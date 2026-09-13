@@ -1,14 +1,79 @@
 import json
+from pathlib import Path
+from typing import Dict, Any
+
 from aiogram import Router, F
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
 
 from keyboards.main_menu import get_main_menu_keyboard
 from keyboards.headache_kb import LOCATION_MAP, PAIN_TYPE_MAP, ALL_SYMPTOMS, MEDICATION_MAP
 from db import upsert_user, get_recent_episodes
 
-# Creating the Router instance to connect this handler to bot instance
+# Paths to localized Russian visual banners
+BANNER_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "hero_banner.png"
+FLOW_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "flow_diagram.png"
+
 router = Router()
+
+
+def _get_intensity_badge(val: int) -> tuple[str, str]:
+    if val <= 3:
+        return "🟢", "Слабая"
+    elif val <= 6:
+        return "🟡", "Умеренная"
+    elif val <= 8:
+        return "🟠", "Сильная"
+    else:
+        return "🔴", "Невыносимая"
+
+
+def _format_episode_card(ep: Dict[str, Any]) -> str:
+    status = ep.get("status")
+    if status == "completed":
+        status_badge = "🟢 <i>Завершен</i>"
+    else:
+        status_badge = "🔴 <b>АКТИВЕН СЕЙЧАС</b>"
+
+    intensity = ep.get("intensity", 0)
+    dot, level_name = _get_intensity_badge(intensity)
+    filled = min(max(intensity, 0), 10)
+    bar = "█" * filled + "░" * (10 - filled)
+
+    loc = LOCATION_MAP.get(ep.get("location"), ep.get("location"))
+    pt = PAIN_TYPE_MAP.get(ep.get("pain_type"), ep.get("pain_type"))
+
+    symptoms_raw = ep.get("symptoms", [])
+    if isinstance(symptoms_raw, str):
+        try:
+            symptoms_raw = json.loads(symptoms_raw)
+        except Exception:
+            symptoms_raw = [symptoms_raw]
+    if not symptoms_raw or "none" in symptoms_raw:
+        sym_str = "—"
+    else:
+        sym_str = ", ".join(ALL_SYMPTOMS.get(s, s) for s in symptoms_raw)
+
+    med = ep.get("medication") or "Не принимались"
+    if med == "none":
+        med = "Не принимались"
+    med = MEDICATION_MAP.get(med, med)
+
+    time_line = f"<code>{ep.get('start_time')}</code>"
+    if ep.get("end_time"):
+        time_line += f" → <code>{ep.get('end_time')}</code>"
+
+    return (
+        f"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"┃ <b>Приступ #{ep.get('id')}</b> • {status_badge}\n"
+        f"┃ 🗓 {time_line}\n"
+        f"┃ 💥 <b>Боль:</b> <b>{intensity}/10</b> {dot} <code>[{bar}]</code>\n"
+        f"┃ 📍 <b>Локация:</b> {loc}\n"
+        f"┃ ⚡️ <b>Характер:</b> {pt}\n"
+        f"┃ 🩺 <b>Симптомы:</b> {sym_str}\n"
+        f"┃ 💊 <b>Препарат:</b> <b>{med}</b>\n"
+        f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    )
 
 
 @router.message(Command("start"))
@@ -28,15 +93,27 @@ async def start(message: Message):
             greeting_name = f", {' '.join(name_parts)}"
 
     welcome_text = (
-        f"👋 <b>Привет{greeting_name}! Я твой личный дневник головных болей</b>, чтобы ты не пришел как его создатель к неврологу как долбоеб!\n\n"
-        "💡 <b>Что я умею:</b>\n"
-        "• Фиксировать начало, интенсивность, локализацию и характер боли\n"
-        "• Отслеживать сопутствующие симптомы (ауру, светобоязнь, тошноту)\n"
-        "• Записывать принятые препараты и их эффективность\n"
-        "• Вести историю твоих приступов\n"
-        "• 📥 <b>Экспортировать готовый медицинский отчет в PDF и таблицу CSV</b> для врача\n\n"
-        "Нажми <b>«🤕 Записать приступ»</b>, чтобы сделать первую запись."
+        f"👋 <b>Привет{greeting_name}!</b>\n"
+        "Добро пожаловать в <b>Migrebot</b> — твой умный дневник головной боли и мигрени.\n\n"
+        "💡 <b>Возможности бота:</b>\n"
+        "▫️ <b>Быстрая запись:</b> опрос за 30 секунд (сила боли 1–10, локализация, симптомы)\n"
+        "▫️ <b>Учет лекарств:</b> точная фиксация препаратов и дозировок\n"
+        "▫️ <b>Хронометраж:</b> расчет точной продолжительности каждого приступа\n"
+        "▫️ <b>Медицинский экспорт:</b> отчеты в <b>PDF</b> и <b>Excel/CSV</b> для невролога\n\n"
+        "<i>Нажмите <b>«🤕 Записать приступ»</b> в меню ниже, чтобы зафиксировать боль.</i>"
     )
+
+    if BANNER_PATH.is_file():
+        try:
+            await message.answer_photo(
+                photo=FSInputFile(str(BANNER_PATH)),
+                caption=welcome_text,
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+        except Exception:
+            pass
+
     await message.answer(text=welcome_text, reply_markup=get_main_menu_keyboard())
 
 
@@ -44,14 +121,26 @@ async def start(message: Message):
 @router.message(F.text == "ℹ️ Справка")
 async def help_command(message: Message):
     help_text = (
-        "📖 <b>Справка по боту:</b>\n\n"
-        "• <b>🤕 Записать приступ</b> (/log) — пошаговый опрос о текущем приступе боли.\n"
-        "• <b>⏹ Завершить приступ</b> (/finish) — отметить, что боль утихла, и рассчитать продолжительность.\n"
-        "• <b>📊 Мои приступы</b> — просмотреть последние записи из дневника.\n"
-        "• <b>📥 Экспорт отчета</b> (/export) — скачать дневник в виде PDF-отчета или CSV-таблицы (Excel).\n"
+        "📖 <b>Справка и навигация по Migrebot:</b>\n\n"
+        "• <b>🤕 Записать приступ</b> (<code>/log</code>) — пошаговый опрос о текущей боли.\n"
+        "• <b>⏹ Завершить приступ</b> (<code>/finish</code>) — зафиксировать окончание боли и время.\n"
+        "• <b>📊 Мои приступы</b> — последние записи из дневника в виде наглядных карточек.\n"
+        "• <b>📥 Экспорт отчета</b> (<code>/export</code>) — скачать отчет для врача (PDF) или таблицу (CSV).\n"
         "• <b>/cancel</b> — прервать текущий опрос в любой момент.\n\n"
-        "<i>Дневник помогает врачу-неврологу поставить точный диагноз (мигрень, ГБН, кластерная боль и т.д.) и подобрать правильную терапию.</i>"
+        "💡 <i>Дневник позволяет врачу-неврологу поставить точный диагноз (мигрень, ГБН, кластерная боль) и подобрать эффективную терапию.</i>"
     )
+
+    if FLOW_PATH.is_file():
+        try:
+            await message.answer_photo(
+                photo=FSInputFile(str(FLOW_PATH)),
+                caption=help_text,
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+        except Exception:
+            pass
+
     await message.answer(text=help_text, reply_markup=get_main_menu_keyboard())
 
 
@@ -62,38 +151,14 @@ async def view_history(message: Message):
 
     if not episodes:
         await message.answer(
-            "📭 У вас пока нет сохраненных записей о приступах.\n\n"
-            "Чтобы добавить первую запись, нажмите «🤕 Записать приступ».",
+            "📭 <b>В дневнике пока нет сохраненных записей о приступах.</b>\n\n"
+            "Чтобы добавить первую запись, нажмите <b>«🤕 Записать приступ»</b>.",
             reply_markup=get_main_menu_keyboard()
         )
         return
 
-    lines = ["<b>📊 Последние приступы:</b>\n"]
-    for i, ep in enumerate(episodes, 1):
-        status_icon = "🟢 (завершен)" if ep.get("status") == "completed" else "🔴 (активен)"
-        intensity = ep.get("intensity", 0)
-        loc = LOCATION_MAP.get(ep.get("location"), ep.get("location"))
-        pt = PAIN_TYPE_MAP.get(ep.get("pain_type"), ep.get("pain_type"))
+    cards = [_format_episode_card(ep) for ep in episodes]
+    header = "📊 <b>ПОСЛЕДНИЕ ПРИСТУПЫ В ДНЕВНИКЕ:</b>\n\n"
+    footer = "\n\n📥 <i>Для выгрузки всех записей нажмите «📥 Экспорт отчета».</i>"
 
-        symptoms_raw = ep.get("symptoms", [])
-        if isinstance(symptoms_raw, str):
-            try:
-                symptoms_raw = json.loads(symptoms_raw)
-            except Exception:
-                symptoms_raw = [symptoms_raw]
-        if not symptoms_raw or "none" in symptoms_raw:
-            sym_str = "нет"
-        else:
-            sym_str = ", ".join(ALL_SYMPTOMS.get(s, s) for s in symptoms_raw)
-
-        med = MEDICATION_MAP.get(ep.get("medication"), ep.get("medication"))
-
-        lines.append(
-            f"<b>#{ep.get('id')} — {ep.get('start_time')}</b> {status_icon}\n"
-            f"• Сила: <b>{intensity}/10</b> | Локация: {loc}\n"
-            f"• Тип: {pt} | Симптомы: {sym_str}\n"
-            f"• Препарат: {med}\n"
-        )
-
-    lines.append("<i>Для выгрузки всех записей нажмите «📥 Экспорт отчета».</i>")
-    await message.answer("\n".join(lines), reply_markup=get_main_menu_keyboard())
+    await message.answer(header + "\n\n".join(cards) + footer, reply_markup=get_main_menu_keyboard())

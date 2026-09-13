@@ -59,31 +59,41 @@ def get_start_time_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# 2. Intensity Keyboard (1-10)
+# 2. Intensity Keyboard (1-10 with color coded badges)
 def get_intensity_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    # Row 1: 1-5 (Mild to moderate)
-    builder.row(*[
-        InlineKeyboardButton(text=str(i), callback_data=IntensityCallback(value=i).pack())
+    # Row 1: 1-5 (Mild to moderate: green to yellow)
+    row_1 = [
+        InlineKeyboardButton(
+            text=f"{i} 🟢" if i <= 3 else f"{i} 🟡",
+            callback_data=IntensityCallback(value=i).pack()
+        )
         for i in range(1, 6)
-    ])
-    # Row 2: 6-10 (Severe)
-    builder.row(*[
-        InlineKeyboardButton(text=str(i), callback_data=IntensityCallback(value=i).pack())
+    ]
+    builder.row(*row_1)
+
+    # Row 2: 6-10 (Moderate to severe: yellow, orange, red)
+    row_2 = [
+        InlineKeyboardButton(
+            text=f"{i} 🟡" if i == 6 else (f"{i} 🟠" if i <= 8 else f"{i} 🔴"),
+            callback_data=IntensityCallback(value=i).pack()
+        )
         for i in range(6, 11)
-    ])
+    ]
+    builder.row(*row_2)
+
     add_navigation_buttons(builder, show_back=True, show_cancel=True)
     return builder.as_markup()
 
 
 # 3. Location Keyboard
 LOCATION_MAP = {
-    "left": "Слева 👈",
-    "right": "Справа 👉",
-    "both": "С обеих сторон ↔️",
-    "forehead_temples": "Лоб и виски 🎯",
-    "back_head": "Затылок 🔙",
-    "diffuse": "Вся голова 🌐"
+    "left": "👈 Слева (односторонняя)",
+    "right": "Справа (односторонняя) 👉",
+    "both": "↔️ С обеих сторон",
+    "forehead_temples": "🎯 Лоб и виски",
+    "back_head": "🔙 Затылок и шея",
+    "diffuse": "🌐 Вся голова (диффузная)"
 }
 
 def get_location_keyboard() -> InlineKeyboardMarkup:
@@ -106,11 +116,11 @@ def get_location_keyboard() -> InlineKeyboardMarkup:
 
 # 4. Pain Type Keyboard
 PAIN_TYPE_MAP = {
-    "throbbing": "Пульсирующая ⚡️",
-    "pressing": "Давящая / сжимающая 🗜",
-    "bursting": "Распирающая 💥",
-    "stabbing": "Колющая / прострелы 🎯",
-    "dull": "Тупая / ноющая 🌧"
+    "throbbing": "💓 Пульсирующая (мигренозная)",
+    "pressing": "🗜 Сжимающая / как обруч (ГБН)",
+    "bursting": "💥 Распирающая",
+    "stabbing": "🎯 Колющая / прострелы",
+    "dull": "🌧 Тупая / ноющая"
 }
 
 def get_pain_type_keyboard() -> InlineKeyboardMarkup:
@@ -121,13 +131,13 @@ def get_pain_type_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# 5. Symptoms Keyboard (Multi-select)
+# 5. Symptoms Keyboard (Multi-select with counter)
 ALL_SYMPTOMS = {
+    "photophobia": "💡 Светобоязнь (фотофобия)",
+    "phonophobia": "🔊 Звукобоязнь (фонофобия)",
     "nausea": "🤢 Тошнота",
     "vomiting": "🤮 Рвота",
-    "photophobia": "💡 Светобоязнь",
-    "phonophobia": "🔊 Звукобоязнь",
-    "aura": "✨ Зрительная аура",
+    "aura": "✨ Зрительная аура (мерцание)",
     "dizziness": "🌀 Головокружение",
     "odor": "👃 Чувствительность к запахам"
 }
@@ -137,7 +147,7 @@ def get_symptoms_keyboard(selected: Set[str] = None) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     for key, label in ALL_SYMPTOMS.items():
-        mark = "✅ " if key in selected else "▫️ "
+        mark = "✅ " if key in selected else "◻️ "
         builder.row(
             InlineKeyboardButton(
                 text=f"{mark}{label}",
@@ -146,7 +156,7 @@ def get_symptoms_keyboard(selected: Set[str] = None) -> InlineKeyboardMarkup:
         )
 
     # Option for no symptoms
-    no_sym_mark = "✅ " if "none" in selected else "▫️ "
+    no_sym_mark = "✅ " if "none" in selected else "◻️ "
     builder.row(
         InlineKeyboardButton(
             text=f"{no_sym_mark}❌ Нет сопутствующих симптомов",
@@ -154,10 +164,12 @@ def get_symptoms_keyboard(selected: Set[str] = None) -> InlineKeyboardMarkup:
         )
     )
 
-    # Done button
+    # Done button with selected count indicator
+    real_selected = [s for s in selected if s != "none"]
+    count_label = f" (выбрано: {len(real_selected)})" if real_selected else ""
     builder.row(
         InlineKeyboardButton(
-            text="➡️ Продолжить",
+            text=f"➡️ Продолжить{count_label}",
             callback_data=SymptomCallback(action="done", value="done").pack()
         )
     )
@@ -190,7 +202,10 @@ get_manual_medication_keyboard = get_medication_keyboard
 def get_confirm_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="💾 Сохранить приступ", callback_data=ConfirmCallback(action="save").pack())
+        InlineKeyboardButton(
+            text="💾 Сохранить приступ в дневник",
+            callback_data=ConfirmCallback(action="save").pack()
+        )
     )
     add_navigation_buttons(builder, show_back=True, show_cancel=True)
     return builder.as_markup()
@@ -200,7 +215,7 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
 def get_cancel_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="❌ Отмена", callback_data=NavCallback(action="cancel").pack())
+        InlineKeyboardButton(text="❌ Отменить запись", callback_data=NavCallback(action="cancel").pack())
     )
     return builder.as_markup()
 
@@ -212,8 +227,8 @@ class ExportCallback(CallbackData, prefix="hde"):
 def get_export_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="📄 Экспорт в PDF", callback_data=ExportCallback(format="pdf").pack()),
-        InlineKeyboardButton(text="📊 Экспорт в CSV (Excel)", callback_data=ExportCallback(format="csv").pack())
+        InlineKeyboardButton(text="📄 Медицинский отчет (PDF)", callback_data=ExportCallback(format="pdf").pack()),
+        InlineKeyboardButton(text="📊 Таблица данных (CSV / Excel)", callback_data=ExportCallback(format="csv").pack())
     )
     builder.row(
         InlineKeyboardButton(text="📦 Скачать оба формата (PDF + CSV)", callback_data=ExportCallback(format="both").pack())

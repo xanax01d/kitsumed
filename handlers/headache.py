@@ -35,10 +35,95 @@ from db import create_episode, get_active_episode, finish_episode, upsert_user
 router = Router()
 
 
-# --- Helper to format summary ---
+# --- Helpers for Visual Badges & Summary ---
+def _get_intensity_badge(val: int) -> tuple[str, str]:
+    if val <= 3:
+        return "🟢", "Слабая"
+    elif val <= 6:
+        return "🟡", "Умеренная"
+    elif val <= 8:
+        return "🟠", "Сильная"
+    else:
+        return "🔴", "Невыносимая"
+
+
+def _get_progress_bar(val: int, max_val: int = 10) -> str:
+    filled = min(max(val, 0), max_val)
+    return "█" * filled + "░" * (max_val - filled)
+
+
+def step_1_text() -> str:
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 1 из 6 • Время ]  ▰▱▱▱▱▱ 17%</code>\n\n"
+        "⏰ <b>Когда началась головная боль?</b>\n"
+        "<i>Выберите быстрый вариант или укажите точное время:</i>"
+    )
+
+
+def step_2_text(time_str: str) -> str:
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 2 из 6 • Сила боли ]  ▰▰▱▱▱▱ 33%</code>\n\n"
+        f"⏰ Начало: <code>{time_str}</code>\n\n"
+        "📊 <b>Оцените интенсивность боли по шкале от 1 до 10:</b>\n"
+        "🟢 <b>1–3</b> — Слабая <i>(фоновая, работоспособность сохранена)</i>\n"
+        "🟡 <b>4–6</b> — Умеренная <i>(снижает концентрацию)</i>\n"
+        "🟠 <b>7–8</b> — Сильная <i>(тяжело выполнять обычные дела)</i>\n"
+        "🔴 <b>9–10</b> — Невыносимая <i>(сильнейшая боль, постельный режим)</i>"
+    )
+
+
+def step_3_text(intensity: int) -> str:
+    dot, level_name = _get_intensity_badge(intensity)
+    bar = _get_progress_bar(intensity, 10)
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 3 из 6 • Локализация ]  ▰▰▰▱▱▱ 50%</code>\n\n"
+        f"📊 Интенсивность: <b>{intensity}/10</b> {dot} <i>({level_name})</i>\n"
+        f"    <code>[{bar}]</code>\n\n"
+        "📍 <b>Где именно локализуется боль?</b>\n"
+        "<i>Выберите зону сосредоточения боли:</i>"
+    )
+
+
+def step_4_text(loc_key: str) -> str:
+    loc_text = LOCATION_MAP.get(loc_key, loc_key)
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 4 из 6 • Характер ]  ▰▰▰▰▱▱ 67%</code>\n\n"
+        f"📍 Зона: <b>{loc_text}</b>\n\n"
+        "⚡️ <b>Каков характер головной боли?</b>\n"
+        "<i>Выберите тип ощущений (важно для клинической дифференциации):</i>"
+    )
+
+
+def step_5_text(pt_key: str) -> str:
+    pt_text = PAIN_TYPE_MAP.get(pt_key, pt_key)
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 5 из 6 • Симптомы ]  ▰▰▰▰▰▱ 83%</code>\n\n"
+        f"⚡️ Характер: <b>{pt_text}</b>\n\n"
+        "🩺 <b>Есть ли сопутствующие симптомы?</b>\n"
+        "<i>Отметьте нужные симптомы и нажмите «➡️ Продолжить»:</i>"
+    )
+
+
+def step_6_text() -> str:
+    return (
+        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
+        "<code>[ Шаг 6 из 6 • Препарат ]  ▰▰▰▰▰▰ 100%</code>\n\n"
+        "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
+        "<i>(Например: <code>Суматриптан 50 мг</code>, <code>Ибупрофен 400 мг</code>, "
+        "<code>Цитрамон 1 таб</code>)</i>\n\n"
+        "Если вы ничего не принимали, нажмите кнопку ниже:"
+    )
+
+
 def format_summary(data: Dict[str, Any]) -> str:
     intensity = data.get("intensity", 0)
-    int_emoji = "🟢" if intensity <= 3 else ("🟡" if intensity <= 6 else "🔴")
+    dot, level_name = _get_intensity_badge(intensity)
+    bar = _get_progress_bar(intensity, 10)
 
     loc_key = data.get("location", "")
     loc_text = LOCATION_MAP.get(loc_key, loc_key)
@@ -48,7 +133,7 @@ def format_summary(data: Dict[str, Any]) -> str:
 
     symptoms_list = data.get("symptoms", [])
     if not symptoms_list or "none" in symptoms_list:
-        symptoms_str = "Нет"
+        symptoms_str = "<i>Не отмечено</i>"
     else:
         symptoms_str = ", ".join(ALL_SYMPTOMS.get(s, s) for s in symptoms_list)
 
@@ -58,13 +143,18 @@ def format_summary(data: Dict[str, Any]) -> str:
     med_text = MEDICATION_MAP.get(med_val, med_val)
 
     return (
-        "<b>📋 Проверьте данные о приступе:</b>\n\n"
-        f"⏰ <b>Начало:</b> {data.get('start_time', 'Не указано')}\n"
-        f"📊 <b>Интенсивность:</b> {intensity}/10 {int_emoji}\n"
+        "╔═══════════════════════════════════╗\n"
+        "║   📋 <b>ИТОГОВАЯ КАРТОЧКА ПРИСТУПА</b>     ║\n"
+        "╚═══════════════════════════════════╝\n\n"
+        f"⏰ <b>Начало:</b> <code>{data.get('start_time', 'Не указано')}</code>\n"
+        f"📊 <b>Интенсивность:</b> <b>{intensity}/10</b> {dot} <i>({level_name})</i>\n"
+        f"    <code>[{bar}]</code>\n"
         f"📍 <b>Локализация:</b> {loc_text}\n"
         f"⚡️ <b>Характер:</b> {pt_text}\n"
         f"🩺 <b>Симптомы:</b> {symptoms_str}\n"
-        f"💊 <b>Препарат:</b> {med_text}\n"
+        f"💊 <b>Препарат:</b> <b>{med_text}</b>\n\n"
+        "───────────────────────────────────\n"
+        "<i>Все данные указаны верно? Сохранить запись в дневник?</i>"
     )
 
 
@@ -97,26 +187,28 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
     if current_state == HeadacheLogSG.intensity.state:
         await state.set_state(HeadacheLogSG.start_time)
         await callback.message.edit_text(
-            "⏰ <b>Когда началась головная боль?</b>",
+            step_1_text(),
             reply_markup=get_start_time_keyboard()
         )
     elif current_state == HeadacheLogSG.location.state:
+        data = await state.get_data()
         await state.set_state(HeadacheLogSG.intensity)
         await callback.message.edit_text(
-            "📊 <b>Оцените интенсивность боли по шкале от 1 до 10:</b>\n"
-            "<i>(1 — еле заметная, 10 — невыносимая)</i>",
+            step_2_text(data.get("start_time", "")),
             reply_markup=get_intensity_keyboard()
         )
     elif current_state == HeadacheLogSG.pain_type.state:
+        data = await state.get_data()
         await state.set_state(HeadacheLogSG.location)
         await callback.message.edit_text(
-            "📍 <b>Где именно локализуется боль?</b>",
+            step_3_text(data.get("intensity", 0)),
             reply_markup=get_location_keyboard()
         )
     elif current_state == HeadacheLogSG.symptoms.state:
+        data = await state.get_data()
         await state.set_state(HeadacheLogSG.pain_type)
         await callback.message.edit_text(
-            "⚡️ <b>Каков характер головной боли?</b>",
+            step_4_text(data.get("location", "")),
             reply_markup=get_pain_type_keyboard()
         )
     elif current_state == HeadacheLogSG.medication.state:
@@ -124,17 +216,13 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         selected = set(data.get("symptoms", []))
         await state.set_state(HeadacheLogSG.symptoms)
         await callback.message.edit_text(
-            "🩺 <b>Есть ли сопутствующие симптомы?</b>\n"
-            "<i>(Отметьте нужные пункты и нажмите «➡️ Продолжить»)</i>",
+            step_5_text(data.get("pain_type", "")),
             reply_markup=get_symptoms_keyboard(selected)
         )
     elif current_state == HeadacheLogSG.confirm.state:
         await state.set_state(HeadacheLogSG.medication)
         await callback.message.edit_text(
-            "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
-            "<i>(Например: <code>Ибупрофен 400 мг</code>, <code>Суматриптан 50 мг</code>, "
-            "<code>Цитрамон 1 таб</code>)</i>\n\n"
-            "Если вы ничего не принимали, нажмите кнопку ниже:",
+            step_6_text(),
             reply_markup=get_medication_keyboard()
         )
 
@@ -154,16 +242,15 @@ async def start_headache_log(message: Message, state: FSMContext):
         active = await get_active_episode(user.id)
         if active:
             await message.answer(
-                "⚠️ <b>У вас уже есть незавершенный приступ</b>, начатый: "
-                f"<code>{active.get('start_time')}</code>.\n\n"
-                "Вы можете сначала завершить его кнопкой «⏹ Завершить приступ» или начать новую запись.",
+                "⚠️ <b>У вас уже есть незавершенный приступ!</b>\n"
+                f"🗓 Начало: <code>{active.get('start_time')}</code>\n\n"
+                "Вы можете завершить его кнопкой <b>«⏹ Завершить приступ»</b> или начать новую запись.",
             )
 
     await state.clear()
     await state.set_state(HeadacheLogSG.start_time)
     await message.answer(
-        "🤕 <b>Запись нового приступа</b>\n\n"
-        "⏰ <b>Когда началась головная боль?</b>",
+        step_1_text(),
         reply_markup=get_start_time_keyboard()
     )
 
@@ -185,8 +272,8 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
     elif preset == "custom":
         await state.set_state(HeadacheLogSG.custom_start_time)
         await callback.message.edit_text(
-            "✍️ <b>Введите время начала приступа</b> текстом\n"
-            "<i>(Например: <code>15:40</code> или <code>вчера в 21:00</code>)</i>:",
+            "✍️ <b>Введите время начала приступа</b> текстом:\n"
+            "<i>(Например: <code>15:40</code> или <code>вчера в 21:00</code>)</i>",
             reply_markup=get_cancel_keyboard()
         )
         await callback.answer()
@@ -197,9 +284,7 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
     await state.update_data(start_time=time_str)
     await state.set_state(HeadacheLogSG.intensity)
     await callback.message.edit_text(
-        f"⏰ Время начала: <b>{time_str}</b>\n\n"
-        "📊 <b>Оцените интенсивность боли по шкале от 1 до 10:</b>\n"
-        "<i>(1 — едва ощутимая, 5 — умеренная, 10 — невыносимая)</i>",
+        step_2_text(time_str),
         reply_markup=get_intensity_keyboard()
     )
     await callback.answer()
@@ -211,9 +296,7 @@ async def process_custom_start_time(message: Message, state: FSMContext):
     await state.update_data(start_time=time_str)
     await state.set_state(HeadacheLogSG.intensity)
     await message.answer(
-        f"⏰ Время начала: <b>{time_str}</b>\n\n"
-        "📊 <b>Оцените интенсивность боли по шкале от 1 до 10:</b>\n"
-        "<i>(1 — едва ощутимая, 5 — умеренная, 10 — невыносимая)</i>",
+        step_2_text(time_str),
         reply_markup=get_intensity_keyboard()
     )
 
@@ -225,8 +308,7 @@ async def process_intensity(callback: CallbackQuery, callback_data: IntensityCal
     await state.update_data(intensity=intensity)
     await state.set_state(HeadacheLogSG.location)
     await callback.message.edit_text(
-        f"📊 Интенсивность: <b>{intensity}/10</b>\n\n"
-        "📍 <b>Где локализуется боль?</b>",
+        step_3_text(intensity),
         reply_markup=get_location_keyboard()
     )
     await callback.answer()
@@ -239,8 +321,7 @@ async def process_location(callback: CallbackQuery, callback_data: LocationCallb
     await state.update_data(location=loc_key)
     await state.set_state(HeadacheLogSG.pain_type)
     await callback.message.edit_text(
-        f"📍 Локализация: <b>{LOCATION_MAP.get(loc_key, loc_key)}</b>\n\n"
-        "⚡️ <b>Каков характер боли?</b>",
+        step_4_text(loc_key),
         reply_markup=get_pain_type_keyboard()
     )
     await callback.answer()
@@ -253,9 +334,7 @@ async def process_pain_type(callback: CallbackQuery, callback_data: PainTypeCall
     await state.update_data(pain_type=pt_key, symptoms=[])
     await state.set_state(HeadacheLogSG.symptoms)
     await callback.message.edit_text(
-        f"⚡️ Характер: <b>{PAIN_TYPE_MAP.get(pt_key, pt_key)}</b>\n\n"
-        "🩺 <b>Есть ли сопутствующие симптомы?</b>\n"
-        "<i>(Отметьте нужные пункты и нажмите «➡️ Продолжить»)</i>",
+        step_5_text(pt_key),
         reply_markup=get_symptoms_keyboard(set())
     )
     await callback.answer()
@@ -287,10 +366,7 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
     elif action == "done":
         await state.set_state(HeadacheLogSG.medication)
         await callback.message.edit_text(
-            "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
-            "<i>(Например: <code>Ибупрофен 400 мг</code>, <code>Суматриптан 50 мг</code>, "
-            "<code>Цитрамон 1 таб</code>)</i>\n\n"
-            "Если вы ничего не принимали, нажмите кнопку ниже:",
+            step_6_text(),
             reply_markup=get_medication_keyboard()
         )
 
@@ -340,12 +416,12 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
     await state.clear()
 
     await callback.message.edit_text(
-        "✅ <b>Приступ успешно записан!</b> (№" + str(episode_id) + ")\n\n"
-        "💡 <i>Рекомендации:</i>\n"
-        "• Выпейте стакан чистой воды\n"
-        "• Отдохните в затемненной и тихой комнате\n"
-        "• Положите прохладный компресс на лоб или шею\n\n"
-        "Когда головная боль стихнет, нажмите кнопку <b>«⏹ Завершить приступ»</b>, чтобы зафиксировать продолжительность.",
+        f"✅ <b>Приступ успешно записан в дневник!</b> (Запись #{episode_id})\n\n"
+        "🧘‍♂️ <b>Рекомендации первой помощи:</b>\n"
+        "💧 Выпейте стакан чистой негазированной воды\n"
+        "🌑 Прилягте в затемненной и тихой проветренной комнате\n"
+        "❄️ Положите прохладный компресс на лоб или шею\n\n"
+        "Когда головная боль стихнет, нажмите <b>«⏹ Завершить приступ»</b> в меню ниже, чтобы зафиксировать продолжительность.",
         reply_markup=None
     )
     await callback.message.answer(
@@ -364,8 +440,8 @@ async def cmd_finish_episode(message: Message):
 
     if not active:
         await message.answer(
-            "ℹ️ У вас сейчас нет активного незавершенного приступа.\n\n"
-            "Чтобы зафиксировать новый приступ, нажмите кнопку «🤕 Записать приступ».",
+            "ℹ️ <b>У вас сейчас нет активного незавершенного приступа.</b>\n\n"
+            "Чтобы зафиксировать новый приступ, нажмите кнопку <b>«🤕 Записать приступ»</b>.",
             reply_markup=get_main_menu_keyboard()
         )
         return
@@ -381,15 +457,15 @@ async def cmd_finish_episode(message: Message):
         diff = now_dt - start_dt
         hours = int(diff.total_seconds() // 3600)
         minutes = int((diff.total_seconds() % 3600) // 60)
-        duration_str = f"\n⏱ <b>Длительность приступа:</b> {hours} ч {minutes} мин"
+        duration_str = f"{hours} ч {minutes} мин"
     except Exception:
-        pass
+        duration_str = "не рассчитана"
 
     await message.answer(
-        f"🎉 <b>Приступ завершен!</b>\n\n"
-        f"Начало: <code>{start_str}</code>\n"
-        f"Окончание: <code>{end_time_str}</code>"
-        f"{duration_str}\n\n"
-        "Данные сохранены в ваш дневник. Рады, что вам стало легче!",
+        "🎉 <b>Приступ успешно завершен!</b>\n\n"
+        f"⏱ <b>Длительность:</b> <b>{duration_str}</b>\n"
+        f"🗓 <b>Начало:</b> <code>{start_str}</code>\n"
+        f"🏁 <b>Окончание:</b> <code>{end_time_str}</code>\n\n"
+        "<i>Данные зафиксированы в истории. Рады, что вам стало лучше! 💚</i>",
         reply_markup=get_main_menu_keyboard()
     )
