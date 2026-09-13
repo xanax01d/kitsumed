@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(11%2F11)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(16%2F16)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -77,6 +77,15 @@
 ### 4. 📊 Мгновенная история
 - Быстрый просмотр последних приступов в Telegram с наглядным отображением статусов (🟢 завершен / 🔴 активен) и ключевых параметров.
 
+### 5. ⏰ Ежедневные персонализированные опросы
+- **Регулярный чек-ин**: Каждый день в выбранное пользователем время бот отправляет интерактивный запрос: *«Болела ли голова сегодня?»*.
+- **Быстрые действия**:
+  - `🤕 Да, болела` — мгновенный переход к фиксации приступа в дневнике.
+  - `👌 Нет, всё отлично` — сохранение бессимптомного дня в истории.
+  - `⚙️ Настроить время` — изменение параметров опроса.
+- **Гибкая настройка расписания**: Быстрые пресеты (`09:00`, `14:00`, `19:00`, `21:00`, `22:00`, `23:00` МСК) или ввод любого произвольного времени (`ЧЧ:ММ`), а также возможность временного отключения.
+- **Фоновый планировщик**: Асинхронный воркер проверяет расписание каждую минуту, учитывает часовой пояс (Europe/Moscow) и защищает от повторных отправок в течение одного календарного дня.
+
 ---
 
 ## 🎮 Интерфейс и сценарии работы
@@ -98,6 +107,7 @@
 | `/finish` | `⏹ Завершить приступ` | Закрытие активного приступа с фиксацией длительности |
 | `/export` | `📥 Экспорт отчета` | Меню выгрузки медицинского отчета (PDF / CSV / Оба) |
 | — | `📊 Мои приступы` | Экспресс-просмотр последних 5 записей из дневника |
+| `/reminder`, `/settings` | `⏰ Напоминания` | Настройка времени ежедневного опроса самочувствия |
 | `/help` | `ℹ️ Справка` | Справочное руководство по ведению дневника |
 | `/cancel` | `❌ Отмена` | Прерывание текущего опроса и возврат в главное меню |
 
@@ -129,19 +139,23 @@ migrebot_analog/
 │   ├── __init__.py        # Роутер хэндлеров
 │   ├── startHandler.py    # Команды /start, /help, меню истории приступов
 │   ├── headache.py        # FSM-опросник фиксации и завершения приступа
+│   ├── reminderHandler.py # Настройка и обработка ежедневных опросов
 │   └── exportHandler.py   # Генерация и отправка отчетов (/export)
 ├── keyboards/
 │   ├── __init__.py
 │   ├── main_menu.py       # Постоянная клавиатура быстрого доступа (Reply)
+│   ├── reminder_kb.py     # Инлайн-кнопки настроек и ежедневного чек-ина
 │   └── headache_kb.py     # Инлайн-клавиатуры опросника, навигация и коллбэки
 ├── services/
 │   ├── __init__.py
+│   ├── reminder_service.py # Фоновый планировщик ежедневных опросов (MSK)
 │   └── export_service.py  # Сборка медицинского PDF и таблицы CSV с очисткой эмодзи
 ├── states/
 │   ├── __init__.py
+│   ├── reminder.py        # FSM-состояния настроек напоминаний (ReminderSG)
 │   └── headache.py        # FSM-состояния (HeadacheLogSG)
 ├── tests/
-│   └── test_flow.py       # Набор юнит-тестов (клавиатуры, FSM, БД, экспорт CJK)
+│   └── test_flow.py       # Набор юнит-тестов (клавиатуры, FSM, БД, экспорт CJK, напоминания)
 ├── .env                   # Конфигурация подключения (токен, Redis, Postgres)
 ├── .gitignore             # Игнорируемые файлы окружения
 ├── requirements.txt       # Зависимости Python
@@ -204,7 +218,7 @@ python3 main.py
 python3 -m unittest tests/test_flow.py -v
 ```
 
-### Структура тест-сьюта (11 тестов):
+### Структура тест-сьюта (16 тестов):
 
 | Тест | Категория | Проверяемая функциональность |
 | :--- | :--- | :--- |
@@ -214,6 +228,11 @@ python3 -m unittest tests/test_flow.py -v
 | `test_cancel_flow_clears_state` | 🧭 Навигация | Гарантированный сброс FSM-состояния (`state.clear()`) при нажатии на кнопку «Отмена» и отправке команды `/cancel` |
 | `test_callback_packing` | 🔘 Клавиатуры | Корректность префиксов и сериализации коллбэков всех шагов (время, интенсивность, локация, характер боли, симптомы, медикаменты, экспорт) |
 | `test_keyboards_structure` | 🔘 Клавиатуры | Валидация сетки кнопок, текстов и коллбэк-данных всех инлайн-клавиатур |
+| `test_reminder_keyboards_and_callbacks` | ⏰ Напоминания | Формирование клавиатур настроек, чек-ина и сериализация `rem\|...`, `rem_p\|...` |
+| `test_reminder_custom_time_validation` | ⏰ Напоминания | Валидация регулярным выражением произвольного ввода времени (`ЧЧ:ММ`, от 00:00 до 23:59) |
+| `test_reminder_db_methods_mocked` | ⏰ Напоминания | Выборка пользователей, обновление времени/статуса и фиксация даты отправки опроса |
+| `test_reminder_prompt_callbacks` | ⏰ Напоминания | Обработка реакций на чек-ин («Да, болела» ➔ старт FSM, «Нет, всё отлично» ➔ благодарность) |
+| `test_reminder_scheduler_tick` | ⏰ Напоминания | Изолированное выполнение тика фонового планировщика и отправка уведомления пользователю |
 | `test_csv_and_pdf_generation` | 📄 Экспорт | Сборка медицинского PDF-отчета (ReportLab Landscape A4) и CSV таблицы с кодировкой UTF-8 BOM без ошибок |
 | `test_cjk_and_nickname_export` | 📄 Экспорт | Поддержка кириллицы, латиницы, CJK-иероглифов и никнеймов шрифтовым стеком `VL-Gothic` |
 | `test_redis_fsm_storage_config` | 🗄 Хранилища | Изоляция ключей состояний FSM в Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
@@ -285,6 +304,10 @@ python3 -m unittest tests/test_flow.py -v
 | `user_id` | `BIGINT PRIMARY KEY` | Уникальный идентификатор пользователя Telegram |
 | `username` | `VARCHAR(255)` | Никнейм (@username) |
 | `first_name` | `VARCHAR(255)` | Имя профиля Telegram |
+| `reminder_time` | `VARCHAR(8)` | Время ежедневного опроса (по умолчанию `21:00`) |
+| `reminder_enabled` | `BOOLEAN` | Флаг активности напоминаний (`true`/`false`) |
+| `timezone` | `VARCHAR(64)` | Часовой пояс пользователя (`Europe/Moscow`) |
+| `last_reminded_date` | `VARCHAR(16)` | Дата последней отправки опроса (`YYYY-MM-DD`) |
 | `created_at` | `TIMESTAMPTZ` | Время первой авторизации |
 
 ### `headache_episodes`

@@ -5,7 +5,7 @@ def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
     keyboard = [
         [KeyboardButton(text="🤕 Записать приступ"), KeyboardButton(text="⏹ Завершить приступ")],
         [KeyboardButton(text="📊 Мои приступы"), KeyboardButton(text="📥 Экспорт отчета")],
-        [KeyboardButton(text="ℹ️ Справка")]
+        [KeyboardButton(text="⏰ Напоминания"), KeyboardButton(text="ℹ️ Справка")]
     ]
     return ReplyKeyboardMarkup(
         keyboard=keyboard,

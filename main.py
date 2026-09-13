@@ -9,7 +9,8 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from redis.asyncio import Redis
 
-from handlers import startHandler, headache, exportHandler
+from handlers import startHandler, headache, exportHandler, reminderHandler
+from services import reminder_scheduler
 from db import init_db, close_db
 
 # Load environment variables
@@ -59,16 +60,25 @@ async def main() -> None:
     dp.include_router(startHandler.router)
     dp.include_router(headache.router)
     dp.include_router(exportHandler.router)
+    dp.include_router(reminderHandler.router)
 
     # 4. Create Bot instance
     bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await bot.delete_webhook(drop_pending_updates=True)
+
+    # 5. Start background reminder scheduler
+    scheduler_task = asyncio.create_task(reminder_scheduler(bot))
 
     logging.info("Bot started successfully and is polling for updates...")
     try:
         await dp.start_polling(bot)
     finally:
         logging.info("Shutting down resources...")
+        scheduler_task.cancel()
+        try:
+            await scheduler_task
+        except asyncio.CancelledError:
+            pass
         await close_db()
         await redis_client.aclose()
 

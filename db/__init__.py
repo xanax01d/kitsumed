@@ -8,6 +8,10 @@ from .database import (
     finish_episode,
     get_recent_episodes,
     get_all_episodes,
+    get_user_reminder,
+    set_user_reminder,
+    get_users_due_for_reminder,
+    mark_user_reminded,
 )
 
 __all__ = [
@@ -20,4 +24,8 @@ __all__ = [
     "finish_episode",
     "get_recent_episodes",
     "get_all_episodes",
+    "get_user_reminder",
+    "set_user_reminder",
+    "get_users_due_for_reminder",
+    "mark_user_reminded",
 ]

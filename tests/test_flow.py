@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
@@ -22,8 +23,23 @@ from keyboards.headache_kb import (
     NavCallback,
 )
 from keyboards.main_menu import get_main_menu_keyboard
+from keyboards.reminder_kb import (
+    get_reminder_settings_keyboard,
+    get_reminder_prompt_keyboard,
+    get_reminder_custom_cancel_keyboard,
+    ReminderCallback,
+    ReminderPromptCallback,
+)
 from states.headache import HeadacheLogSG
+from states.reminder import ReminderSG
 from handlers.headache import callback_back, callback_cancel, cmd_cancel
+from handlers.reminderHandler import (
+    TIME_REGEX,
+    process_custom_time_input,
+    process_daily_healthy,
+    process_daily_headache,
+    _format_reminder_text,
+)
 import db.database as db_mod
 from main import get_redis_client, get_fsm_storage
 from services import generate_csv, generate_pdf
@@ -329,6 +345,123 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
         await cmd_cancel(mock_msg, mock_state_cmd)
         mock_state_cmd.clear.assert_called_once()
+
+    def test_reminder_keyboards_and_callbacks(self):
+        # Settings keyboard enabled
+        kb_on = get_reminder_settings_keyboard("21:00", enabled=True)
+        self.assertIsNotNone(kb_on)
+        self.assertGreater(len(kb_on.inline_keyboard), 3)
+
+        # Settings keyboard disabled
+        kb_off = get_reminder_settings_keyboard("21:00", enabled=False)
+        self.assertIsNotNone(kb_off)
+
+        # Daily inquiry prompt keyboard
+        kb_prompt = get_reminder_prompt_keyboard()
+        self.assertEqual(len(kb_prompt.inline_keyboard), 3)
+
+        # Custom time cancel keyboard
+        kb_cancel = get_reminder_custom_cancel_keyboard()
+        self.assertEqual(len(kb_cancel.inline_keyboard), 1)
+
+        # Packing callbacks
+        cb_set = ReminderCallback(action="set_time", value="20:00").pack()
+        self.assertTrue(cb_set.startswith("rem|set_time|20:00"))
+
+        cb_toggle = ReminderCallback(action="toggle").pack()
+        self.assertTrue(cb_toggle.startswith("rem|toggle"))
+
+        cb_headache = ReminderPromptCallback(action="headache").pack()
+        self.assertTrue(cb_headache.startswith("rem_p|headache"))
+
+        cb_healthy = ReminderPromptCallback(action="healthy").pack()
+        self.assertTrue(cb_healthy.startswith("rem_p|healthy"))
+
+    def test_reminder_custom_time_validation(self):
+        valid_times = ["21:00", "09:30", "8:15", "0:00", "23:59", "00:00"]
+        for t in valid_times:
+            self.assertIsNotNone(TIME_REGEX.match(t), f"Expected {t} to be valid")
+
+        invalid_times = ["24:00", "25:30", "12:60", "abc", "2100", "-1:00", "12:5"]
+        for t in invalid_times:
+            self.assertIsNone(TIME_REGEX.match(t), f"Expected {t} to be invalid")
+
+    async def test_reminder_db_methods_mocked(self):
+        mock_pool = MagicMock()
+        mock_conn = AsyncMock()
+        mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
+
+        with patch.object(db_mod, "_get_pool", return_value=mock_pool):
+            # 1. get_user_reminder not found -> default
+            mock_conn.fetchrow.return_value = None
+            res_def = await db_mod.get_user_reminder(12345)
+            self.assertEqual(res_def["reminder_time"], "21:00")
+            self.assertTrue(res_def["reminder_enabled"])
+
+            # 2. get_user_reminder found
+            mock_conn.fetchrow.return_value = {
+                "reminder_time": "19:30",
+                "reminder_enabled": False,
+                "timezone": "Europe/Moscow",
+                "last_reminded_date": "2026-09-13"
+            }
+            res = await db_mod.get_user_reminder(12345)
+            self.assertEqual(res["reminder_time"], "19:30")
+            self.assertFalse(res["reminder_enabled"])
+
+            # 3. set_user_reminder
+            mock_conn.execute.return_value = "UPDATE 1"
+            upd = await db_mod.set_user_reminder(12345, reminder_time="20:00", enabled=True)
+            self.assertTrue(upd)
+
+            # 4. get_users_due_for_reminder
+            mock_conn.fetch.return_value = [
+                {"user_id": 111, "first_name": "Anna", "username": "anna", "reminder_time": "21:00", "timezone": "Europe/Moscow"}
+            ]
+            due = await db_mod.get_users_due_for_reminder("21:00", "2026-09-13")
+            self.assertEqual(len(due), 1)
+            self.assertEqual(due[0]["user_id"], 111)
+
+            # 5. mark_user_reminded
+            mock_conn.execute.return_value = "UPDATE 1"
+            marked = await db_mod.mark_user_reminded(111, "2026-09-13")
+            self.assertTrue(marked)
+
+    async def test_reminder_prompt_callbacks(self):
+        # 1. Healthy response
+        mock_cb = AsyncMock()
+        mock_cb.message = AsyncMock()
+        await process_daily_healthy(mock_cb)
+        mock_cb.answer.assert_called_with("Здорово!")
+
+        # 2. Headache response starts HeadacheLogSG.start_time
+        mock_cb_h = AsyncMock()
+        mock_cb_h.message = AsyncMock()
+        mock_state = AsyncMock()
+        await process_daily_headache(mock_cb_h, mock_state)
+        mock_state.set_state.assert_called_with(HeadacheLogSG.start_time)
+        mock_cb_h.answer.assert_called()
+
+    async def test_reminder_scheduler_tick(self):
+        from services.reminder_service import reminder_scheduler
+        mock_bot = AsyncMock()
+
+        calls = 0
+        async def fake_sleep(sec):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                raise asyncio.CancelledError()
+
+        with patch("services.reminder_service.get_users_due_for_reminder", new_callable=AsyncMock) as mock_get_due, \
+             patch("services.reminder_service.mark_user_reminded", new_callable=AsyncMock) as mock_mark, \
+             patch("asyncio.sleep", side_effect=fake_sleep):
+            mock_get_due.return_value = [
+                {"user_id": 999, "first_name": "TestUser", "reminder_time": "21:00"}
+            ]
+            await reminder_scheduler(mock_bot)
+            mock_bot.send_message.assert_called_once()
+            mock_mark.assert_called_once()
 
 
 if __name__ == "__main__":

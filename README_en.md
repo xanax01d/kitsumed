@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(11%2F11)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(16%2F16)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -77,6 +77,15 @@ Fully asynchronous, fault-tolerant microservice architecture based on Python asy
 ### 4. 📊 Instant History Access
 - On-demand history review of recent episodes directly in Telegram with clear status badges (🟢 completed / 🔴 active).
 
+### 5. ⏰ Daily Personalized Check-ins
+- **Routine Inquiries**: Daily automated check-in prompt at user-configured time: *«Did you have a headache today?»*.
+- **Quick Action Handlers**:
+  - `🤕 Yes, had pain` — launches step-by-step episode logging immediately.
+  - `👌 No, feeling great` — saves asymptomatic day record in diary.
+  - `⚙️ Adjust time` — directly open reminder settings.
+- **Flexible Timing & Presets**: Select from common presets (`09:00`, `14:00`, `19:00`, `21:00`, `22:00`, `23:00` MSK) or enter any custom `HH:MM` time.
+- **Background Scheduler**: Async background worker checks every minute, respects user timezone (Europe/Moscow), and prevents duplicate notifications within the same calendar day.
+
 ---
 
 ## 🎮 User Workflow & Scenarios
@@ -98,6 +107,7 @@ Interactive flow from initial recording to persistent storage and medical report
 | `/finish` | `⏹ Finish episode` | Closes the active episode and computes elapsed time |
 | `/export` | `📥 Export report` | Report export menu (PDF / CSV / Both) |
 | — | `📊 My episodes` | Displays the 5 most recent entries from diary |
+| `/reminder`, `/settings` | `⏰ Reminders` | Daily wellness check-in schedule settings |
 | `/help` | `ℹ️ Help` | Comprehensive diary guide and documentation |
 | `/cancel` | `❌ Cancel` | Aborts the active survey and returns to the main menu |
 
@@ -129,19 +139,23 @@ migrebot_analog/
 │   ├── __init__.py        # Handlers root router
 │   ├── startHandler.py    # /start, /help, and episode history handlers
 │   ├── headache.py        # FSM logging flow and episode completion
+│   ├── reminderHandler.py # Daily check-in scheduling and reminder dispatch
 │   └── exportHandler.py   # PDF and CSV export dispatcher (/export)
 ├── keyboards/
 │   ├── __init__.py
 │   ├── main_menu.py       # Persistent bottom reply keyboard
+│   ├── reminder_kb.py     # Inline keyboards for reminders and check-in prompt
 │   └── headache_kb.py     # Inline keyboards, callbacks, and navigation
 ├── services/
 │   ├── __init__.py
+│   ├── reminder_service.py # Background scheduler worker for daily reminders (MSK)
 │   └── export_service.py  # Medical PDF and CSV report builders with emoji cleaning
 ├── states/
 │   ├── __init__.py
+│   ├── reminder.py        # FSM states for reminder settings (ReminderSG)
 │   └── headache.py        # FSM states (HeadacheLogSG)
 ├── tests/
-│   └── test_flow.py       # Comprehensive unit tests (FSM, DB, CJK export)
+│   └── test_flow.py       # Comprehensive unit tests (FSM, DB, CJK export, reminders)
 ├── .env                   # Environment secrets (bot token, Redis, Postgres)
 ├── .gitignore             # Git ignored files and directories
 ├── requirements.txt       # Python dependencies
@@ -205,7 +219,7 @@ The repository contains an asynchronous unit test suite (`unittest.IsolatedAsync
 python3 -m unittest tests/test_flow.py -v
 ```
 
-### Test Suite Structure (11 Tests):
+### Test Suite Structure (16 Tests):
 
 | Test | Category | Verified Functionality |
 | :--- | :--- | :--- |
@@ -215,6 +229,11 @@ python3 -m unittest tests/test_flow.py -v
 | `test_cancel_flow_clears_state` | 🧭 Navigation | Reliable FSM state clearing (`state.clear()`) on cancel button click and `/cancel` text command |
 | `test_callback_packing` | 🔘 Keyboards | Correct prefixes and serialization of callbacks for all questionnaire steps (time, intensity, location, pain type, symptoms, medication, export) |
 | `test_keyboards_structure` | 🔘 Keyboards | Validation of button layouts, captions, and callback payloads across all inline keyboards |
+| `test_reminder_keyboards_and_callbacks` | ⏰ Reminders | Keyboard builder verification, callback serialization with `rem\|...` and `rem_p\|...` prefixes |
+| `test_reminder_custom_time_validation` | ⏰ Reminders | Regex validation for arbitrary custom `HH:MM` time entries (00:00 to 23:59) |
+| `test_reminder_db_methods_mocked` | ⏰ Reminders | Querying due users, updating reminder schedule/status, and logging dispatch dates |
+| `test_reminder_prompt_callbacks` | ⏰ Reminders | Responses to daily inquiries ("Had pain" ➔ launch FSM, "No pain" ➔ save healthy day) |
+| `test_reminder_scheduler_tick` | ⏰ Reminders | Unit execution of reminder background scheduler tick and user message dispatch |
 | `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables without errors |
 | `test_cjk_and_nickname_export` | 📄 Export | Support for Cyrillic, Latin, CJK characters, and usernames via the `VL-Gothic` font stack |
 | `test_redis_fsm_storage_config` | 🗄 Storage | Key namespace isolation for FSM states in Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
@@ -286,6 +305,10 @@ Tables and indexes are automatically initialized on startup via `asyncpg`:
 | `user_id` | `BIGINT PRIMARY KEY` | Unique Telegram user ID |
 | `username` | `VARCHAR(255)` | Telegram username (@handle) |
 | `first_name` | `VARCHAR(255)` | Profile first name |
+| `reminder_time` | `VARCHAR(8)` | Daily check-in time (defaults to `21:00`) |
+| `reminder_enabled` | `BOOLEAN` | Check-in activation flag (`true`/`false`) |
+| `timezone` | `VARCHAR(64)` | User timezone string (`Europe/Moscow`) |
+| `last_reminded_date` | `VARCHAR(16)` | Last reminder dispatch date (`YYYY-MM-DD`) |
 | `created_at` | `TIMESTAMPTZ` | Timestamp of first interaction |
 
 ### `headache_episodes`
