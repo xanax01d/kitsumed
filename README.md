@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(7%2F7)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(11%2F11)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -28,6 +28,7 @@
   <a href="#-интерфейс-и-сценарии-работы">🎮 Сценарии</a> •
   <a href="#-стек-технологий">🛠 Стек</a> •
   <a href="#-быстрый-старт">⚙️ Быстрый старт</a> •
+  <a href="#-тестирование">🧪 Тестирование</a> •
   <a href="#-развертывание-на-сервере-systemd">🚀 Деплой</a> •
   <a href="#-база-данных">📋 База данных</a>
 </p>
@@ -188,15 +189,36 @@ POSTGRES_TIMEOUT=10.0
 POSTGRES_COMMAND_TIMEOUT=15.0
 ```
 
-### 3. Запуск тестов
+### 3. Запуск бота
+```bash
+python3 main.py
+```
+
+---
+
+## 🧪 Тестирование
+
+Проект покрыт набором асинхронных юнит-тестов (`unittest.IsolatedAsyncioTestCase` с изоляцией моками `AsyncMock`), проверяющих целостность бизнес-логики, FSM-переходов, навигации, базы данных и генерации отчетов:
+
 ```bash
 python3 -m unittest tests/test_flow.py -v
 ```
 
-### 4. Запуск бота
-```bash
-python3 main.py
-```
+### Структура тест-сьюта (11 тестов):
+
+| Тест | Категория | Проверяемая функциональность |
+| :--- | :--- | :--- |
+| `test_nav_callbacks_packing` | 🧭 Навигация | Корректная упаковка callback-данных `hdn:back` («Назад») и `hdn:cancel` («Отмена») |
+| `test_navigation_buttons_presence_in_keyboards` | 🧭 Навигация | Наличие кнопок «Назад» и «Отмена» во всех 8 клавиатурах опросника (включая ручной ввод времени) |
+| `test_navigation_back_fsm_transitions` | 🧭 Навигация | Корректный пошаговый возврат назад по всем состояниям FSM (`confirm` ➔ `medication` ➔ `symptoms` ➔ `pain_type` ➔ `location` ➔ `intensity` ➔ `start_time`, `custom_start_time` ➔ `start_time`) |
+| `test_cancel_flow_clears_state` | 🧭 Навигация | Гарантированный сброс FSM-состояния (`state.clear()`) при нажатии на кнопку «Отмена» и отправке команды `/cancel` |
+| `test_callback_packing` | 🔘 Клавиатуры | Корректность префиксов и сериализации коллбэков всех шагов (время, интенсивность, локация, характер боли, симптомы, медикаменты, экспорт) |
+| `test_keyboards_structure` | 🔘 Клавиатуры | Валидация сетки кнопок, текстов и коллбэк-данных всех инлайн-клавиатур |
+| `test_csv_and_pdf_generation` | 📄 Экспорт | Сборка медицинского PDF-отчета (ReportLab Landscape A4) и CSV таблицы с кодировкой UTF-8 BOM без ошибок |
+| `test_cjk_and_nickname_export` | 📄 Экспорт | Поддержка кириллицы, латиницы, CJK-иероглифов и никнеймов шрифтовым стеком `VL-Gothic` |
+| `test_redis_fsm_storage_config` | 🗄 Хранилища | Изоляция ключей состояний FSM в Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
+| `test_postgres_dsn_generation` | 🗄 База данных | Формирование строки DSN подключения к PostgreSQL с параметрами безопасности и таймаутов |
+| `test_postgres_db_lifecycle_mocked` | 🗄 База данных | Жизненный цикл CRUD: создание профиля пользователя, открытие приступа, выборка истории и закрытие приступа |
 
 ---
 
