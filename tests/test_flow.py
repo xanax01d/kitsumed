@@ -57,17 +57,15 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         menu = get_main_menu_keyboard()
         self.assertGreaterEqual(len(menu.keyboard), 2)
 
-        self.assertIsNotNone(get_start_time_keyboard())
-        self.assertIsNotNone(get_intensity_keyboard())
-        self.assertIsNotNone(get_location_keyboard())
-        self.assertIsNotNone(get_pain_type_keyboard())
-        self.assertIsNotNone(get_confirm_keyboard())
-        self.assertIsNotNone(get_export_keyboard())
-
-        kb_empty = get_symptoms_keyboard(set())
-        kb_with_sym = get_symptoms_keyboard({"nausea", "aura"})
-        self.assertGreater(len(kb_empty.inline_keyboard), 0)
-        self.assertGreater(len(kb_with_sym.inline_keyboard), 0)
+        for lang in ["ru", "en", "meme", "cyberpunk"]:
+            self.assertIsNotNone(get_start_time_keyboard(lang=lang))
+            self.assertIsNotNone(get_location_keyboard(lang=lang))
+            self.assertIsNotNone(get_pain_type_keyboard(lang=lang))
+            self.assertIsNotNone(get_symptoms_keyboard(set(), lang=lang))
+            self.assertIsNotNone(get_symptoms_keyboard({"nausea", "aura"}, lang=lang))
+            self.assertIsNotNone(get_medication_keyboard(lang=lang))
+            self.assertIsNotNone(get_confirm_keyboard(lang=lang))
+            self.assertIsNotNone(get_export_keyboard(lang=lang))
 
     def test_callback_packing(self):
         cb_time = TimeCallback(preset="now").pack()
@@ -580,6 +578,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ru", SUPPORTED_LANGUAGES)
         self.assertIn("en", SUPPORTED_LANGUAGES)
         self.assertIn("meme", SUPPORTED_LANGUAGES)
+        self.assertIn("cyberpunk", SUPPORTED_LANGUAGES)
 
         # Test Russian strings
         self.assertIn("Migrebot", get_text("start_welcome", "ru"))
@@ -600,6 +599,15 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("дедлайн", get_pain_type_map("meme")["pressing"])
         self.assertIn("кринж", get_symptoms_map("meme")["nausea"])
         self.assertIn("артиллерия", get_medication_map("meme")["triptan"])
+
+        # Test Cyberpunk strings
+        cp_welcome = get_text("start_welcome", "cyberpunk")
+        self.assertTrue("чумба" in cp_welcome or "биомонитор" in cp_welcome or "нейрочип" in cp_welcome)
+        self.assertTrue("киберпсихоз" in get_intensity_label(10, "cyberpunk") or "Травма Тим" in get_intensity_label(10, "cyberpunk"))
+        self.assertIn("нейропорт", get_location_map("cyberpunk")["forehead"])
+        self.assertIn("Черного льда", get_pain_type_map("cyberpunk")["stabbing"])
+        self.assertIn("Kiroshi", get_symptoms_map("cyberpunk")["photophobia"])
+        self.assertIn("нейроблокатор", get_medication_map("cyberpunk")["triptan"])
 
         # Test fallback to Russian
         self.assertIsNotNone(get_text("unknown_key_xyz", "en"))

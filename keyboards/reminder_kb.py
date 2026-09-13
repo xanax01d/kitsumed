@@ -182,6 +182,10 @@ def get_reminder_prompt_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
         b_yes = "🤕 Да, был кринж"
         b_no = "👌 Не, я гигачад"
         b_set = "⚙️ Настроить будильник"
+    elif lang == "cyberpunk":
+        b_yes = "🤕 Да, был сбой имплантов"
+        b_no = "👌 Биомонитор в норме"
+        b_set = "⚙️ Калибровка таймера"
     elif lang == "en":
         b_yes = "🤕 Yes, it did"
         b_no = "👌 No, felt great"
