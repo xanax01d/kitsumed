@@ -566,6 +566,167 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         finally:
             mc._FILE_ID_CACHE = orig_cache
 
+    def test_i18n_locales_and_mappings(self):
+        from locales import (
+            get_text,
+            get_intensity_label,
+            get_location_map,
+            get_pain_type_map,
+            get_symptoms_map,
+            get_medication_map,
+            SUPPORTED_LANGUAGES,
+        )
+
+        self.assertIn("ru", SUPPORTED_LANGUAGES)
+        self.assertIn("en", SUPPORTED_LANGUAGES)
+        self.assertIn("meme", SUPPORTED_LANGUAGES)
+
+        # Test Russian strings
+        self.assertIn("Migrebot", get_text("start_welcome", "ru"))
+        self.assertEqual(get_intensity_label(2, "ru"), "Слабая")
+        self.assertEqual(get_intensity_label(10, "ru"), "Невыносимая")
+
+        # Test English strings
+        self.assertIn("Migrebot", get_text("start_welcome", "en"))
+        self.assertEqual(get_intensity_label(2, "en"), "Mild")
+        self.assertEqual(get_intensity_label(10, "en"), "Unbearable")
+        self.assertIn("Forehead", get_location_map("en")["forehead"])
+
+        # Test Meme Russian strings (old and new Runet memes)
+        meme_welcome = get_text("start_welcome", "meme")
+        self.assertTrue("бо-бо" in meme_welcome or "сожрет" in meme_welcome or "суету" in meme_welcome)
+        self.assertTrue("фиаско" in get_intensity_label(10, "meme") or "Press F" in get_intensity_label(10, "meme"))
+        self.assertIn("facepalm", get_location_map("meme")["forehead"])
+        self.assertIn("дедлайн", get_pain_type_map("meme")["pressing"])
+        self.assertIn("кринж", get_symptoms_map("meme")["nausea"])
+        self.assertIn("артиллерия", get_medication_map("meme")["triptan"])
+
+        # Test fallback to Russian
+        self.assertIsNotNone(get_text("unknown_key_xyz", "en"))
+
+    async def test_language_handler_and_switching(self):
+        from handlers.languageHandler import cmd_select_language, process_language_choice
+        from keyboards.headache_kb import LanguageCallback
+
+        # 1. Test /language command
+        mock_msg = AsyncMock()
+        mock_msg.from_user = MagicMock()
+        mock_msg.from_user.id = 12345
+        mock_msg.from_user.username = "testuser"
+        mock_msg.from_user.first_name = "Test"
+
+        with patch("handlers.languageHandler.upsert_user", new=AsyncMock()), \
+             patch("handlers.languageHandler.get_user_language", new=AsyncMock(return_value="ru")):
+            await cmd_select_language(mock_msg)
+            mock_msg.answer.assert_called_once()
+            args, kwargs = mock_msg.answer.call_args
+            self.assertIn("Выбор языка", kwargs["text"])
+
+        # 2. Test language selection callback
+        mock_cb = AsyncMock()
+        mock_cb.from_user = mock_msg.from_user
+        mock_cb.message = AsyncMock()
+        cb_data = LanguageCallback(code="meme")
+
+        with patch("handlers.languageHandler.upsert_user", new=AsyncMock()), \
+             patch("handlers.languageHandler.set_user_language", new=AsyncMock(return_value=True)):
+            await process_language_choice(mock_cb, cb_data)
+            mock_cb.answer.assert_called_with("Language: MEME")
+
+    async def test_followup_flow_and_medication_relief(self):
+        from handlers.followupHandler import (
+            cmd_check_pain_status,
+            process_pain_passed,
+            process_pain_not_passed,
+            process_set_when,
+            process_medication_relief,
+        )
+        from keyboards.headache_kb import FollowUpCallback
+
+        # 1. Test /status or finish check
+        mock_msg = AsyncMock()
+        mock_msg.from_user = MagicMock()
+        mock_msg.from_user.id = 12345
+        mock_state = AsyncMock()
+
+        with patch("handlers.followupHandler.get_active_episode", new=AsyncMock(return_value={"id": 42, "user_id": 12345})):
+            await cmd_check_pain_status(mock_msg, mock_state)
+            mock_msg.answer.assert_called_once()
+            args, kwargs = mock_msg.answer.call_args
+            self.assertIn("Прошла ли", kwargs["text"])
+
+        # 2. Pain passed -> asks when
+        mock_cb = AsyncMock()
+        mock_cb.from_user = mock_msg.from_user
+        mock_cb.message = AsyncMock()
+        cb_passed = FollowUpCallback(action="pain_passed", episode_id=42)
+        await process_pain_passed(mock_cb, cb_passed)
+        mock_cb.message.edit_text.assert_called_once()
+        args, kwargs = mock_cb.message.edit_text.call_args
+        self.assertIn("Когда прошла", kwargs["text"])
+
+        # 3. Time selected -> resolves pain & asks medication if taken
+        cb_when = FollowUpCallback(action="set_when", episode_id=42, value="-30m")
+        mock_ep = {
+            "id": 42,
+            "user_id": 12345,
+            "medication": "Суматриптан 50мг",
+            "medication_relief": None,
+        }
+        with patch("handlers.followupHandler.resolve_episode_pain", new=AsyncMock(return_value=True)) as mock_resolve, \
+             patch("handlers.followupHandler.get_episode_by_id", new=AsyncMock(return_value=mock_ep)):
+            await process_set_when(mock_cb, cb_when)
+            mock_resolve.assert_called_with(42, pain_passed=True, end_time=unittest.mock.ANY)
+            args, kwargs = mock_cb.message.edit_text.call_args
+            self.assertIn("Помог ли", kwargs["text"])
+
+        # 4. Medication relief recorded -> stores in DB
+        mock_cb_med = AsyncMock()
+        mock_cb_med.from_user = mock_msg.from_user
+        mock_cb_med.message = AsyncMock()
+        cb_relief = FollowUpCallback(action="med_relief", episode_id=42, value="helped")
+        with patch("handlers.followupHandler.update_medication_relief", new=AsyncMock(return_value=True)) as mock_up_med:
+            await process_medication_relief(mock_cb_med, cb_relief)
+            mock_up_med.assert_called_with(42, "helped")
+            mock_cb_med.answer.assert_called_once()
+
+        # 5. Pain NOT passed -> marks not resolved in DB
+        cb_not_passed = FollowUpCallback(action="pain_not_passed", episode_id=42)
+        with patch("handlers.followupHandler.resolve_episode_pain", new=AsyncMock(return_value=True)) as mock_resolve_no, \
+             patch("handlers.followupHandler.get_episode_by_id", new=AsyncMock(return_value={"id": 42, "medication": "none"})):
+            await process_pain_not_passed(mock_cb, cb_not_passed)
+            mock_resolve_no.assert_called_with(42, pain_passed=False)
+
+    async def test_followup_scheduler_worker(self):
+        from services.followup_service import followup_scheduler
+        mock_bot = AsyncMock()
+
+        test_episodes = [
+            {
+                "id": 99,
+                "user_id": 12345,
+                "language": "meme",
+                "medication": "Ибупрофен",
+            }
+        ]
+
+        calls = 0
+        async def fake_sleep(duration):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                raise asyncio.CancelledError()
+
+        with patch("services.followup_service.get_pending_followup_episodes", new=AsyncMock(return_value=test_episodes)), \
+             patch("services.followup_service.mark_followup_sent", new=AsyncMock(return_value=True)) as mock_sent, \
+             patch("asyncio.sleep", side_effect=fake_sleep):
+            await followup_scheduler(mock_bot)
+            mock_bot.send_message.assert_called_once()
+            args, kwargs = mock_bot.send_message.call_args
+            self.assertEqual(kwargs["chat_id"], 12345)
+            self.assertTrue("отпустила" in kwargs["text"] or "суета" in kwargs["text"])
+            mock_sent.assert_called_with(99)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -46,6 +46,7 @@ async def reminder_scheduler(bot: Bot) -> None:
                 target_time = user.get("reminder_time") or "21:00"
                 tz_name = user.get("timezone") or "Europe/Moscow"
                 last_date = user.get("last_reminded_date")
+                lang = user.get("language") or "ru"
 
                 try:
                     user_tz = zoneinfo.ZoneInfo(tz_name)
@@ -58,13 +59,14 @@ async def reminder_scheduler(bot: Bot) -> None:
 
                 if user_time_str == target_time:
                     if last_date is None or str(last_date) < user_date_str:
-                        prompt_text = "<b>Болела ли голова сегодня?</b>"
+                        from locales import get_text
+                        prompt_text = get_text("reminder_daily_prompt", lang)
 
                         try:
                             await bot.send_message(
                                 chat_id=user_id,
                                 text=prompt_text,
-                                reply_markup=get_reminder_prompt_keyboard()
+                                reply_markup=get_reminder_prompt_keyboard(lang)
                             )
                             await mark_user_reminded(user_id, user_date_str)
                             logger.info(

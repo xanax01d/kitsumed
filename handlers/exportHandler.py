@@ -4,10 +4,11 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from aiogram.filters import Command
 
-from db import get_all_episodes
+from db import get_all_episodes, get_user_language
 from keyboards.headache_kb import get_export_keyboard, ExportCallback
-from keyboards.main_menu import get_main_menu_keyboard
+from keyboards.main_menu import get_main_menu_keyboard, EXPORT_BUTTONS
 from services import generate_csv, generate_pdf
+from locales import get_text
 
 IMG_EXPORT = Path(__file__).parent.parent / "assets" / "images" / "ru" / "architecture_diagram.png"
 
@@ -15,46 +16,46 @@ router = Router()
 
 
 @router.message(Command("export"))
-@router.message(F.text == "📥 Экспорт отчета")
+@router.message(F.text.in_(EXPORT_BUTTONS))
 async def cmd_export(message: Message):
     user = message.from_user
+    lang = await get_user_language(user.id) if user else "ru"
     episodes = await get_all_episodes(user.id)
 
     if not episodes:
         await message.answer(
-            "В дневнике пока нет записей для экспорта.",
-            reply_markup=get_main_menu_keyboard()
+            get_text("export_empty", lang),
+            reply_markup=get_main_menu_keyboard(lang)
         )
         return
 
-    text = (
-        f"<b>Экспорт дневника</b> (записей: <b>{len(episodes)}</b>)\n\n"
-        "Выберите формат:"
-    )
+    text = get_text("export_title", lang, count=len(episodes))
+    kb = get_export_keyboard(lang)
 
     if IMG_EXPORT.is_file():
         try:
             await message.answer_photo(
                 photo=FSInputFile(str(IMG_EXPORT)),
                 caption=text,
-                reply_markup=get_export_keyboard()
+                reply_markup=kb
             )
             return
         except Exception:
             pass
 
-    await message.answer(text, reply_markup=get_export_keyboard())
+    await message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(ExportCallback.filter())
 async def process_export_callback(callback: CallbackQuery, callback_data: ExportCallback):
     user = callback.from_user
+    lang = await get_user_language(user.id) if user else "ru"
     episodes = await get_all_episodes(user.id)
 
     if not episodes:
         await callback.message.answer(
-            "Записей для экспорта не найдено.",
-            reply_markup=get_main_menu_keyboard()
+            get_text("export_empty", lang),
+            reply_markup=get_main_menu_keyboard(lang)
         )
         await callback.answer()
         return
@@ -77,11 +78,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         csv_file = BufferedInputFile(csv_bytes, filename=csv_filename)
         await callback.message.answer_document(
             document=csv_file,
-            caption=(
-                "<b>Выгрузка данных (CSV)</b>\n\n"
-                f"• Записей: <b>{len(episodes)}</b>\n"
-                f"• Дата: <code>{formatted_now}</code>"
-            )
+            caption=get_text("export_caption_csv", lang, count=len(episodes), date=formatted_now)
         )
 
     if fmt in ("pdf", "both"):
@@ -90,9 +87,5 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         pdf_file = BufferedInputFile(pdf_bytes, filename=pdf_filename)
         await callback.message.answer_document(
             document=pdf_file,
-            caption=(
-                "<b>Медицинский отчет (PDF)</b>\n\n"
-                f"• Записей: <b>{len(episodes)}</b>\n"
-                f"• Дата: <code>{formatted_now}</code>"
-            )
+            caption=get_text("export_caption_pdf", lang, count=len(episodes), date=formatted_now)
         )
