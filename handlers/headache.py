@@ -18,7 +18,7 @@ from keyboards.headache_kb import (
     get_confirm_keyboard, get_cancel_keyboard,
     LOCATION_MAP, PAIN_TYPE_MAP, ALL_SYMPTOMS, MEDICATION_MAP
 )
-from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS
+from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS, CANCEL_BUTTONS
 from db import create_episode, get_active_episode, upsert_user, get_user_language
 from services.media_cache import get_photo_source, extract_and_record
 from locales import (
@@ -203,7 +203,7 @@ def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
 
 # --- Cancel Command & Handlers ---
 @router.message(Command("cancel"))
-@router.message(F.text.casefold().in_(["отмена", "❌ отмена", "cancel", "❌ cancel"]))
+@router.message(F.text.casefold().in_([b.casefold() for b in CANCEL_BUTTONS]))
 async def cmd_cancel(message: Message, state: FSMContext):
     current_state = await state.get_state()
     user_id = message.from_user.id
