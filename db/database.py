@@ -308,3 +308,16 @@ async def mark_user_reminded(user_id: int, reminder_date_str: str) -> bool:
         return res.endswith("1")
 
 
+async def get_enabled_reminder_users() -> List[Dict[str, Any]]:
+    """Returns all users with active reminders for timezone-aware evaluation."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT user_id, username, first_name, reminder_time, timezone, last_reminded_date
+            FROM users
+            WHERE reminder_enabled = TRUE;
+        """)
+        return [dict(r) for r in rows]
+
+
+

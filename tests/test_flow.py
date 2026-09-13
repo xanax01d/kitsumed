@@ -27,6 +27,10 @@ from keyboards.reminder_kb import (
     get_reminder_settings_keyboard,
     get_reminder_prompt_keyboard,
     get_reminder_custom_cancel_keyboard,
+    get_timezone_keyboard,
+    get_timezone_cancel_keyboard,
+    get_tz_label,
+    get_tz_local_time,
     ReminderCallback,
     ReminderPromptCallback,
 )
@@ -35,10 +39,12 @@ from states.reminder import ReminderSG
 from handlers.headache import callback_back, callback_cancel, cmd_cancel
 from handlers.reminderHandler import (
     TIME_REGEX,
+    resolve_timezone,
     process_custom_time_input,
     process_daily_healthy,
     process_daily_headache,
     _format_reminder_text,
+    _format_timezone_text,
 )
 import db.database as db_mod
 from main import get_redis_client, get_fsm_storage
@@ -348,13 +354,21 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
     def test_reminder_keyboards_and_callbacks(self):
         # Settings keyboard enabled
-        kb_on = get_reminder_settings_keyboard("21:00", enabled=True)
+        kb_on = get_reminder_settings_keyboard("21:00", enabled=True, current_tz="Europe/Moscow")
         self.assertIsNotNone(kb_on)
         self.assertGreater(len(kb_on.inline_keyboard), 3)
 
         # Settings keyboard disabled
-        kb_off = get_reminder_settings_keyboard("21:00", enabled=False)
+        kb_off = get_reminder_settings_keyboard("21:00", enabled=False, current_tz="Asia/Yekaterinburg")
         self.assertIsNotNone(kb_off)
+
+        # Timezone selection keyboard
+        kb_tz = get_timezone_keyboard("Europe/Moscow")
+        self.assertIsNotNone(kb_tz)
+        self.assertGreater(len(kb_tz.inline_keyboard), 5)
+
+        kb_tz_cancel = get_timezone_cancel_keyboard()
+        self.assertEqual(len(kb_tz_cancel.inline_keyboard), 1)
 
         # Daily inquiry prompt keyboard
         kb_prompt = get_reminder_prompt_keyboard()
@@ -368,6 +382,9 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         cb_set = ReminderCallback(action="set_time", value="20:00").pack()
         self.assertTrue(cb_set.startswith("rem|set_time|20:00"))
 
+        cb_tz = ReminderCallback(action="set_tz", value="Europe/Samara").pack()
+        self.assertTrue(cb_tz.startswith("rem|set_tz|Europe/Samara"))
+
         cb_toggle = ReminderCallback(action="toggle").pack()
         self.assertTrue(cb_toggle.startswith("rem|toggle"))
 
@@ -376,6 +393,36 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
         cb_healthy = ReminderPromptCallback(action="healthy").pack()
         self.assertTrue(cb_healthy.startswith("rem_p|healthy"))
+
+    def test_timezone_resolution_and_formatting(self):
+        # 1. Direct IANA timezones
+        self.assertEqual(resolve_timezone("Europe/Minsk"), "Europe/Minsk")
+        self.assertEqual(resolve_timezone("Asia/Yekaterinburg"), "Asia/Yekaterinburg")
+
+        # 2. Case-insensitive preset matching
+        self.assertEqual(resolve_timezone("Москва"), "Europe/Moscow")
+        self.assertEqual(resolve_timezone("новосибирск"), "Asia/Novosibirsk")
+        self.assertEqual(resolve_timezone("Калининград"), "Europe/Kaliningrad")
+
+        # 3. UTC offsets (matching presets where available, falling back to Etc/GMT)
+        self.assertEqual(resolve_timezone("UTC+5"), "Asia/Yekaterinburg")
+        self.assertEqual(resolve_timezone("+4"), "Europe/Samara")
+        self.assertEqual(resolve_timezone("-3"), "Etc/GMT+3")
+        self.assertEqual(resolve_timezone("UTC-8"), "Etc/GMT+8")
+        self.assertEqual(resolve_timezone("+13"), "Etc/GMT-13")
+
+        # 4. Invalid timezone
+        self.assertIsNone(resolve_timezone("not_a_timezone_123"))
+        self.assertIsNone(resolve_timezone("+25:00"))
+
+        # 5. Label formatting
+        self.assertIn("Москва", get_tz_label("Europe/Moscow"))
+        self.assertEqual(get_tz_label("Etc/GMT-4"), "UTC+4")
+
+        # 6. Local time formatting (HH:MM)
+        loc_time = get_tz_local_time("Europe/Moscow")
+        self.assertEqual(len(loc_time), 5)
+        self.assertIn(":", loc_time)
 
     def test_reminder_custom_time_validation(self):
         valid_times = ["21:00", "09:30", "8:15", "0:00", "23:59", "00:00"]
@@ -396,22 +443,24 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             mock_conn.fetchrow.return_value = None
             res_def = await db_mod.get_user_reminder(12345)
             self.assertEqual(res_def["reminder_time"], "21:00")
+            self.assertEqual(res_def["timezone"], "Europe/Moscow")
             self.assertTrue(res_def["reminder_enabled"])
 
             # 2. get_user_reminder found
             mock_conn.fetchrow.return_value = {
                 "reminder_time": "19:30",
                 "reminder_enabled": False,
-                "timezone": "Europe/Moscow",
+                "timezone": "Asia/Yekaterinburg",
                 "last_reminded_date": "2026-09-13"
             }
             res = await db_mod.get_user_reminder(12345)
             self.assertEqual(res["reminder_time"], "19:30")
+            self.assertEqual(res["timezone"], "Asia/Yekaterinburg")
             self.assertFalse(res["reminder_enabled"])
 
             # 3. set_user_reminder
             mock_conn.execute.return_value = "UPDATE 1"
-            upd = await db_mod.set_user_reminder(12345, reminder_time="20:00", enabled=True)
+            upd = await db_mod.set_user_reminder(12345, reminder_time="20:00", timezone="Europe/Samara", enabled=True)
             self.assertTrue(upd)
 
             # 4. get_users_due_for_reminder
@@ -422,7 +471,14 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(due), 1)
             self.assertEqual(due[0]["user_id"], 111)
 
-            # 5. mark_user_reminded
+            # 5. get_enabled_reminder_users
+            mock_conn.fetch.return_value = [
+                {"user_id": 111, "first_name": "Anna", "username": "anna", "reminder_time": "21:00", "timezone": "Europe/Moscow", "last_reminded_date": None}
+            ]
+            enabled_users = await db_mod.get_enabled_reminder_users()
+            self.assertEqual(len(enabled_users), 1)
+
+            # 6. mark_user_reminded
             mock_conn.execute.return_value = "UPDATE 1"
             marked = await db_mod.mark_user_reminded(111, "2026-09-13")
             self.assertTrue(marked)
@@ -443,8 +499,14 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         mock_cb_h.answer.assert_called()
 
     async def test_reminder_scheduler_tick(self):
+        import zoneinfo
+        from datetime import datetime, timezone
         from services.reminder_service import reminder_scheduler
         mock_bot = AsyncMock()
+
+        now_utc = datetime.now(timezone.utc)
+        user_tz = zoneinfo.ZoneInfo("Europe/Moscow")
+        user_local_time = now_utc.astimezone(user_tz).strftime("%H:%M")
 
         calls = 0
         async def fake_sleep(sec):
@@ -453,11 +515,17 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             if calls > 1:
                 raise asyncio.CancelledError()
 
-        with patch("services.reminder_service.get_users_due_for_reminder", new_callable=AsyncMock) as mock_get_due, \
+        with patch("services.reminder_service.get_enabled_reminder_users", new_callable=AsyncMock) as mock_get_users, \
              patch("services.reminder_service.mark_user_reminded", new_callable=AsyncMock) as mock_mark, \
              patch("asyncio.sleep", side_effect=fake_sleep):
-            mock_get_due.return_value = [
-                {"user_id": 999, "first_name": "TestUser", "reminder_time": "21:00"}
+            mock_get_users.return_value = [
+                {
+                    "user_id": 999,
+                    "first_name": "TestUser",
+                    "reminder_time": user_local_time,
+                    "timezone": "Europe/Moscow",
+                    "last_reminded_date": None,
+                }
             ]
             await reminder_scheduler(mock_bot)
             mock_bot.send_message.assert_called_once()

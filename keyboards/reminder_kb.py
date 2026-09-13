@@ -1,10 +1,14 @@
+import zoneinfo
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 class ReminderCallback(CallbackData, prefix="rem", sep="|"):
-    action: str  # "set_time", "custom", "toggle", "close"
+    action: str  # "set_time", "custom", "toggle", "close", "tz_menu", "set_tz", "custom_tz", "back_settings"
     value: str = ""
 
 
@@ -12,7 +16,58 @@ class ReminderPromptCallback(CallbackData, prefix="rem_p", sep="|"):
     action: str  # "headache", "healthy", "settings"
 
 
-def get_reminder_settings_keyboard(current_time: str, enabled: bool) -> InlineKeyboardMarkup:
+TIMEZONE_PRESETS = [
+    ("Калининград (UTC+2)", "Europe/Kaliningrad"),
+    ("Москва, СПб (UTC+3)", "Europe/Moscow"),
+    ("Самара, Баку (UTC+4)", "Europe/Samara"),
+    ("Екатеринбург (UTC+5)", "Asia/Yekaterinburg"),
+    ("Омск, Астана (UTC+6)", "Asia/Omsk"),
+    ("Новосибирск (UTC+7)", "Asia/Novosibirsk"),
+    ("Иркутск (UTC+8)", "Asia/Irkutsk"),
+    ("Якутск (UTC+9)", "Asia/Yakutsk"),
+    ("Владивосток (UTC+10)", "Asia/Vladivostok"),
+    ("Магадан (UTC+11)", "Asia/Magadan"),
+    ("Камчатка (UTC+12)", "Asia/Kamchatka"),
+    ("Берлин, Варшава (UTC+1)", "Europe/Berlin"),
+    ("Лондон (UTC+0)", "Europe/London"),
+    ("Нью-Йорк (UTC-5)", "America/New_York"),
+]
+
+TIMEZONE_LABELS = {tz: label for label, tz in TIMEZONE_PRESETS}
+
+
+def get_tz_label(tz_key: str) -> str:
+    """Returns a friendly label for the given timezone identifier."""
+    if tz_key in TIMEZONE_LABELS:
+        return TIMEZONE_LABELS[tz_key]
+    if tz_key.startswith("Etc/GMT"):
+        # Format Etc/GMT-3 as UTC+3
+        try:
+            offset_part = tz_key.replace("Etc/GMT", "")
+            if offset_part.startswith("-"):
+                return f"UTC+{offset_part[1:]}"
+            elif offset_part.startswith("+"):
+                return f"UTC-{offset_part[1:]}"
+            return "UTC+0"
+        except Exception:
+            pass
+    return tz_key
+
+
+def get_tz_local_time(tz_key: str) -> str:
+    """Returns the current formatted local time (HH:MM) in the given timezone."""
+    try:
+        tz = zoneinfo.ZoneInfo(tz_key)
+    except Exception:
+        tz = timezone(timedelta(hours=3))
+    return datetime.now(tz).strftime("%H:%M")
+
+
+def get_reminder_settings_keyboard(
+    current_time: str,
+    enabled: bool,
+    current_tz: str = "Europe/Moscow"
+) -> InlineKeyboardMarkup:
     """Builds the reminder configuration keyboard with presets and controls."""
     builder = InlineKeyboardBuilder()
 
@@ -40,6 +95,14 @@ def get_reminder_settings_keyboard(current_time: str, enabled: bool) -> InlineKe
         )
     )
 
+    tz_label = get_tz_label(current_tz)
+    builder.row(
+        InlineKeyboardButton(
+            text=f"🌍 Пояс: {tz_label}",
+            callback_data=ReminderCallback(action="tz_menu").pack()
+        )
+    )
+
     toggle_text = "🔕 Отключить напоминания" if enabled else "🔔 Включить напоминания"
     builder.row(
         InlineKeyboardButton(
@@ -55,6 +118,48 @@ def get_reminder_settings_keyboard(current_time: str, enabled: bool) -> InlineKe
         )
     )
 
+    return builder.as_markup()
+
+
+def get_timezone_keyboard(current_tz: str) -> InlineKeyboardMarkup:
+    """Builds the timezone selection keyboard with city presets."""
+    builder = InlineKeyboardBuilder()
+
+    for label, tz_id in TIMEZONE_PRESETS:
+        is_current = (current_tz == tz_id)
+        btn_text = f"✅ {label}" if is_current else label
+        builder.button(
+            text=btn_text,
+            callback_data=ReminderCallback(action="set_tz", value=tz_id).pack()
+        )
+    builder.adjust(2, 2, 2, 2, 2, 1, 2, 1)
+
+    builder.row(
+        InlineKeyboardButton(
+            text="✍️ Ввести вручную (UTC±X или город)",
+            callback_data=ReminderCallback(action="custom_tz").pack()
+        )
+    )
+
+    builder.row(
+        InlineKeyboardButton(
+            text="⬅️ Назад к напоминаниям",
+            callback_data=ReminderCallback(action="back_settings").pack()
+        )
+    )
+
+    return builder.as_markup()
+
+
+def get_timezone_cancel_keyboard() -> InlineKeyboardMarkup:
+    """Cancel button for manual timezone input."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="❌ Отмена",
+            callback_data=ReminderCallback(action="back_settings").pack()
+        )
+    )
     return builder.as_markup()
 
 
@@ -87,7 +192,7 @@ def get_reminder_prompt_keyboard() -> InlineKeyboardMarkup:
     )
     builder.row(
         InlineKeyboardButton(
-            text="⏰ Настроить время",
+            text="⚙️ Настроить время",
             callback_data=ReminderPromptCallback(action="settings").pack()
         )
     )
