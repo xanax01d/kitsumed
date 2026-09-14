@@ -7,9 +7,23 @@ from aiogram.types import FSInputFile, InputMediaPhoto, Message
 logger = logging.getLogger(__name__)
 
 CACHE_FILE = Path(__file__).parent.parent / "assets" / "image_cache.json"
+ASSETS_DIR = Path(__file__).parent.parent / "assets" / "images"
 
 # In-memory storage for telegram photo file_ids
 _FILE_ID_CACHE: dict[str, str] = {}
+
+
+def get_localized_asset(rel_path: str, lang: str = "ru") -> Path:
+    """
+    Returns path to localized asset if available (e.g. 'steps/pain_scale.png' with lang='en'
+    looks in 'en/steps/pain_scale.png', then falls back to 'ru/steps/pain_scale.png').
+    """
+    loc = "en" if lang == "en" else "ru"
+    target = ASSETS_DIR / loc / rel_path
+    if target.is_file():
+        return target
+    fallback = ASSETS_DIR / "ru" / rel_path
+    return fallback
 
 
 def _get_keys(image_path: Union[Path, str]) -> list[str]:
@@ -17,7 +31,7 @@ def _get_keys(image_path: Union[Path, str]) -> list[str]:
     p = Path(image_path)
     keys = [p.name]
     try:
-        assets_dir = Path(__file__).parent.parent / "assets" / "images"
+        assets_dir = ASSETS_DIR
         if assets_dir in p.resolve().parents or p.is_relative_to(assets_dir):
             rel = str(p.relative_to(assets_dir))
             keys.append(rel)

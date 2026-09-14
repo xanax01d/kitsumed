@@ -12,7 +12,7 @@ from keyboards.main_menu import (
     HELP_BUTTONS,
 )
 from db import upsert_user, get_recent_episodes, get_user_language
-from services.media_cache import get_photo_source, extract_and_record
+from services.media_cache import get_photo_source, extract_and_record, get_localized_asset
 from locales import (
     get_text,
     get_intensity_label,
@@ -22,9 +22,9 @@ from locales import (
     get_medication_map,
 )
 
-BANNER_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "hero_banner.png"
-FLOW_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "flow_diagram.png"
-DB_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "db_diagram.png"
+BANNER_PATH = get_localized_asset("hero_banner.png", "ru")
+FLOW_PATH = get_localized_asset("flow_diagram.png", "ru")
+DB_PATH = get_localized_asset("db_diagram.png", "ru")
 
 router = Router()
 
@@ -100,26 +100,27 @@ async def start(message: Message):
 
     welcome_text = get_text("start_welcome", lang)
     main_kb = get_main_menu_keyboard(lang)
+    banner_img = get_localized_asset("hero_banner.png", lang)
 
-    if BANNER_PATH.is_file():
-        photo_src = get_photo_source(BANNER_PATH)
+    if banner_img.is_file():
+        photo_src = get_photo_source(banner_img)
         try:
             res = await message.answer_photo(
                 photo=photo_src,
                 caption=welcome_text,
                 reply_markup=main_kb
             )
-            extract_and_record(BANNER_PATH, res)
+            extract_and_record(banner_img, res)
             return
         except Exception:
             if isinstance(photo_src, str):
                 try:
                     res = await message.answer_photo(
-                        photo=FSInputFile(str(BANNER_PATH)),
+                        photo=FSInputFile(str(banner_img)),
                         caption=welcome_text,
                         reply_markup=main_kb
                     )
-                    extract_and_record(BANNER_PATH, res)
+                    extract_and_record(banner_img, res)
                     return
                 except Exception:
                     pass
@@ -134,26 +135,27 @@ async def help_command(message: Message):
     lang = await get_user_language(user.id) if user else "ru"
     help_text = get_text("help_text", lang)
     main_kb = get_main_menu_keyboard(lang)
+    flow_img = get_localized_asset("flow_diagram.png", lang)
 
-    if FLOW_PATH.is_file():
-        photo_src = get_photo_source(FLOW_PATH)
+    if flow_img.is_file():
+        photo_src = get_photo_source(flow_img)
         try:
             res = await message.answer_photo(
                 photo=photo_src,
                 caption=help_text,
                 reply_markup=main_kb
             )
-            extract_and_record(FLOW_PATH, res)
+            extract_and_record(flow_img, res)
             return
         except Exception:
             if isinstance(photo_src, str):
                 try:
                     res = await message.answer_photo(
-                        photo=FSInputFile(str(FLOW_PATH)),
+                        photo=FSInputFile(str(flow_img)),
                         caption=help_text,
                         reply_markup=main_kb
                     )
-                    extract_and_record(FLOW_PATH, res)
+                    extract_and_record(flow_img, res)
                     return
                 except Exception:
                     pass

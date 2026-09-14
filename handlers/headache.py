@@ -20,7 +20,7 @@ from keyboards.headache_kb import (
 )
 from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS, CANCEL_BUTTONS
 from db import create_episode, get_active_episode, upsert_user, get_user_language
-from services.media_cache import get_photo_source, extract_and_record
+from services.media_cache import get_photo_source, extract_and_record, get_localized_asset
 from locales import (
     get_text,
     get_intensity_label,
@@ -32,15 +32,31 @@ from locales import (
 
 router = Router()
 
-# Paths to localized Russian step illustration cards
+# Paths to localized step illustration cards
 BASE_ASSETS = Path(__file__).parent.parent / "assets" / "images" / "ru"
-IMG_FLOW = BASE_ASSETS / "flow_diagram.png"
-IMG_HERO = BASE_ASSETS / "hero_banner.png"
-IMG_PAIN_SCALE = BASE_ASSETS / "steps" / "pain_scale.png"
-IMG_LOCATION = BASE_ASSETS / "steps" / "location.png"
-IMG_PAIN_TYPE = BASE_ASSETS / "steps" / "pain_type.png"
-IMG_SYMPTOMS = BASE_ASSETS / "steps" / "symptoms.png"
-IMG_MEDICATION = BASE_ASSETS / "steps" / "medication.png"
+
+
+def get_step_asset(step_name: str, lang: str = "ru") -> Path:
+    mapping = {
+        "flow": "flow_diagram.png",
+        "hero": "hero_banner.png",
+        "pain_scale": "steps/pain_scale.png",
+        "location": "steps/location.png",
+        "pain_type": "steps/pain_type.png",
+        "symptoms": "steps/symptoms.png",
+        "medication": "steps/medication.png",
+    }
+    rel = mapping.get(step_name, f"steps/{step_name}.png")
+    return get_localized_asset(rel, lang)
+
+
+IMG_FLOW = get_step_asset("flow", "ru")
+IMG_HERO = get_step_asset("hero", "ru")
+IMG_PAIN_SCALE = get_step_asset("pain_scale", "ru")
+IMG_LOCATION = get_step_asset("location", "ru")
+IMG_PAIN_TYPE = get_step_asset("pain_type", "ru")
+IMG_SYMPTOMS = get_step_asset("symptoms", "ru")
+IMG_MEDICATION = get_step_asset("medication", "ru")
 
 
 # --- Navigation History Helper ---
@@ -259,7 +275,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         await state.set_state(HeadacheLogSG.start_time)
         await show_or_edit_step(
             callback,
-            IMG_FLOW,
+            get_step_asset("flow", lang),
             step_1_text(lang),
             get_start_time_keyboard(lang)
         )
@@ -283,7 +299,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
     if prev_state == HeadacheLogSG.start_time:
         await show_or_edit_step(
             callback,
-            IMG_FLOW,
+            get_step_asset("flow", lang),
             step_1_text(lang),
             get_start_time_keyboard(lang)
         )
@@ -291,7 +307,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         time_str = data.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
         await show_or_edit_step(
             callback,
-            IMG_PAIN_SCALE,
+            get_step_asset("pain_scale", lang),
             step_2_text(time_str, lang),
             get_intensity_keyboard(lang)
         )
@@ -299,7 +315,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         intensity = data.get("intensity", 5)
         await show_or_edit_step(
             callback,
-            IMG_LOCATION,
+            get_step_asset("location", lang),
             step_3_text(intensity, lang),
             get_location_keyboard(lang)
         )
@@ -307,7 +323,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         loc_key = data.get("location", "left")
         await show_or_edit_step(
             callback,
-            IMG_PAIN_TYPE,
+            get_step_asset("pain_type", lang),
             step_4_text(loc_key, lang),
             get_pain_type_keyboard(lang)
         )
@@ -316,14 +332,14 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         selected_syms = set(data.get("symptoms", []))
         await show_or_edit_step(
             callback,
-            IMG_SYMPTOMS,
+            get_step_asset("symptoms", lang),
             step_5_text(pt_key, lang),
             get_symptoms_keyboard(selected_syms, lang)
         )
     elif prev_state == HeadacheLogSG.medication:
         await show_or_edit_step(
             callback,
-            IMG_MEDICATION,
+            get_step_asset("medication", lang),
             step_6_text(lang),
             get_medication_keyboard(lang)
         )
@@ -352,7 +368,7 @@ async def start_headache_log(message: Message, state: FSMContext):
     await state.set_state(HeadacheLogSG.start_time)
     await show_or_edit_step(
         message,
-        IMG_FLOW,
+        get_step_asset("flow", lang),
         step_1_text(lang),
         get_start_time_keyboard(lang)
     )
@@ -383,7 +399,7 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
         )
         await show_or_edit_step(
             callback,
-            IMG_FLOW,
+            get_step_asset("flow", lang),
             custom_prompt,
             get_cancel_keyboard(show_back=True, lang=lang)
         )
@@ -395,7 +411,7 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
     await state.set_state(HeadacheLogSG.intensity)
     await show_or_edit_step(
         callback,
-        IMG_PAIN_SCALE,
+        get_step_asset("pain_scale", lang),
         step_2_text(time_str, lang),
         get_intensity_keyboard(lang)
     )
@@ -411,7 +427,7 @@ async def process_custom_start_time(message: Message, state: FSMContext):
     await state.set_state(HeadacheLogSG.intensity)
     await show_or_edit_step(
         message,
-        IMG_PAIN_SCALE,
+        get_step_asset("pain_scale", lang),
         step_2_text(time_str, lang),
         get_intensity_keyboard(lang)
     )
@@ -429,7 +445,7 @@ async def process_intensity(callback: CallbackQuery, callback_data: IntensityCal
     await state.set_state(HeadacheLogSG.location)
     await show_or_edit_step(
         callback,
-        IMG_LOCATION,
+        get_step_asset("location", lang),
         step_3_text(intensity_val, lang),
         get_location_keyboard(lang)
     )
@@ -447,7 +463,7 @@ async def process_location(callback: CallbackQuery, callback_data: LocationCallb
     await state.set_state(HeadacheLogSG.pain_type)
     await show_or_edit_step(
         callback,
-        IMG_PAIN_TYPE,
+        get_step_asset("pain_type", lang),
         step_4_text(loc_key, lang),
         get_pain_type_keyboard(lang)
     )
@@ -466,7 +482,7 @@ async def process_pain_type(callback: CallbackQuery, callback_data: PainTypeCall
     await state.update_data(symptoms=[])
     await show_or_edit_step(
         callback,
-        IMG_SYMPTOMS,
+        get_step_asset("symptoms", lang),
         step_5_text(pt_key, lang),
         get_symptoms_keyboard(set(), lang)
     )
@@ -501,7 +517,7 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
         await state.set_state(HeadacheLogSG.medication)
         await show_or_edit_step(
             callback,
-            IMG_MEDICATION,
+            get_step_asset("medication", lang),
             step_6_text(lang),
             get_medication_keyboard(lang)
         )
@@ -520,7 +536,7 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
         await state.set_state(HeadacheLogSG.confirm)
         await show_or_edit_step(
             callback,
-            IMG_FLOW,
+            get_step_asset("flow", lang),
             format_summary(data, lang),
             get_confirm_keyboard(lang)
         )
@@ -537,7 +553,7 @@ async def process_medication_input(message: Message, state: FSMContext):
     await state.set_state(HeadacheLogSG.confirm)
     await show_or_edit_step(
         message,
-        IMG_FLOW,
+        get_step_asset("flow", lang),
         format_summary(data, lang),
         get_confirm_keyboard(lang)
     )
@@ -577,7 +593,7 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
 
     await show_or_edit_step(
         callback,
-        IMG_HERO,
+        get_step_asset("hero", lang),
         saved_text,
         None
     )
