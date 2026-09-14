@@ -231,7 +231,22 @@ def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
     return output.getvalue().encode('utf-8-sig')
 
 
-def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациент") -> bytes:
+def get_tz_now(tz_name: str = "Europe/Moscow") -> datetime:
+    """Returns current datetime localized to user's timezone."""
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo(tz_name)
+    except Exception:
+        from datetime import timezone, timedelta
+        tz = timezone(timedelta(hours=3))
+    return datetime.now(tz)
+
+
+def generate_pdf(
+    episodes: List[Dict[str, Any]],
+    user_title: str = "Пациент",
+    tz_name: str = "Europe/Moscow"
+) -> bytes:
     """Generates a landscape A4 medical report table in PDF."""
     buffer = io.BytesIO()
 
@@ -307,7 +322,7 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
 
     # Title & Metadata (Clean text without emoji glyph drop)
     elements.append(Paragraph("Дневник головных болей (Мигрень)", title_style))
-    now_str = datetime.now().strftime("%d.%m.%Y %H:%M")
+    now_str = get_tz_now(tz_name).strftime("%d.%m.%Y %H:%M")
     total_count = len(episodes)
     avg_intensity = (
         round(sum(e.get("intensity", 0) for e in episodes) / total_count, 1)
