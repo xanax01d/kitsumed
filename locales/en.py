@@ -207,7 +207,8 @@ MEDICATION_MAP = {
 
 TRIGGERS_MAP = {
     "stress": "Stress / Fatigue",
-    "sleep": "Lack of sleep / Irregular sleep",
+    "sleep": "Lack of sleep",
+    "oversleep": "Oversleeping / Too much sleep",
     "weather": "Weather / Pressure change",
     "food": "Hunger / Skipped meal",
     "alcohol": "Alcohol",

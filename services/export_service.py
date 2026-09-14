@@ -62,7 +62,8 @@ ALL_SYMPTOMS_CLEAN = {
 
 ALL_TRIGGERS_CLEAN = {
     "stress": "Стресс / усталость",
-    "sleep": "Недосып / сбит режим",
+    "sleep": "Недосып",
+    "oversleep": "Избыток сна / пересып",
     "weather": "Погода / давление",
     "food": "Голод / пропуск еды",
     "alcohol": "Алкоголь",

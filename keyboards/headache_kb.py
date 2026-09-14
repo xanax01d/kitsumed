@@ -375,10 +375,11 @@ def get_symptoms_keyboard(selected: Set[str] = None, lang: str = "ru") -> Inline
 
 # --- 5b. Triggers Keyboard ---
 TRIGGERS_ORDER = [
-    ("stress", "sleep"),
-    ("weather", "food"),
-    ("alcohol", "caffeine"),
-    ("sensory", "physical"),
+    ("stress", "weather"),
+    ("sleep", "oversleep"),
+    ("food", "alcohol"),
+    ("caffeine", "sensory"),
+    ("physical",),
 ]
 
 def get_triggers_keyboard(selected: Optional[Set[str]] = None, lang: str = "ru") -> InlineKeyboardMarkup:
