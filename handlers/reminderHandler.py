@@ -22,7 +22,7 @@ from keyboards.main_menu import get_main_menu_keyboard, REMINDER_BUTTONS
 from keyboards.headache_kb import get_start_time_keyboard
 from states.reminder import ReminderSG
 from states.headache import HeadacheLogSG
-from handlers.headache import show_or_edit_step, IMG_FLOW, step_1_text
+from handlers.headache import show_or_edit_step, IMG_FLOW, step_1_text, get_step_asset
 from db import get_user_reminder, set_user_reminder, upsert_user, get_user_language
 from locales import get_text
 
@@ -353,13 +353,16 @@ async def process_daily_healthy(callback: CallbackQuery):
 
 @router.callback_query(ReminderPromptCallback.filter(F.action == "headache"))
 async def process_daily_headache(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    lang = await get_user_language(user_id)
     await state.clear()
+    await state.update_data(lang=lang)
     await state.set_state(HeadacheLogSG.start_time)
     await show_or_edit_step(
         callback,
-        IMG_FLOW,
-        step_1_text(),
-        get_start_time_keyboard()
+        get_step_asset("start_time", lang),
+        step_1_text(lang),
+        get_start_time_keyboard(lang)
     )
     await callback.answer()
 

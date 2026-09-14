@@ -8,10 +8,10 @@ from db import get_all_episodes, get_user_language
 from keyboards.headache_kb import get_export_keyboard, ExportCallback
 from keyboards.main_menu import get_main_menu_keyboard, EXPORT_BUTTONS
 from services import generate_csv, generate_pdf
-from services.media_cache import get_localized_asset
+from services.media_cache import get_localized_asset, get_photo_source, extract_and_record
 from locales import get_text
 
-IMG_EXPORT = get_localized_asset("architecture_diagram.png", "ru")
+IMG_EXPORT = get_localized_asset("export.png", "ru")
 
 router = Router()
 
@@ -32,18 +32,30 @@ async def cmd_export(message: Message):
 
     text = get_text("export_title", lang, count=len(episodes))
     kb = get_export_keyboard(lang)
-    export_img = get_localized_asset("architecture_diagram.png", lang)
+    export_img = get_localized_asset("export.png", lang)
 
     if export_img.is_file():
+        photo_src = get_photo_source(export_img)
         try:
-            await message.answer_photo(
-                photo=FSInputFile(str(export_img)),
+            res = await message.answer_photo(
+                photo=photo_src,
                 caption=text,
                 reply_markup=kb
             )
+            extract_and_record(export_img, res)
             return
         except Exception:
-            pass
+            if isinstance(photo_src, str):
+                try:
+                    res = await message.answer_photo(
+                        photo=FSInputFile(str(export_img)),
+                        caption=text,
+                        reply_markup=kb
+                    )
+                    extract_and_record(export_img, res)
+                    return
+                except Exception:
+                    pass
 
     await message.answer(text, reply_markup=kb)
 
