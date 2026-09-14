@@ -805,11 +805,14 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             "architecture_diagram.png",
             "flow_diagram.png",
             "db_diagram.png",
+            "steps/start_time.png",
             "steps/pain_scale.png",
             "steps/location.png",
             "steps/pain_type.png",
             "steps/symptoms.png",
             "steps/medication.png",
+            "steps/confirm.png",
+            "steps/saved.png",
         ]
 
         for loc in ["ru", "en"]:

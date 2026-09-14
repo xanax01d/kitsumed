@@ -40,11 +40,14 @@ def get_step_asset(step_name: str, lang: str = "ru") -> Path:
     mapping = {
         "flow": "flow_diagram.png",
         "hero": "hero_banner.png",
+        "start_time": "steps/start_time.png",
         "pain_scale": "steps/pain_scale.png",
         "location": "steps/location.png",
         "pain_type": "steps/pain_type.png",
         "symptoms": "steps/symptoms.png",
         "medication": "steps/medication.png",
+        "confirm": "steps/confirm.png",
+        "saved": "steps/saved.png",
     }
     rel = mapping.get(step_name, f"steps/{step_name}.png")
     return get_localized_asset(rel, lang)
@@ -52,11 +55,14 @@ def get_step_asset(step_name: str, lang: str = "ru") -> Path:
 
 IMG_FLOW = get_step_asset("flow", "ru")
 IMG_HERO = get_step_asset("hero", "ru")
+IMG_START_TIME = get_step_asset("start_time", "ru")
 IMG_PAIN_SCALE = get_step_asset("pain_scale", "ru")
 IMG_LOCATION = get_step_asset("location", "ru")
 IMG_PAIN_TYPE = get_step_asset("pain_type", "ru")
 IMG_SYMPTOMS = get_step_asset("symptoms", "ru")
 IMG_MEDICATION = get_step_asset("medication", "ru")
+IMG_CONFIRM = get_step_asset("confirm", "ru")
+IMG_SAVED = get_step_asset("saved", "ru")
 
 
 # --- Navigation History Helper ---
@@ -275,7 +281,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
         await state.set_state(HeadacheLogSG.start_time)
         await show_or_edit_step(
             callback,
-            get_step_asset("flow", lang),
+            get_step_asset("start_time", lang),
             step_1_text(lang),
             get_start_time_keyboard(lang)
         )
@@ -299,7 +305,7 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
     if prev_state == HeadacheLogSG.start_time:
         await show_or_edit_step(
             callback,
-            get_step_asset("flow", lang),
+            get_step_asset("start_time", lang),
             step_1_text(lang),
             get_start_time_keyboard(lang)
         )
@@ -368,7 +374,7 @@ async def start_headache_log(message: Message, state: FSMContext):
     await state.set_state(HeadacheLogSG.start_time)
     await show_or_edit_step(
         message,
-        get_step_asset("flow", lang),
+        get_step_asset("start_time", lang),
         step_1_text(lang),
         get_start_time_keyboard(lang)
     )
@@ -399,7 +405,7 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
         )
         await show_or_edit_step(
             callback,
-            get_step_asset("flow", lang),
+            get_step_asset("start_time", lang),
             custom_prompt,
             get_cancel_keyboard(show_back=True, lang=lang)
         )
@@ -536,7 +542,7 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
         await state.set_state(HeadacheLogSG.confirm)
         await show_or_edit_step(
             callback,
-            get_step_asset("flow", lang),
+            get_step_asset("confirm", lang),
             format_summary(data, lang),
             get_confirm_keyboard(lang)
         )
@@ -553,7 +559,7 @@ async def process_medication_input(message: Message, state: FSMContext):
     await state.set_state(HeadacheLogSG.confirm)
     await show_or_edit_step(
         message,
-        get_step_asset("flow", lang),
+        get_step_asset("confirm", lang),
         format_summary(data, lang),
         get_confirm_keyboard(lang)
     )
@@ -593,7 +599,7 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
 
     await show_or_edit_step(
         callback,
-        get_step_asset("hero", lang),
+        get_step_asset("saved", lang),
         saved_text,
         None
     )
