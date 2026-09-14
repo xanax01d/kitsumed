@@ -40,6 +40,7 @@ MESSAGES = {
     "history_card_pain": "• Урон нейросети: <b>{intensity}/10</b> ({level})\n",
     "history_card_loc": "• Сектор: {loc} | {pt}\n",
     "history_card_sym": "• Аномалии: {sym}\n",
+    "history_card_triggers": "• Триггеры: {triggers}\n",
     "history_card_med": "• Стимы/Фарма: {med}",
 
     # Headache Log Steps
@@ -48,6 +49,10 @@ MESSAGES = {
     "step_3_title": "<b>Сектор поражения имплантов</b>\nНагрузка: <b>{intensity}/10</b> ({level})",
     "step_4_title": "<b>Характер нейрошума и спазма</b>\nСектор: <b>{loc_text}</b>",
     "step_5_title": "<b>Сопутствующие аномалии биосистемы</b>\nШум: <b>{pt_text}</b>",
+    "step_triggers_title": "<b>Диагностика триггеров перегрузки:</b>\nВыберите факторы сбоя или введите сигнатуру:",
+    "custom_trigger_prompt": "<b>Ввод сигнатуры сбоя</b>\nВведите фактор аномалии (например: <i>перегруз сети, токсичный смог, дедлайн Арасаки</i>):",
+    "btn_custom_trigger": "✍️ Пользовательский вектор",
+    "btn_no_triggers": "❌ Внешние аномалии не найдены",
     "step_6_title": "<b>Инъекция стимуляторов / Блокаторы</b>\nУкажи химсостав или нажми клавишу на деке:",
     "med_time_question": "<b>Когда был введен стимулятор ({medication}) после сбоя нейросети?</b>",
     "relief_time_question": "<b>Через сколько времени после стимулятора нейросеть стабилизировалась?</b>",
@@ -68,8 +73,17 @@ MESSAGES = {
     "summary_location": "• Сектор: {loc_text}\n",
     "summary_pain_type": "• Характер сбоя: {pt_text}\n",
     "summary_symptoms": "• Аномалии: {symptoms_str}\n",
+    "summary_triggers": "• Триггеры: {triggers_str}\n",
     "summary_medication": "• Стимы/Фарма: {med_text}\n\n",
     "summary_confirm": "Загрузить пакет данных в память деки?",
+
+    # Calendar
+    "calendar_title": "<b>Хронологический лог биометрии</b> — {month_name} {year}\n\n🔴 Циклы критического перегрева: <b>{pain_days}</b>\n🟢 Стабильные циклы: <b>{healthy_days}</b>\n\n<i>Выберите временную метку:</i>",
+    "calendar_btn_today": "📅 Текущий цикл",
+    "calendar_day_healthy": "<b>{date_str}</b> — нейросеть стабильна 🟢\n\nИмпульсов перегрева не зафиксировано.",
+    "calendar_day_episodes_title": "<b>Логи сбоев за {date_str}</b> (событий: {count}):\n\n",
+    "calendar_future_alert": "Таймлайн не синхронизирован: дата в будущем.",
+    "calendar_btn_back": "⬅️ Возврат в лог-матрицу",
 
     # Navigation & Action Buttons
     "btn_cancel": "❌ Аварийный сброс",
@@ -191,3 +205,16 @@ MEDICATION_MAP = {
     "analgesic": "Анальгин / Спазмалгон (анальгетик)",
     "citramon": "Цитрамон (олдскульный бустер)",
 }
+
+TRIGGERS_MAP = {
+    "stress": "Нейростресс / выгорание",
+    "sleep": "Сбой цикла гибернации",
+    "weather": "Кислотный дождь / барометр",
+    "food": "Дефицит глюкозы / биопасты",
+    "alcohol": "Синтетический алкоголь",
+    "caffeine": "Стимуляторы / кофеин",
+    "sensory": "Светошумовой спам Night City",
+    "physical": "Перегрузка сервоприводов",
+    "none": "Скрытый сбой бионики",
+}
+

@@ -97,6 +97,7 @@ async def init_db(dsn: Optional[str] = None):
                 location VARCHAR(128) NOT NULL,
                 pain_type VARCHAR(128) NOT NULL,
                 symptoms JSONB,
+                triggers JSONB,
                 medication TEXT,
                 status VARCHAR(32) DEFAULT 'active',
                 medication_relief VARCHAR(32) DEFAULT NULL,
@@ -108,6 +109,7 @@ async def init_db(dsn: Optional[str] = None):
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
 
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS triggers JSONB;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS medication_relief VARCHAR(32) DEFAULT NULL;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS pain_resolved BOOLEAN DEFAULT NULL;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS med_take_delay VARCHAR(32) DEFAULT NULL;
@@ -195,6 +197,8 @@ async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
     pool = _get_pool()
     symptoms_list = list(data.get("symptoms", []))
     symptoms_json = json.dumps(symptoms_list, ensure_ascii=False)
+    triggers_list = list(data.get("triggers", []))
+    triggers_json = json.dumps(triggers_list, ensure_ascii=False)
     start_time = data.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
     end_time = data.get("end_time")
     intensity = int(data.get("intensity", 5))
@@ -211,31 +215,31 @@ async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
         if status == "completed":
             row = await conn.fetchrow("""
                 INSERT INTO headache_episodes (
-                    user_id, start_time, end_time, intensity, location, pain_type, symptoms,
+                    user_id, start_time, end_time, intensity, location, pain_type, symptoms, triggers,
                     medication, medication_relief, med_take_delay, relief_delay, status,
                     pain_resolved, followup_due_at, followup_sent
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7::jsonb,
-                    $8, $9, $10, $11, 'completed',
-                    $12, NULL, TRUE
+                    $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
+                    $9, $10, $11, $12, 'completed',
+                    $13, NULL, TRUE
                 )
                 RETURNING id;
-            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json,
+            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json, triggers_json,
                 medication, medication_relief, med_take_delay, relief_delay,
                 True if pain_resolved is None else pain_resolved)
         else:
             row = await conn.fetchrow("""
                 INSERT INTO headache_episodes (
-                    user_id, start_time, end_time, intensity, location, pain_type, symptoms,
+                    user_id, start_time, end_time, intensity, location, pain_type, symptoms, triggers,
                     medication, medication_relief, med_take_delay, relief_delay, status,
                     pain_resolved, followup_due_at, followup_sent
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7::jsonb,
-                    $8, $9, $10, $11, 'active',
-                    $12, NOW() + INTERVAL '2 hours', FALSE
+                    $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
+                    $9, $10, $11, $12, 'active',
+                    $13, NOW() + INTERVAL '2 hours', FALSE
                 )
                 RETURNING id;
-            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json,
+            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json, triggers_json,
                 medication, medication_relief, med_take_delay, relief_delay,
                 False if pain_resolved is None else pain_resolved)
         return row["id"]
@@ -249,6 +253,18 @@ def _format_episode_row(row: asyncpg.Record) -> Dict[str, Any]:
             item["symptoms"] = json.loads(syms)
         except Exception:
             pass
+    elif syms is None:
+        item["symptoms"] = []
+
+    trigs = item.get("triggers")
+    if isinstance(trigs, str):
+        try:
+            item["triggers"] = json.loads(trigs)
+        except Exception:
+            item["triggers"] = [trigs]
+    elif trigs is None:
+        item["triggers"] = []
+
     return item
 
 
@@ -258,7 +274,7 @@ async def get_active_episode(user_id: int) -> Optional[Dict[str, Any]]:
     async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
                    pain_resolved, med_take_delay, relief_delay,
                    followup_due_at, followup_sent, created_at
             FROM headache_episodes
@@ -276,7 +292,7 @@ async def get_episode_by_id(episode_id: int) -> Optional[Dict[str, Any]]:
     async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
                    pain_resolved, med_take_delay, relief_delay,
                    followup_due_at, followup_sent, created_at
             FROM headache_episodes
@@ -377,7 +393,7 @@ async def get_recent_episodes(user_id: int, limit: int = 5) -> List[Dict[str, An
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
                    pain_resolved, med_take_delay, relief_delay, created_at
             FROM headache_episodes
             WHERE user_id = $1
@@ -392,7 +408,7 @@ async def get_all_episodes(user_id: int) -> List[Dict[str, Any]]:
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
                    pain_resolved, med_take_delay, relief_delay, created_at
             FROM headache_episodes
             WHERE user_id = $1
@@ -491,6 +507,82 @@ async def get_enabled_reminder_users() -> List[Dict[str, Any]]:
             WHERE reminder_enabled = TRUE;
         """)
         return [dict(r) for r in rows]
+
+
+def extract_episode_date(ep: Dict[str, Any]) -> Optional[datetime.date]:
+    """Extracts date object from an episode dict using start_time or created_at."""
+    st = ep.get("start_time", "")
+    if isinstance(st, str) and len(st) >= 10:
+        try:
+            return datetime.strptime(st[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    ca = ep.get("created_at")
+    if isinstance(ca, datetime):
+        return ca.date()
+    elif isinstance(ca, str) and len(ca) >= 10:
+        try:
+            return datetime.strptime(ca[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    return None
+
+
+async def get_episodes_for_month(user_id: int, year: int, month: int) -> List[Dict[str, Any]]:
+    """Fetches all episodes recorded for a user in the given year and month."""
+    pool = _get_pool()
+    month_prefix = f"{year:04d}-{month:02d}%"
+    month_exact = f"{year:04d}-{month:02d}"
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, user_id, start_time, end_time, intensity, location,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
+                   pain_resolved, med_take_delay, relief_delay, created_at
+            FROM headache_episodes
+            WHERE user_id = $1
+              AND (
+                  start_time LIKE $2
+                  OR TO_CHAR(created_at, 'YYYY-MM') = $3
+              )
+            ORDER BY id ASC;
+        """, user_id, month_prefix, month_exact)
+        return [_format_episode_row(r) for r in rows]
+
+
+async def get_episodes_for_date(user_id: int, year: int, month: int, day: int) -> List[Dict[str, Any]]:
+    """Fetches all episodes recorded for a user on a specific date (YYYY-MM-DD)."""
+    pool = _get_pool()
+    date_prefix = f"{year:04d}-{month:02d}-{day:02d}%"
+    date_exact = f"{year:04d}-{month:02d}-{day:02d}"
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, user_id, start_time, end_time, intensity, location,
+                   pain_type, symptoms, triggers, medication, status, medication_relief,
+                   pain_resolved, med_take_delay, relief_delay, created_at
+            FROM headache_episodes
+            WHERE user_id = $1
+              AND (
+                  start_time LIKE $2
+                  OR TO_CHAR(created_at, 'YYYY-MM-DD') = $3
+              )
+            ORDER BY id ASC;
+        """, user_id, date_prefix, date_exact)
+        return [_format_episode_row(r) for r in rows]
+
+
+async def clear_all_episodes(user_id: Optional[int] = None) -> int:
+    """Clears headache episodes. If user_id is provided, deletes episodes for that user; otherwise truncates table."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        if user_id is not None:
+            res = await conn.execute("DELETE FROM headache_episodes WHERE user_id = $1;", user_id)
+        else:
+            res = await conn.execute("TRUNCATE TABLE headache_episodes RESTART IDENTITY CASCADE;")
+        try:
+            return int(res.split()[-1])
+        except Exception:
+            return 0
+
 
 
 

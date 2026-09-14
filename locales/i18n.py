@@ -81,6 +81,12 @@ def get_medication_map(lang: str = DEFAULT_LANGUAGE) -> Dict[str, str]:
     return getattr(mod, "MEDICATION_MAP", ru.MEDICATION_MAP)
 
 
+def get_triggers_map(lang: str = DEFAULT_LANGUAGE) -> Dict[str, str]:
+    lang_code = normalize_lang(lang)
+    mod = _MODULES.get(lang_code, ru)
+    return getattr(mod, "TRIGGERS_MAP", ru.TRIGGERS_MAP)
+
+
 def get_intensity_label(val: int, lang: str = DEFAULT_LANGUAGE) -> str:
     lang_code = normalize_lang(lang)
     if val <= 3:

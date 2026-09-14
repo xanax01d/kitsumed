@@ -11,6 +11,7 @@ from locales.i18n import (
     get_pain_type_map,
     get_symptoms_map,
     get_medication_map,
+    get_triggers_map,
     get_intensity_label,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "get_pain_type_map",
     "get_symptoms_map",
     "get_medication_map",
+    "get_triggers_map",
     "get_intensity_label",
 ]

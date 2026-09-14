@@ -60,6 +60,18 @@ ALL_SYMPTOMS_CLEAN = {
     "none": "Без сопутствующих симптомов",
 }
 
+ALL_TRIGGERS_CLEAN = {
+    "stress": "Стресс / усталость",
+    "sleep": "Недосып / сбит режим",
+    "weather": "Погода / давление",
+    "food": "Голод / пропуск еды",
+    "alcohol": "Алкоголь",
+    "caffeine": "Кофеин",
+    "sensory": "Шум / свет / духота",
+    "physical": "Физ. нагрузка",
+    "none": "Без явного триггера",
+}
+
 MEDICATION_MAP_CLEAN = {
     "triptan": "Триптан (Суматриптан, Зомиг)",
     "nsaid": "НПВП (Ибупрофен, Напроксен, Нурофен)",
@@ -152,6 +164,18 @@ def _format_symptoms(symptoms_raw: Any, clean: bool = False) -> str:
     return ", ".join(lookup.get(s, clean_text_for_pdf(s) if clean else s) for s in symptoms_raw)
 
 
+def _format_triggers(triggers_raw: Any, clean: bool = False) -> str:
+    if isinstance(triggers_raw, str):
+        try:
+            triggers_raw = json.loads(triggers_raw)
+        except Exception:
+            triggers_raw = [triggers_raw]
+    if not triggers_raw or "none" in triggers_raw:
+        return "Нет"
+    lookup = ALL_TRIGGERS_CLEAN if clean else ALL_TRIGGERS_CLEAN
+    return ", ".join(lookup.get(t, clean_text_for_pdf(t) if clean else t) for t in triggers_raw)
+
+
 def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
     """Generates a CSV file with BOM for Microsoft Excel compatibility."""
     output = io.StringIO()
@@ -169,6 +193,7 @@ def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
         "Локализация",
         "Характер боли",
         "Симптомы",
+        "Триггеры",
         "Принятые медикаменты",
         "Статус"
     ]
@@ -178,6 +203,7 @@ def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
         loc = LOCATION_MAP_CLEAN.get(ep.get("location"), clean_text_for_pdf(ep.get("location") or "-"))
         pt = PAIN_TYPE_MAP_CLEAN.get(ep.get("pain_type"), clean_text_for_pdf(ep.get("pain_type") or "-"))
         sym = _format_symptoms(ep.get("symptoms"), clean=True)
+        trig = _format_triggers(ep.get("triggers"), clean=True)
         med_val = ep.get("medication")
         med = MEDICATION_MAP_CLEAN.get(med_val, clean_text_for_pdf(med_val or "-"))
         relief = ep.get("medication_relief")
@@ -196,6 +222,7 @@ def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
             loc,
             pt,
             sym,
+            trig,
             med,
             status_str
         ])
@@ -248,7 +275,6 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
         fontSize=10,
         leading=14,
         textColor=colors.HexColor("#4A5568"),
-        spaceAfter=15,
     )
 
     th_style = ParagraphStyle(
@@ -307,6 +333,7 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
         Paragraph("<b>Локализация</b>", th_style),
         Paragraph("<b>Характер</b>", th_style),
         Paragraph("<b>Симптомы</b>", th_style),
+        Paragraph("<b>Триггеры</b>", th_style),
         Paragraph("<b>Препарат</b>", th_style),
     ]
 
@@ -316,6 +343,7 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
         loc = LOCATION_MAP_CLEAN.get(ep.get("location"), clean_text_for_pdf(ep.get("location") or "-"))
         pt = PAIN_TYPE_MAP_CLEAN.get(ep.get("pain_type"), clean_text_for_pdf(ep.get("pain_type") or "-"))
         sym = _format_symptoms(ep.get("symptoms"), clean=True)
+        trig = _format_triggers(ep.get("triggers"), clean=True)
         med_val = ep.get("medication")
         med = MEDICATION_MAP_CLEAN.get(med_val, clean_text_for_pdf(med_val or "-"))
         relief = ep.get("medication_relief")
@@ -334,13 +362,13 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
             Paragraph(loc, td_style),
             Paragraph(pt, td_style),
             Paragraph(sym, td_style),
+            Paragraph(trig, td_style),
             Paragraph(med, td_style),
         ]
         data.append(row)
 
     # Column widths for Landscape A4 (total usable width ≈ 792pt)
-    # Total width = 30 + 90 + 90 + 55 + 45 + 115 + 115 + 140 + 110 = 790pt
-    col_widths = [30, 85, 85, 55, 45, 115, 115, 140, 120]
+    col_widths = [25, 80, 80, 50, 40, 95, 95, 110, 110, 105]
 
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([

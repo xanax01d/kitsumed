@@ -39,6 +39,7 @@ MESSAGES = {
     "history_card_pain": "• Pain: <b>{intensity}/10</b> ({level})\n",
     "history_card_loc": "• Location: {loc} | {pt}\n",
     "history_card_sym": "• Symptoms: {sym}\n",
+    "history_card_triggers": "• Triggers: {triggers}\n",
     "history_card_med": "• Medication: {med}",
 
     # Headache Log Steps
@@ -47,6 +48,10 @@ MESSAGES = {
     "step_3_title": "<b>Pain Localization</b>\nPain: <b>{intensity}/10</b> ({level})",
     "step_4_title": "<b>Pain Type</b>\nLocation: <b>{loc_text}</b>",
     "step_5_title": "<b>Associated Symptoms</b>\nType: <b>{pt_text}</b>",
+    "step_triggers_title": "<b>What triggered the episode?</b>\nSelect potential triggers or type your own:",
+    "custom_trigger_prompt": "<b>Trigger / Provoking factor</b>\nEnter what might have triggered the pain (e.g. <i>skipped lunch, bright screen, weather</i>):",
+    "btn_custom_trigger": "✍️ Custom trigger",
+    "btn_no_triggers": "❌ No clear trigger",
     "step_6_title": "<b>Medication Taken</b>\nEnter drug name and dosage or select an option below:",
     "med_time_question": "<b>When did you take the medication ({medication}) relative to headache onset?</b>",
     "relief_time_question": "<b>How long after taking the pill did the pain completely subside?</b>",
@@ -67,8 +72,17 @@ MESSAGES = {
     "summary_location": "• Location: {loc_text}\n",
     "summary_pain_type": "• Type: {pt_text}\n",
     "summary_symptoms": "• Symptoms: {symptoms_str}\n",
+    "summary_triggers": "• Triggers: {triggers_str}\n",
     "summary_medication": "• Medication: {med_text}\n\n",
     "summary_confirm": "Save this episode?",
+
+    # Calendar
+    "calendar_title": "<b>Headache Calendar</b> — {month_name} {year}\n\n🔴 Headache days: <b>{pain_days}</b>\n🟢 Pain-free days: <b>{healthy_days}</b>\n\n<i>Tap a day to view details:</i>",
+    "calendar_btn_today": "📅 Current month",
+    "calendar_day_healthy": "<b>{date_str}</b> — pain-free day 🟢\n\nNo headache episodes recorded.",
+    "calendar_day_episodes_title": "<b>Episodes on {date_str}</b> (total: {count}):\n\n",
+    "calendar_future_alert": "This day is in the future.",
+    "calendar_btn_back": "⬅️ Back to calendar",
 
     # Navigation & Action Buttons
     "btn_cancel": "❌ Cancel",
@@ -190,3 +204,16 @@ MEDICATION_MAP = {
     "analgesic": "Analgesics / Spasmalgon",
     "citramon": "Citramon / Caffeine combo",
 }
+
+TRIGGERS_MAP = {
+    "stress": "Stress / Fatigue",
+    "sleep": "Lack of sleep / Irregular sleep",
+    "weather": "Weather / Pressure change",
+    "food": "Hunger / Skipped meal",
+    "alcohol": "Alcohol",
+    "caffeine": "Caffeine",
+    "sensory": "Noise / Bright light / Smells",
+    "physical": "Physical exertion",
+    "none": "No clear trigger",
+}
+
