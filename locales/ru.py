@@ -34,6 +34,12 @@ MESSAGES = {
     "history_card_status_completed": "Завершен",
     "history_card_status_active": "Активен",
     "history_card_status_not_resolved": "Не прошла",
+    "history_card_header": "Приступ #{id} ({status})",
+    "history_card_time": "• Время: <code>{time}</code>\n",
+    "history_card_pain": "• Боль: <b>{intensity}/10</b> ({level})\n",
+    "history_card_loc": "• Локация: {loc} | {pt}\n",
+    "history_card_sym": "• Симптомы: {sym}\n",
+    "history_card_med": "• Препарат: {med}",
 
     # Headache Log Steps
     "step_1_title": "<b>Когда началась боль?</b>",
@@ -159,12 +165,14 @@ PAIN_TYPE_MAP = {
 }
 
 SYMPTOMS_MAP = {
-    "nausea": "Тошнота / рвота",
+    "nausea": "Тошнота",
+    "vomiting": "Рвота",
     "photophobia": "Светобоязнь",
     "phonophobia": "Звукобоязнь",
     "aura": "Зрительная аура",
     "dizziness": "Головокружение",
-    "osmophobia": "Непереносимость запахов",
+    "odor": "Чувствительность к запахам",
+    "osmophobia": "Чувствительность к запахам",
     "none": "Без сопутствующих симптомов",
 }
 

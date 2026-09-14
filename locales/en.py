@@ -34,6 +34,12 @@ MESSAGES = {
     "history_card_status_completed": "Completed",
     "history_card_status_active": "Active",
     "history_card_status_not_resolved": "Not Resolved",
+    "history_card_header": "Episode #{id} ({status})",
+    "history_card_time": "• Time: <code>{time}</code>\n",
+    "history_card_pain": "• Pain: <b>{intensity}/10</b> ({level})\n",
+    "history_card_loc": "• Location: {loc} | {pt}\n",
+    "history_card_sym": "• Symptoms: {sym}\n",
+    "history_card_med": "• Medication: {med}",
 
     # Headache Log Steps
     "step_1_title": "<b>When did the pain start?</b>",
@@ -130,11 +136,17 @@ MESSAGES = {
 }
 
 LOCATION_MAP = {
+    "left": "👈 Left side (unilateral)",
+    "right": "Right side (unilateral) 👉",
+    "both": "↔️ Both sides",
+    "forehead_temples": "🎯 Forehead & temples",
+    "back_head": "🔙 Back of head & neck",
+    "diffuse": "🌐 Whole head (diffuse)",
+    # Granular aliases
     "forehead": "Forehead",
     "temple_right": "Right temple",
     "temple_left": "Left temple",
     "temple_both": "Both temples",
-    "back_head": "Back of head",
     "one_half": "Hemilateral (half head)",
     "all_head": "Whole head",
     "crown": "Top of head (vertex)",
@@ -143,20 +155,23 @@ LOCATION_MAP = {
 }
 
 PAIN_TYPE_MAP = {
-    "pulsating": "Throbbing / Pulsating",
-    "pressing": "Pressing / Tightening",
-    "stabbing": "Stabbing / Sharp",
-    "dull": "Dull ache",
-    "bursting": "Bursting / Explosive",
+    "throbbing": "💓 Throbbing / Pulsating",
+    "pulsating": "💓 Throbbing / Pulsating",
+    "pressing": "🗜 Pressing / Tightening",
+    "stabbing": "🎯 Stabbing / Sharp",
+    "dull": "🌧 Dull ache",
+    "bursting": "💥 Bursting / Explosive",
     "burning": "Burning",
 }
 
 SYMPTOMS_MAP = {
-    "nausea": "Nausea / Vomiting",
+    "nausea": "Nausea",
+    "vomiting": "Vomiting",
     "photophobia": "Light sensitivity",
     "phonophobia": "Sound sensitivity",
     "aura": "Visual aura",
     "dizziness": "Dizziness",
+    "odor": "Smell sensitivity",
     "osmophobia": "Smell sensitivity",
     "none": "No associated symptoms",
 }

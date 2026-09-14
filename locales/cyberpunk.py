@@ -35,6 +35,12 @@ MESSAGES = {
     "history_card_status_completed": "Купирован (система стабильна)",
     "history_card_status_active": "КРИТИЧЕСКИЙ СБОЙ (в процессе)",
     "history_card_status_not_resolved": "Перегрузка не снята",
+    "history_card_header": "Инцидент #{id} ({status})",
+    "history_card_time": "• Таймкод: <code>{time}</code>\n",
+    "history_card_pain": "• Урон нейросети: <b>{intensity}/10</b> ({level})\n",
+    "history_card_loc": "• Сектор: {loc} | {pt}\n",
+    "history_card_sym": "• Аномалии: {sym}\n",
+    "history_card_med": "• Стимы/Фарма: {med}",
 
     # Headache Log Steps
     "step_1_title": "<b>Таймкод: когда начался сбой нейросети?</b>",
@@ -160,12 +166,14 @@ PAIN_TYPE_MAP = {
 }
 
 SYMPTOMS_MAP = {
-    "nausea": "Сбой вестибулярного модуля / Тошнота",
+    "nausea": "Сбой вестибулярного модуля (тошнота)",
+    "vomiting": "Выброс биомассы (рвота)",
     "photophobia": "Перегрузка оптики Kiroshi (светобоязнь)",
     "phonophobia": "Глитч аудиопроцессора (звукобоязнь)",
     "aura": "Глитчи интерфейса / Зрительная аура",
-    "dizziness": "Дрифт гироскопа / Головокружение",
-    "osmophobia": "Сенсорная перегрузка ольфакторного чипа",
+    "dizziness": "Дрифт гироскопа (головокружение)",
+    "odor": "Перегрузка ольфакторного чипа (запахи)",
+    "osmophobia": "Перегрузка ольфакторного чипа (запахи)",
     "none": "Побочных аномалий нет (чистый хром)",
 }
 

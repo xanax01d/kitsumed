@@ -609,8 +609,69 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Kiroshi", get_symptoms_map("cyberpunk")["photophobia"])
         self.assertIn("нейроблокатор", get_medication_map("cyberpunk")["triptan"])
 
+        # Test symptom and location coverage across all languages
+        for l_code in SUPPORTED_LANGUAGES:
+            s_map = get_symptoms_map(l_code)
+            self.assertIn("vomiting", s_map, f"vomiting missing from {l_code}")
+            self.assertIn("nausea", s_map, f"nausea missing from {l_code}")
+            self.assertIn("odor", s_map, f"odor missing from {l_code}")
+            self.assertIn("photophobia", s_map, f"photophobia missing from {l_code}")
+            self.assertIn("phonophobia", s_map, f"phonophobia missing from {l_code}")
+            self.assertIn("aura", s_map, f"aura missing from {l_code}")
+            self.assertIn("dizziness", s_map, f"dizziness missing from {l_code}")
+
+            l_map = get_location_map(l_code)
+            self.assertIn("left", l_map, f"left missing from {l_code}")
+            self.assertIn("right", l_map, f"right missing from {l_code}")
+            self.assertIn("both", l_map, f"both missing from {l_code}")
+            self.assertIn("forehead_temples", l_map, f"forehead_temples missing from {l_code}")
+            self.assertIn("back_head", l_map, f"back_head missing from {l_code}")
+            self.assertIn("diffuse", l_map, f"diffuse missing from {l_code}")
+
+            p_map = get_pain_type_map(l_code)
+            self.assertIn("throbbing", p_map, f"throbbing missing from {l_code}")
+            self.assertIn("pressing", p_map, f"pressing missing from {l_code}")
+            self.assertIn("stabbing", p_map, f"stabbing missing from {l_code}")
+            self.assertIn("dull", p_map, f"dull missing from {l_code}")
+            self.assertIn("bursting", p_map, f"bursting missing from {l_code}")
+
         # Test fallback to Russian
         self.assertIsNotNone(get_text("unknown_key_xyz", "en"))
+
+    def test_format_episode_card_no_raw_vomiting(self):
+        from handlers.startHandler import _format_episode_card
+        ep = {
+            "id": 6,
+            "start_time": "2026-09-13 22:23",
+            "end_time": "2026-09-13 22:36",
+            "intensity": 10,
+            "location": "diffuse",
+            "pain_type": "dull",
+            "symptoms": ["aura", "phonophobia", "vomiting", "nausea", "photophobia", "dizziness"],
+            "medication": "none",
+            "status": "completed"
+        }
+        # Verify Russian
+        card_ru = _format_episode_card(ep, lang="ru")
+        self.assertNotIn("vomiting", card_ru)
+        self.assertIn("Рвота", card_ru)
+        self.assertIn("Тошнота", card_ru)
+
+        # Verify English
+        card_en = _format_episode_card(ep, lang="en")
+        self.assertNotIn("vomiting", card_en)
+        self.assertIn("Vomiting", card_en)
+        self.assertIn("Nausea", card_en)
+
+        # Verify Meme
+        card_meme = _format_episode_card(ep, lang="meme")
+        self.assertNotIn("vomiting", card_meme)
+        self.assertIn("Рвота (полный тотал)", card_meme)
+
+        # Verify Cyberpunk
+        card_cp = _format_episode_card(ep, lang="cyberpunk")
+        self.assertNotIn("vomiting", card_cp)
+        self.assertIn("Выброс биомассы", card_cp)
 
     async def test_language_handler_and_switching(self):
         from handlers.languageHandler import cmd_select_language, process_language_choice
