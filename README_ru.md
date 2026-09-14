@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(24%2F24)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(25%2F25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![i18n](https://img.shields.io/badge/Languages-4%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#7-🌐-локализация-и-мультиязычность-4-языка)
 [![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#8-🩺-автоматический-follow-up-и-оценка-препаратов)
 [![Response Time](https://img.shields.io/badge/Response%20Time-~50ms-success?style=for-the-badge&logo=fastapi&logoColor=white)](#6-⚡️-высокая-производительность-и-кэширование-медиа)
@@ -273,7 +273,7 @@ python3 main.py
 python3 -m unittest discover -s tests -v
 ```
 
-### Структура тест-сьюта (24 теста):
+### Структура тест-сьюта (25 тестов):
 
 | Тест | Категория | Проверяемая функциональность |
 | :--- | :--- | :--- |
@@ -289,6 +289,7 @@ python3 -m unittest discover -s tests -v
 | `test_reminder_db_methods_mocked` | ⏰ Напоминания | Выборка пользователей, обновление времени/статуса/пояса и фиксация даты отправки опроса |
 | `test_reminder_prompt_callbacks` | ⏰ Напоминания | Обработка реакций на чек-ин («Да, болела» ➔ старт FSM с карточкой `start_time.png`, «Нет, всё отлично» ➔ благодарность) |
 | `test_reminder_scheduler_tick` | ⏰ Напоминания | Изолированное выполнение тика фонового планировщика с учетом часового пояса пользователя |
+| `test_medication_relief_flow_branching` | 💊 Медикаменты | Интерактивное ветвление: опрос облегчения («Помогло?») при указании препарата и мгновенный переход к подтверждению, если лекарства не принимались |
 | `test_followup_flow_and_medication_relief` | 🩺 Follow-up | Полный цикл: опрос стихания боли, выбор времени купирования, сбор оценки действия лекарств (`helped`, `partial`, `not_helped`) |
 | `test_followup_scheduler_worker` | 🩺 Follow-up | Работа фонового планировщика контроля приступов через 2 часа и отметка отправки `followup_sent` |
 | `test_i18n_locales_and_mappings` | 🌐 Локализация | Полнота словарей во всех 4 локалях (RU, EN, Meme, Cyberpunk): симптомы, локализации, интенсивность, fallback |

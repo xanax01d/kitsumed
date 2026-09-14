@@ -196,18 +196,19 @@ async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
     location = str(data.get("location", ""))
     pain_type = str(data.get("pain_type", ""))
     medication = str(data.get("medication", "none"))
+    medication_relief = data.get("medication_relief")
 
     async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             INSERT INTO headache_episodes (
                 user_id, start_time, intensity, location, pain_type, symptoms,
-                medication, status, followup_due_at, followup_sent
+                medication, medication_relief, status, followup_due_at, followup_sent
             ) VALUES (
-                $1, $2, $3, $4, $5, $6::jsonb, $7, 'active',
+                $1, $2, $3, $4, $5, $6::jsonb, $7, $8, 'active',
                 NOW() + INTERVAL '2 hours', FALSE
             )
             RETURNING id;
-        """, user_id, start_time, intensity, location, pain_type, symptoms_json, medication)
+        """, user_id, start_time, intensity, location, pain_type, symptoms_json, medication, medication_relief)
         return row["id"]
 
 

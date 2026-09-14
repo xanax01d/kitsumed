@@ -178,7 +178,12 @@ def generate_csv(episodes: List[Dict[str, Any]]) -> bytes:
         loc = LOCATION_MAP_CLEAN.get(ep.get("location"), clean_text_for_pdf(ep.get("location") or "-"))
         pt = PAIN_TYPE_MAP_CLEAN.get(ep.get("pain_type"), clean_text_for_pdf(ep.get("pain_type") or "-"))
         sym = _format_symptoms(ep.get("symptoms"), clean=True)
-        med = MEDICATION_MAP_CLEAN.get(ep.get("medication"), clean_text_for_pdf(ep.get("medication") or "-"))
+        med_val = ep.get("medication")
+        med = MEDICATION_MAP_CLEAN.get(med_val, clean_text_for_pdf(med_val or "-"))
+        relief = ep.get("medication_relief")
+        if relief and med != "Не принимались" and med != "-":
+            relief_map = {"helped": " (помогло)", "partially": " (частично)", "not_helped": " (не помогло)"}
+            med += relief_map.get(relief, "")
         dur = _calculate_duration(ep.get("start_time", ""), ep.get("end_time"))
         status_str = "Завершен" if ep.get("status") == "completed" else "Активен"
 
@@ -311,7 +316,12 @@ def generate_pdf(episodes: List[Dict[str, Any]], user_title: str = "Пациен
         loc = LOCATION_MAP_CLEAN.get(ep.get("location"), clean_text_for_pdf(ep.get("location") or "-"))
         pt = PAIN_TYPE_MAP_CLEAN.get(ep.get("pain_type"), clean_text_for_pdf(ep.get("pain_type") or "-"))
         sym = _format_symptoms(ep.get("symptoms"), clean=True)
-        med = MEDICATION_MAP_CLEAN.get(ep.get("medication"), clean_text_for_pdf(ep.get("medication") or "-"))
+        med_val = ep.get("medication")
+        med = MEDICATION_MAP_CLEAN.get(med_val, clean_text_for_pdf(med_val or "-"))
+        relief = ep.get("medication_relief")
+        if relief and med != "Не принимались" and med != "-":
+            relief_map = {"helped": " (помогло)", "partially": " (частично)", "not_helped": " (не помогло)"}
+            med += relief_map.get(relief, "")
         dur = _calculate_duration(ep.get("start_time", ""), ep.get("end_time"))
         intensity = ep.get("intensity", "")
 
