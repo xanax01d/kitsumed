@@ -48,6 +48,8 @@ MESSAGES = {
     "step_4_title": "<b>Pain Type</b>\nLocation: <b>{loc_text}</b>",
     "step_5_title": "<b>Associated Symptoms</b>\nType: <b>{pt_text}</b>",
     "step_6_title": "<b>Medication Taken</b>\nEnter drug name and dosage or select an option below:",
+    "med_time_question": "<b>When did you take the medication ({medication}) relative to headache onset?</b>",
+    "relief_time_question": "<b>How long after taking the pill did the pain completely subside?</b>",
 
     # Intensity labels
     "intensity_mild": "Mild",
@@ -58,6 +60,9 @@ MESSAGES = {
     # Summary
     "summary_title": "<b>Episode Summary</b>\n\n",
     "summary_time": "• Time: <code>{start_time}</code>\n",
+    "summary_time_resolved": "• Time: <code>{start_time} → {end_time}</code> ({duration})\n",
+    "summary_status_completed": "• Status: 🟢 Resolved (pain subsided)\n",
+    "summary_status_active": "• Status: 🔴 Active (episode ongoing)\n",
     "summary_pain": "• Pain: <b>{intensity}/10</b> ({level})\n",
     "summary_location": "• Location: {loc_text}\n",
     "summary_pain_type": "• Type: {pt_text}\n",
@@ -73,6 +78,7 @@ MESSAGES = {
     "action_cancelled": "Action cancelled.",
     "no_active_action": "No active action.",
     "saved_success": "<b>Episode saved</b> (#{episode_id})\n\nThe bot will automatically check in on you later.",
+    "saved_completed_success": "<b>Episode recorded and resolved</b> (#{episode_id})\n\n🟢 Duration: <code>{duration}</code>.\nGlad you are feeling better!",
 
     # Follow-up Flow (Pain resolution & Medication efficacy)
     "fu_no_active": "No active episode to check.",

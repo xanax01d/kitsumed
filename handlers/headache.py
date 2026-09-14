@@ -12,10 +12,13 @@ from aiogram.fsm.context import FSMContext
 from states.headache import HeadacheLogSG
 from keyboards.headache_kb import (
     TimeCallback, IntensityCallback, LocationCallback, PainTypeCallback,
-    SymptomCallback, MedicationCallback, MedicationReliefCallback, ConfirmCallback, NavCallback,
+    SymptomCallback, MedicationCallback, MedicationReliefCallback,
+    MedicationTimeCallback, ReliefTimeCallback,
+    ConfirmCallback, NavCallback,
     get_start_time_keyboard, get_intensity_keyboard, get_location_keyboard,
     get_pain_type_keyboard, get_symptoms_keyboard, get_medication_keyboard,
-    get_medication_relief_keyboard, get_confirm_keyboard, get_cancel_keyboard,
+    get_medication_time_keyboard, get_medication_relief_keyboard, get_relief_time_keyboard,
+    get_confirm_keyboard, get_cancel_keyboard,
     LOCATION_MAP, PAIN_TYPE_MAP, ALL_SYMPTOMS, MEDICATION_MAP
 )
 from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS, CANCEL_BUTTONS
@@ -46,6 +49,8 @@ def get_step_asset(step_name: str, lang: str = "ru") -> Path:
         "pain_type": "steps/pain_type.png",
         "symptoms": "steps/symptoms.png",
         "medication": "steps/medication.png",
+        "medication_time": "steps/medication.png",
+        "relief_time": "steps/saved.png",
         "confirm": "steps/confirm.png",
         "saved": "steps/saved.png",
     }
@@ -198,10 +203,74 @@ def step_6_text(lang: str = "ru") -> str:
     return get_text("step_6_title", lang)
 
 
+def step_med_time_text(med_name: str, lang: str = "ru") -> str:
+    med_map = get_medication_map(lang)
+    display_name = med_map.get(med_name, med_name)
+    return get_text("med_time_question", lang, medication=display_name)
+
+
 def step_med_relief_text(med_name: str, lang: str = "ru") -> str:
     med_map = get_medication_map(lang)
     display_name = med_map.get(med_name, med_name)
     return get_text("fu_med_question", lang, medication=display_name)
+
+
+def step_relief_time_text(lang: str = "ru") -> str:
+    return get_text("relief_time_question", lang)
+
+
+def _parse_delay_minutes(delay_val: Optional[str]) -> int:
+    if not delay_val:
+        return 0
+    val = str(delay_val).strip().lower()
+    if val.endswith("m"):
+        try:
+            return int(val[:-1])
+        except ValueError:
+            return 0
+    elif val.endswith("h"):
+        try:
+            return int(val[:-1]) * 60
+        except ValueError:
+            return 0
+    try:
+        return int(val)
+    except ValueError:
+        return 0
+
+
+def _calculate_end_time_and_duration(start_time_str: str, total_minutes: int, lang: str = "ru") -> tuple[str, str]:
+    try:
+        dt_start = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M")
+    except Exception:
+        try:
+            today = datetime.now().date()
+            t = datetime.strptime(start_time_str, "%H:%M").time()
+            dt_start = datetime.combine(today, t)
+        except Exception:
+            dt_start = datetime.now() - timedelta(minutes=total_minutes)
+
+    dt_end = dt_start + timedelta(minutes=total_minutes)
+    end_time_str = dt_end.strftime("%Y-%m-%d %H:%M")
+
+    hours = total_minutes // 60
+    mins = total_minutes % 60
+    if lang == "en":
+        if hours > 0 and mins > 0:
+            duration_str = f"{hours}h {mins}m"
+        elif hours > 0:
+            duration_str = f"{hours}h"
+        else:
+            duration_str = f"{mins}m"
+    else:
+        if hours > 0 and mins > 0:
+            duration_str = f"{hours} ч {mins} мин"
+        elif hours > 0:
+            duration_str = f"{hours} ч"
+        else:
+            duration_str = f"{mins} мин"
+
+    return end_time_str, duration_str
 
 
 def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
@@ -239,9 +308,24 @@ def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
             elif med_relief == "not_helped":
                 med_text += f" ({get_text('fu_med_not_helped', lang)})"
 
+    is_completed = data.get("status") == "completed"
+    if is_completed and data.get("end_time"):
+        time_section = get_text(
+            "summary_time_resolved",
+            lang,
+            start_time=data.get('start_time', '—'),
+            end_time=data.get('end_time', '—'),
+            duration=data.get('duration', '—')
+        )
+        status_section = get_text("summary_status_completed", lang)
+    else:
+        time_section = get_text("summary_time", lang, start_time=data.get('start_time', '—'))
+        status_section = get_text("summary_status_active", lang)
+
     return (
         get_text("summary_title", lang) +
-        get_text("summary_time", lang, start_time=data.get('start_time', '—')) +
+        status_section +
+        time_section +
         get_text("summary_pain", lang, intensity=intensity, level=level) +
         get_text("summary_location", lang, loc_text=loc_text) +
         get_text("summary_pain_type", lang, pt_text=pt_text) +
@@ -319,14 +403,24 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
     if current_state_str == HeadacheLogSG.confirm.state:
         med_val = data.get("medication", "none")
         if med_val and med_val != "none":
-            await state.set_state(HeadacheLogSG.medication_relief)
-            await show_or_edit_step(
-                callback,
-                get_step_asset("medication", lang),
-                step_med_relief_text(med_val, lang),
-                get_medication_relief_keyboard(lang)
-            )
-            return
+            if data.get("status") == "completed" or data.get("medication_relief") == "helped":
+                await state.set_state(HeadacheLogSG.relief_time)
+                await show_or_edit_step(
+                    callback,
+                    get_step_asset("relief_time", lang),
+                    step_relief_time_text(lang),
+                    get_relief_time_keyboard(lang)
+                )
+                return
+            else:
+                await state.set_state(HeadacheLogSG.medication_relief)
+                await show_or_edit_step(
+                    callback,
+                    get_step_asset("medication", lang),
+                    step_med_relief_text(med_val, lang),
+                    get_medication_relief_keyboard(lang)
+                )
+                return
         else:
             await state.set_state(HeadacheLogSG.medication)
             await show_or_edit_step(
@@ -337,8 +431,32 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
             )
             return
 
-    # Special handling for medication_relief step: go back to medication
+    # Special handling for relief_time step: go back to medication_relief
+    if current_state_str == HeadacheLogSG.relief_time.state:
+        med_val = data.get("medication", "")
+        await state.set_state(HeadacheLogSG.medication_relief)
+        await show_or_edit_step(
+            callback,
+            get_step_asset("medication", lang),
+            step_med_relief_text(med_val, lang),
+            get_medication_relief_keyboard(lang)
+        )
+        return
+
+    # Special handling for medication_relief step: go back to medication_time
     if current_state_str == HeadacheLogSG.medication_relief.state:
+        med_val = data.get("medication", "")
+        await state.set_state(HeadacheLogSG.medication_time)
+        await show_or_edit_step(
+            callback,
+            get_step_asset("medication_time", lang),
+            step_med_time_text(med_val, lang),
+            get_medication_time_keyboard(lang)
+        )
+        return
+
+    # Special handling for medication_time step: go back to medication
+    if current_state_str == HeadacheLogSG.medication_time.state:
         await state.set_state(HeadacheLogSG.medication)
         await show_or_edit_step(
             callback,
@@ -599,7 +717,16 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
 
     if callback_data.value == "none":
         # None taken -> advance straight to confirmation
-        await state.update_data(medication="none", medication_relief=None)
+        await state.update_data(
+            medication="none",
+            medication_relief=None,
+            med_take_delay=None,
+            relief_delay=None,
+            status="active",
+            pain_resolved=False,
+            end_time=None,
+            duration=None,
+        )
         data = await state.get_data()
         await state.set_state(HeadacheLogSG.confirm)
         await show_or_edit_step(
@@ -609,15 +736,15 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
             get_confirm_keyboard(lang)
         )
     else:
-        # A medication was selected -> ask if it helped!
+        # A medication was selected -> ask when it was taken relative to pain onset!
         med_val = callback_data.value
         await state.update_data(medication=med_val)
-        await state.set_state(HeadacheLogSG.medication_relief)
+        await state.set_state(HeadacheLogSG.medication_time)
         await show_or_edit_step(
             callback,
-            get_step_asset("medication", lang),
-            step_med_relief_text(med_val, lang),
-            get_medication_relief_keyboard(lang)
+            get_step_asset("medication_time", lang),
+            step_med_time_text(med_val, lang),
+            get_medication_time_keyboard(lang)
         )
 
 
@@ -628,16 +755,35 @@ async def process_medication_input(message: Message, state: FSMContext):
     lang = data.get("lang") or await get_user_language(message.from_user.id)
 
     await state.update_data(medication=med_name)
-    await state.set_state(HeadacheLogSG.medication_relief)
+    await state.set_state(HeadacheLogSG.medication_time)
     await show_or_edit_step(
         message,
+        get_step_asset("medication_time", lang),
+        step_med_time_text(med_name, lang),
+        get_medication_time_keyboard(lang)
+    )
+
+
+# --- Step 6b: Medication Intake Time ---
+@router.callback_query(HeadacheLogSG.medication_time, MedicationTimeCallback.filter())
+async def process_medication_time(callback: CallbackQuery, callback_data: MedicationTimeCallback, state: FSMContext):
+    await callback.answer()
+    delay_val = callback_data.value
+    await state.update_data(med_take_delay=delay_val)
+    data = await state.get_data()
+    lang = data.get("lang") or await get_user_language(callback.from_user.id)
+    med_name = data.get("medication", "")
+
+    await state.set_state(HeadacheLogSG.medication_relief)
+    await show_or_edit_step(
+        callback,
         get_step_asset("medication", lang),
         step_med_relief_text(med_name, lang),
         get_medication_relief_keyboard(lang)
     )
 
 
-# --- Step 6b: Medication Relief ---
+# --- Step 6c: Medication Relief ---
 @router.callback_query(HeadacheLogSG.medication_relief, MedicationReliefCallback.filter())
 async def process_medication_relief(callback: CallbackQuery, callback_data: MedicationReliefCallback, state: FSMContext):
     await callback.answer()
@@ -646,6 +792,55 @@ async def process_medication_relief(callback: CallbackQuery, callback_data: Medi
     data = await state.get_data()
     lang = data.get("lang") or await get_user_language(callback.from_user.id)
 
+    if relief_val == "helped":
+        # Pain relieved -> ask how long after taking medication
+        await state.set_state(HeadacheLogSG.relief_time)
+        await show_or_edit_step(
+            callback,
+            get_step_asset("relief_time", lang),
+            step_relief_time_text(lang),
+            get_relief_time_keyboard(lang)
+        )
+    else:
+        # Not helped / partially helped -> remains active episode
+        await state.update_data(
+            status="active",
+            pain_resolved=False,
+            relief_delay=None,
+            end_time=None,
+            duration=None,
+        )
+        data = await state.get_data()
+        await state.set_state(HeadacheLogSG.confirm)
+        await show_or_edit_step(
+            callback,
+            get_step_asset("confirm", lang),
+            format_summary(data, lang),
+            get_confirm_keyboard(lang)
+        )
+
+
+# --- Step 6d: Relief Duration & Calculation ---
+@router.callback_query(HeadacheLogSG.relief_time, ReliefTimeCallback.filter())
+async def process_relief_time(callback: CallbackQuery, callback_data: ReliefTimeCallback, state: FSMContext):
+    await callback.answer()
+    relief_delay = callback_data.value
+    data = await state.get_data()
+    lang = data.get("lang") or await get_user_language(callback.from_user.id)
+
+    med_take_delay = data.get("med_take_delay", "0m")
+    total_minutes = _parse_delay_minutes(med_take_delay) + _parse_delay_minutes(relief_delay)
+    start_time_str = data.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
+    end_time_str, duration_str = _calculate_end_time_and_duration(start_time_str, total_minutes, lang)
+
+    await state.update_data(
+        relief_delay=relief_delay,
+        status="completed",
+        pain_resolved=True,
+        end_time=end_time_str,
+        duration=duration_str,
+    )
+    data = await state.get_data()
     await state.set_state(HeadacheLogSG.confirm)
     await show_or_edit_step(
         callback,
@@ -685,7 +880,15 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
     episode_id = await create_episode(callback.from_user.id, data)
     await state.clear()
 
-    saved_text = get_text("saved_success", lang, episode_id=episode_id)
+    if data.get("status") == "completed":
+        saved_text = get_text(
+            "saved_completed_success",
+            lang,
+            episode_id=episode_id,
+            duration=data.get("duration", "—")
+        )
+    else:
+        saved_text = get_text("saved_success", lang, episode_id=episode_id)
 
     await show_or_edit_step(
         callback,
