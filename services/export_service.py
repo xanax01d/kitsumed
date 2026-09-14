@@ -27,14 +27,25 @@ LOCATION_MAP_CLEAN = {
     "forehead_temples": "Лоб и виски",
     "back_head": "Затылок",
     "diffuse": "Вся голова",
+    "forehead": "Лоб",
+    "temple_right": "Висок справа",
+    "temple_left": "Висок слева",
+    "temple_both": "Виски с обеих сторон",
+    "one_half": "Половина головы",
+    "all_head": "Вся голова",
+    "crown": "Макушка",
+    "eyes": "Область глаз",
+    "neck": "Шея",
 }
 
 PAIN_TYPE_MAP_CLEAN = {
     "throbbing": "Пульсирующая",
+    "pulsating": "Пульсирующая",
     "pressing": "Давящая / сжимающая",
     "bursting": "Распирающая",
     "stabbing": "Колющая / прострелы",
     "dull": "Тупая / ноющая",
+    "burning": "Жгучая",
 }
 
 ALL_SYMPTOMS_CLEAN = {
@@ -45,12 +56,16 @@ ALL_SYMPTOMS_CLEAN = {
     "aura": "Зрительная аура",
     "dizziness": "Головокружение",
     "odor": "Чувствительность к запахам",
+    "osmophobia": "Чувствительность к запахам",
+    "none": "Без сопутствующих симптомов",
 }
 
 MEDICATION_MAP_CLEAN = {
     "triptan": "Триптан (Суматриптан, Зомиг)",
     "nsaid": "НПВП (Ибупрофен, Напроксен, Нурофен)",
     "analgesic": "Анальгетик / Спазмолитик",
+    "paracetamol": "Парацетамол",
+    "citramon": "Цитрамон",
     "custom": "Другое",
     "none": "Не принимались",
 }

@@ -18,12 +18,13 @@ from keyboards.reminder_kb import (
     get_tz_label,
     get_tz_local_time,
 )
-from keyboards.main_menu import get_main_menu_keyboard
+from keyboards.main_menu import get_main_menu_keyboard, REMINDER_BUTTONS
 from keyboards.headache_kb import get_start_time_keyboard
 from states.reminder import ReminderSG
 from states.headache import HeadacheLogSG
 from handlers.headache import show_or_edit_step, IMG_FLOW, step_1_text
-from db import get_user_reminder, set_user_reminder, upsert_user
+from db import get_user_reminder, set_user_reminder, upsert_user, get_user_language
+from locales import get_text
 
 router = Router()
 
@@ -68,37 +69,42 @@ def resolve_timezone(input_str: str) -> Optional[str]:
     return None
 
 
-def _format_reminder_text(reminder_time: str, enabled: bool, tz_name: str = "Europe/Moscow") -> str:
-    status_str = "Включен" if enabled else "Отключен"
+def _format_reminder_text(reminder_time: str, enabled: bool, tz_name: str = "Europe/Moscow", lang: str = "ru") -> str:
+    status_str = get_text("reminder_status_enabled", lang) if enabled else get_text("reminder_status_disabled", lang)
     tz_label = get_tz_label(tz_name)
     local_time = get_tz_local_time(tz_name)
-    return (
-        "<b>Ежедневный опрос</b>\n\n"
-        f"• Статус: <b>{status_str}</b>\n"
-        f"• Время: <b>{reminder_time}</b>\n"
-        f"• Пояс: {tz_label} (сейчас {local_time})"
+    return get_text(
+        "reminder_title",
+        lang,
+        status_str=status_str,
+        reminder_time=reminder_time,
+        tz_label=tz_label,
+        local_time=local_time,
     )
 
 
-def _format_timezone_text(tz_name: str) -> str:
+def _format_timezone_text(tz_name: str, lang: str = "ru") -> str:
     tz_label = get_tz_label(tz_name)
     local_time = get_tz_local_time(tz_name)
-    return (
-        "<b>Часовой пояс</b>\n\n"
-        f"• Пояс: <b>{tz_label}</b>\n"
-        f"• Местное время: <b>{local_time}</b>"
+    return get_text(
+        "tz_menu_title",
+        lang,
+        tz_label=tz_label,
+        local_time=local_time,
     )
 
 
 @router.message(Command("reminder"))
 @router.message(Command("remind"))
 @router.message(Command("settings"))
-@router.message(F.text == "⏰ Напоминания")
+@router.message(F.text.in_(REMINDER_BUTTONS))
 async def show_reminder_settings(message: Message):
     user = message.from_user
+    lang = "ru"
     if user:
         await upsert_user(user.id, user.username, user.first_name)
         rem = await get_user_reminder(user.id)
+        lang = await get_user_language(user.id)
     else:
         rem = {"reminder_time": "21:00", "reminder_enabled": True, "timezone": "Europe/Moscow"}
 
@@ -106,7 +112,7 @@ async def show_reminder_settings(message: Message):
     r_enabled = rem.get("reminder_enabled", True)
     r_tz = rem.get("timezone", "Europe/Moscow")
 
-    text = _format_reminder_text(r_time, r_enabled, r_tz)
+    text = _format_reminder_text(r_time, r_enabled, r_tz, lang)
     keyboard = get_reminder_settings_keyboard(r_time, r_enabled, r_tz)
     await message.answer(text=text, reply_markup=keyboard)
 
