@@ -553,14 +553,31 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNone(mc.get_cached_file_id(unknown_path))
                 self.assertIsInstance(mc.get_photo_source(unknown_path), FSInputFile)
 
-                # Test extract_and_record
-                mock_msg = MagicMock()
-                mock_photo = MagicMock(spec=PhotoSize)
-                mock_photo.file_id = "extracted_file_id_999"
-                mock_msg.photo = [mock_photo]
+                # Test hash invalidation and no-collision
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tf:
+                    tf.write(b"original_image_bytes")
+                    temp_p = Path(tf.name)
+                try:
+                    mc.record_photo_file_id(temp_p, "file_id_version_1")
+                    self.assertEqual(mc.get_cached_file_id(temp_p), "file_id_version_1")
 
-                mc.extract_and_record(unknown_path, mock_msg)
-                self.assertEqual(mc.get_cached_file_id(unknown_path), "extracted_file_id_999")
+                    # Modify the file content on disk
+                    with open(temp_p, "wb") as f:
+                        f.write(b"modified_new_design_image_bytes")
+
+                    # Hash mismatch must invalidate cached file_id and return None
+                    self.assertIsNone(mc.get_cached_file_id(temp_p))
+
+                    # Test cross-locale collision prevention
+                    ru_path = mc.ASSETS_DIR / "ru" / "steps" / "pain_scale.png"
+                    en_path = mc.ASSETS_DIR / "en" / "steps" / "pain_scale.png"
+                    mc.record_photo_file_id(ru_path, "ru_file_id_abc")
+                    # en_path must not resolve to ru_file_id_abc
+                    self.assertNotEqual(mc.get_cached_file_id(en_path), "ru_file_id_abc")
+                finally:
+                    if temp_p.exists():
+                        temp_p.unlink()
         finally:
             mc._FILE_ID_CACHE = orig_cache
 
