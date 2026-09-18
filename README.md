@@ -65,7 +65,7 @@
 ## 🌟 Основные возможности
 
 ### 1. ⏱ Пошаговый FSM-опросник с динамической сменой карточек
-- **Интерактивные переходы (`edit_media`)**: На каждом из этапов опросника в сообщении мгновенно и плавно меняется минималистичная медицинская иллюстрация (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) в выбранной локали (RU/EN).
+- **Интерактивные переходы (`edit_media`)**: На каждом из этапов опросника в сообщении мгновенно и плавно сменяются высокотехнологичные визуальные карточки (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `triggers.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) в выбранной локали (RU/EN).
 - **Время начала**: Быстрые пресеты (*Прямо сейчас, 30 минут назад, 1 час, 2 часа назад*) или ввод точного времени вручную (`ЧЧ:ММ` или `ГГГГ-ММ-ДД ЧЧ:ММ`).
 - **Шкала боли (1–10)**: Интуитивная градация от едва ощутимой (1) до невыносимой (10).
 - **Локализация**: Слева, справа, с обеих сторон, лоб и виски, затылок, диффузная боль (вся голова).
@@ -148,6 +148,65 @@
   <img src="assets/images/ru/flow_diagram.png" alt="Сценарий работы Migrebot" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
 </div>
 
+<br>
+
+### 🖼 Визуальная галерея экранов и карточек опросника
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>⏱ Шаг 1: Время начала приступа</b><br>
+      <img src="assets/images/ru/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📊 Шаг 2: Шкала интенсивности боли (1–10)</b><br>
+      <img src="assets/images/ru/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🎯 Шаг 3: Локализация цефалгии</b><br>
+      <img src="assets/images/ru/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>⚡️ Шаг 4: Характер боли</b><br>
+      <img src="assets/images/ru/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🩺 Шаг 5: Сопутствующие симптомы и аура</b><br>
+      <img src="assets/images/ru/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🌪 Шаг 6: Провоцирующие триггеры</b><br>
+      <img src="assets/images/ru/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>💊 Шаг 7: Препараты и дозировка</b><br>
+      <img src="assets/images/ru/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🛡 Шаг 8: Сводка и подтверждение</b><br>
+      <img src="assets/images/ru/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>📅 Календарь и аналитика приступов</b><br>
+      <img src="assets/images/ru/history.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📥 Клинический отчет для врача (PDF & CSV)</b><br>
+      <img src="assets/images/ru/export.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+</table>
+</div>
+
 ---
 
 ## ⌨️ Команды и навигация
@@ -187,7 +246,7 @@
 migrebot_analog/
 ├── assets/
 │   ├── fonts/             # TrueType шрифты (DejaVuSans, VL-Gothic для CJK/кириллицы)
-│   ├── images/            # Минималистичные медицинские схемы и карточки (28 шт.)
+│   ├── images/            # Высокотехнологичные медицинские схемы и карточки (30 шт.)
 │   │   ├── ru/            # Локализованные ассеты на русском (hero, diagrams, history, export, steps)
 │   │   └── en/            # Локализованные ассеты на английском (hero, diagrams, history, export, steps)
 │   └── image_cache.json   # Постоянный реестр Telegram file_id с MD5-хэшами файлов
@@ -317,7 +376,7 @@ python3 -m unittest discover -s tests -v
 | `test_format_episode_card_no_raw_vomiting` | 🌐 Локализация | Отсутствие утечек сырых кодов в карточках приступов во всех языках |
 | `test_language_handler_and_switching` | 🌐 Локализация | Вызов `/language`, выбор языка, сохранение в БД и корректное переключение интерфейса |
 | `test_media_cache_functions` | ⚡️ Кэш медиа | Сохранение/получение `file_id`, прозрачный fallback на `FSInputFile`, инвалидация по MD5-хэшу и изоляция локалей |
-| `test_localized_assets` | 🎨 Медиа-ассеты | Проверка наличия и точных габаритов (1376×768) всех 28 ассетов в RU и EN директориях |
+| `test_localized_assets` | 🎨 Медиа-ассеты | Проверка наличия и точных габаритов (1376×768) всех 30 ассетов в RU и EN директориях |
 | `test_csv_and_pdf_generation` | 📄 Экспорт | Сборка медицинского PDF-отчета (ReportLab Landscape A4) и CSV таблицы с колонкой триггеров без ошибок |
 | `test_cjk_and_nickname_export` | 📄 Экспорт | Поддержка кириллицы, латиницы, CJK-иероглифов и никнеймов шрифтовым стеком `VL-Gothic` |
 | `test_redis_fsm_storage_config` | 🗄 Хранилища | Изоляция ключей состояний FSM в Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
