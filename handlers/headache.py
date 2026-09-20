@@ -52,7 +52,9 @@ def format_summary(data: Dict[str, Any]) -> str:
     else:
         symptoms_str = ", ".join(ALL_SYMPTOMS.get(s, s) for s in symptoms_list)
 
-    med_val = data.get("medication", "none")
+    med_val = data.get("medication", "Не принимались")
+    if med_val == "none":
+        med_val = "Не принимались"
     med_text = MEDICATION_MAP.get(med_val, med_val)
 
     return (
@@ -129,7 +131,10 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
     elif current_state == HeadacheLogSG.confirm.state:
         await state.set_state(HeadacheLogSG.medication)
         await callback.message.edit_text(
-            "💊 <b>Принимали ли вы лекарство?</b>",
+            "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
+            "<i>(Например: <code>Ибупрофен 400 мг</code>, <code>Суматриптан 50 мг</code>, "
+            "<code>Цитрамон 1 таб</code>)</i>\n\n"
+            "Если вы ничего не принимали, нажмите кнопку ниже:",
             reply_markup=get_medication_keyboard()
         )
 
@@ -282,40 +287,32 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
     elif action == "done":
         await state.set_state(HeadacheLogSG.medication)
         await callback.message.edit_text(
-            "💊 <b>Принимали ли вы лекарство?</b>",
+            "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
+            "<i>(Например: <code>Ибупрофен 400 мг</code>, <code>Суматриптан 50 мг</code>, "
+            "<code>Цитрамон 1 таб</code>)</i>\n\n"
+            "Если вы ничего не принимали, нажмите кнопку ниже:",
             reply_markup=get_medication_keyboard()
         )
 
     await callback.answer()
 
 
-# --- Step 6: Medication ---
+# --- Step 6: Medication (Manual entry + skip button) ---
 @router.callback_query(HeadacheLogSG.medication, MedicationCallback.filter())
-async def process_medication(callback: CallbackQuery, callback_data: MedicationCallback, state: FSMContext):
-    med_val = callback_data.value
-
-    if med_val == "custom":
-        await state.set_state(HeadacheLogSG.custom_medication)
+async def process_medication_skip(callback: CallbackQuery, callback_data: MedicationCallback, state: FSMContext):
+    if callback_data.value == "none":
+        await state.update_data(medication="Не принимались")
+        data = await state.get_data()
+        await state.set_state(HeadacheLogSG.confirm)
         await callback.message.edit_text(
-            "✍️ <b>Введите название лекарства и дозировку</b> текстом:\n"
-            "<i>(Например: <code>Ибупрофен 400 мг</code> или <code>Суматриптан 50 мг</code>)</i>",
-            reply_markup=get_cancel_keyboard()
+            format_summary(data),
+            reply_markup=get_confirm_keyboard()
         )
-        await callback.answer()
-        return
-
-    await state.update_data(medication=med_val)
-    data = await state.get_data()
-    await state.set_state(HeadacheLogSG.confirm)
-    await callback.message.edit_text(
-        format_summary(data),
-        reply_markup=get_confirm_keyboard()
-    )
     await callback.answer()
 
 
-@router.message(HeadacheLogSG.custom_medication, F.text)
-async def process_custom_medication(message: Message, state: FSMContext):
+@router.message(HeadacheLogSG.medication, F.text)
+async def process_medication_input(message: Message, state: FSMContext):
     med_name = message.text.strip()
     await state.update_data(medication=med_name)
     data = await state.get_data()

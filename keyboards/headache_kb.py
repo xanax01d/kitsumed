@@ -166,22 +166,24 @@ def get_symptoms_keyboard(selected: Set[str] = None) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# 6. Medication Keyboard
+# 6. Medication Keyboard (Manual text input with skip option)
 MEDICATION_MAP = {
-    "none": "❌ Не принимал(а)",
-    "triptan": "💊 Триптан (Суматриптан, Золмитриптан...)",
-    "nsaid": "💊 НПВС (Ибупрофен, Напроксен, Нурофен...)",
-    "combined": "💊 Комбинированное (Цитрамон, Пенталгин...)",
-    "paracetamol": "💊 Парацетамол",
-    "custom": "✍️ Ввести другое название"
+    "none": "Не принимались",
 }
 
 def get_medication_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for manual medication entry step (optionally skip if no meds taken)."""
     builder = InlineKeyboardBuilder()
-    for key, label in MEDICATION_MAP.items():
-        builder.row(InlineKeyboardButton(text=label, callback_data=MedicationCallback(value=key).pack()))
+    builder.row(
+        InlineKeyboardButton(
+            text="❌ Не принимал(а) препараты",
+            callback_data=MedicationCallback(value="none").pack()
+        )
+    )
     add_navigation_buttons(builder, show_back=True, show_cancel=True)
     return builder.as_markup()
+
+get_manual_medication_keyboard = get_medication_keyboard
 
 
 # 7. Confirmation Keyboard
