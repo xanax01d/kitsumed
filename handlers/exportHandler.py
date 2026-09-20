@@ -50,6 +50,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         return
 
     fmt = callback_data.format
+    date_str = datetime.now().strftime("%Y%m%d_%H%M")
     name_parts = []
     if user.full_name and user.full_name.strip():
         name_parts.append(user.full_name.strip())
