@@ -27,11 +27,16 @@ async def cmd_export(message: Message):
         return
 
     text = (
-        f"📊 <b>Экспорт дневника приступов</b>\n\n"
-        f"Всего найдено записей: <b>{len(episodes)}</b>.\n"
+        "📥 <b>ЭКСПОРТ ДНЕВНИКА ДЛЯ ВРАЧА</b>\n\n"
+        f"Всего зафиксировано приступов: <b>{len(episodes)}</b>.\n"
         "Выберите желаемый формат для выгрузки:\n\n"
-        "• <b>PDF</b> — готовый медицинский отчет в виде таблицы (удобно распечатать или показать неврологу).\n"
-        "• <b>CSV</b> — таблица для Excel / Google Таблиц для самостоятельного анализа."
+        "📄 <b>Медицинский отчет (PDF)</b>\n"
+        "• Альбомный формат A4 со сводной клинической таблицей\n"
+        "• Включает силу боли, локализацию, тип, симптомы и препараты\n"
+        "• Готов для печати или отправки лечащему неврологу\n\n"
+        "📊 <b>Таблица данных (Excel / CSV)</b>\n"
+        "• Структурированная таблица (кодировка UTF-8 BOM, разделитель «;»)\n"
+        "• Удобно открывать в Excel, Numbers и Google Таблицах"
     )
     await message.answer(text, reply_markup=get_export_keyboard())
 
@@ -51,6 +56,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
 
     fmt = callback_data.format
     date_str = datetime.now().strftime("%Y%m%d_%H%M")
+    formatted_now = datetime.now().strftime("%d.%m.%Y %H:%M")
     name_parts = []
     if user.full_name and user.full_name.strip():
         name_parts.append(user.full_name.strip())
@@ -58,7 +64,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         name_parts.append(f"(@{user.username})")
     user_name = " ".join(name_parts) if name_parts else f"User {user.id}"
 
-    await callback.answer("⏳ Формирую файл...")
+    await callback.answer("⏳ Формирую отчет...")
 
     if fmt in ("csv", "both"):
         csv_bytes = generate_csv(episodes)
@@ -66,8 +72,11 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         csv_file = BufferedInputFile(csv_bytes, filename=csv_filename)
         await callback.message.answer_document(
             document=csv_file,
-            caption="📊 <b>Ваш дневник головных болей (CSV / Excel)</b>\n"
-                    "<i>Кодировка UTF-8 с BOM, разделитель «;» для корректного открытия в Excel.</i>"
+            caption=f"📊 <b>Дневник головных болей (Excel / CSV)</b>\n\n"
+                    f"▫️ Пациент: <b>{user_name}</b>\n"
+                    f"▫️ Записей в таблице: <b>{len(episodes)}</b>\n"
+                    f"▫️ Дата выгрузки: <code>{formatted_now}</code>\n\n"
+                    "<i>Разделитель «;», поддержка кириллицы (UTF-8 with BOM).</i>"
         )
 
     if fmt in ("pdf", "both"):
@@ -76,6 +85,9 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         pdf_file = BufferedInputFile(pdf_bytes, filename=pdf_filename)
         await callback.message.answer_document(
             document=pdf_file,
-            caption="📄 <b>Медицинский отчет по приступам (PDF)</b>\n"
-                    "<i>Формат A4 (альбомная ориентация), готов для показа врачу-неврологу.</i>"
+            caption=f"📄 <b>Медицинский отчет по приступам (PDF)</b>\n\n"
+                    f"▫️ Пациент: <b>{user_name}</b>\n"
+                    f"▫️ Записей в отчете: <b>{len(episodes)}</b>\n"
+                    f"▫️ Дата выгрузки: <code>{formatted_now}</code>\n\n"
+                    "<i>Формат A4 (альбомная ориентация), готов для показа врачу.</i>"
         )
