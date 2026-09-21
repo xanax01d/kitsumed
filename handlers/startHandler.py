@@ -13,6 +13,7 @@ from db import upsert_user, get_recent_episodes
 # Paths to localized Russian visual banners
 BANNER_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "hero_banner.png"
 FLOW_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "flow_diagram.png"
+DB_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "db_diagram.png"
 
 router = Router()
 
@@ -150,15 +151,45 @@ async def view_history(message: Message):
     episodes = await get_recent_episodes(user.id, limit=5)
 
     if not episodes:
-        await message.answer(
+        empty_text = (
             "📭 <b>В дневнике пока нет сохраненных записей о приступах.</b>\n\n"
-            "Чтобы добавить первую запись, нажмите <b>«🤕 Записать приступ»</b>.",
-            reply_markup=get_main_menu_keyboard()
+            "Чтобы добавить первую запись, нажмите <b>«🤕 Записать приступ»</b>."
         )
+        if DB_PATH.is_file():
+            try:
+                await message.answer_photo(
+                    photo=FSInputFile(str(DB_PATH)),
+                    caption=empty_text,
+                    reply_markup=get_main_menu_keyboard()
+                )
+                return
+            except Exception:
+                pass
+        await message.answer(empty_text, reply_markup=get_main_menu_keyboard())
         return
 
     cards = [_format_episode_card(ep) for ep in episodes]
     header = "📊 <b>ПОСЛЕДНИЕ ПРИСТУПЫ В ДНЕВНИКЕ:</b>\n\n"
     footer = "\n\n📥 <i>Для выгрузки всех записей нажмите «📥 Экспорт отчета».</i>"
+    full_text = header + "\n\n".join(cards) + footer
 
-    await message.answer(header + "\n\n".join(cards) + footer, reply_markup=get_main_menu_keyboard())
+    if DB_PATH.is_file():
+        try:
+            if len(full_text) <= 1024:
+                await message.answer_photo(
+                    photo=FSInputFile(str(DB_PATH)),
+                    caption=full_text,
+                    reply_markup=get_main_menu_keyboard()
+                )
+                return
+            else:
+                await message.answer_photo(
+                    photo=FSInputFile(str(DB_PATH)),
+                    caption="📊 <b>Дневник головных болей — История приступов</b>"
+                )
+                await message.answer(full_text, reply_markup=get_main_menu_keyboard())
+                return
+        except Exception:
+            pass
+
+    await message.answer(full_text, reply_markup=get_main_menu_keyboard())

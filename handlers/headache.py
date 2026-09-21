@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Set, Dict, Any
+from pathlib import Path
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, FSInputFile, InlineKeyboardMarkup
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
@@ -33,6 +34,56 @@ from keyboards.main_menu import get_main_menu_keyboard
 from db import create_episode, get_active_episode, finish_episode, upsert_user
 
 router = Router()
+
+# Paths to localized Russian images for every step
+BASE_IMG_DIR = Path(__file__).parent.parent / "assets" / "images" / "ru"
+IMG_HERO = BASE_IMG_DIR / "hero_banner.png"
+IMG_FLOW = BASE_IMG_DIR / "flow_diagram.png"
+IMG_PAIN_SCALE = BASE_IMG_DIR / "steps" / "pain_scale.png"
+IMG_LOCATION = BASE_IMG_DIR / "steps" / "location.png"
+IMG_PAIN_TYPE = BASE_IMG_DIR / "steps" / "pain_type.png"
+IMG_SYMPTOMS = BASE_IMG_DIR / "steps" / "symptoms.png"
+IMG_MEDICATION = BASE_IMG_DIR / "steps" / "medication.png"
+
+
+async def show_or_edit_step(
+    target: Message | CallbackQuery,
+    image_path: Path,
+    caption: str,
+    reply_markup: InlineKeyboardMarkup | None = None
+):
+    """Seamlessly updates or sends a step with image, caption and inline keyboard."""
+    if isinstance(target, CallbackQuery):
+        msg = target.message
+        if image_path.is_file():
+            try:
+                await msg.edit_media(
+                    media=InputMediaPhoto(media=FSInputFile(str(image_path)), caption=caption),
+                    reply_markup=reply_markup
+                )
+                return
+            except Exception:
+                try:
+                    await msg.edit_caption(caption=caption, reply_markup=reply_markup)
+                    return
+                except Exception:
+                    pass
+        try:
+            await msg.edit_text(text=caption, reply_markup=reply_markup)
+        except Exception:
+            await msg.answer(text=caption, reply_markup=reply_markup)
+    else:
+        if image_path.is_file():
+            try:
+                await target.answer_photo(
+                    photo=FSInputFile(str(image_path)),
+                    caption=caption,
+                    reply_markup=reply_markup
+                )
+                return
+            except Exception:
+                pass
+        await target.answer(text=caption, reply_markup=reply_markup)
 
 
 # --- Helpers for Visual Badges & Summary ---
@@ -186,44 +237,56 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
 
     if current_state == HeadacheLogSG.intensity.state:
         await state.set_state(HeadacheLogSG.start_time)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_FLOW,
             step_1_text(),
-            reply_markup=get_start_time_keyboard()
+            get_start_time_keyboard()
         )
     elif current_state == HeadacheLogSG.location.state:
         data = await state.get_data()
         await state.set_state(HeadacheLogSG.intensity)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_PAIN_SCALE,
             step_2_text(data.get("start_time", "")),
-            reply_markup=get_intensity_keyboard()
+            get_intensity_keyboard()
         )
     elif current_state == HeadacheLogSG.pain_type.state:
         data = await state.get_data()
         await state.set_state(HeadacheLogSG.location)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_LOCATION,
             step_3_text(data.get("intensity", 0)),
-            reply_markup=get_location_keyboard()
+            get_location_keyboard()
         )
     elif current_state == HeadacheLogSG.symptoms.state:
         data = await state.get_data()
         await state.set_state(HeadacheLogSG.pain_type)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_PAIN_TYPE,
             step_4_text(data.get("location", "")),
-            reply_markup=get_pain_type_keyboard()
+            get_pain_type_keyboard()
         )
     elif current_state == HeadacheLogSG.medication.state:
         data = await state.get_data()
         selected = set(data.get("symptoms", []))
         await state.set_state(HeadacheLogSG.symptoms)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_SYMPTOMS,
             step_5_text(data.get("pain_type", "")),
-            reply_markup=get_symptoms_keyboard(selected)
+            get_symptoms_keyboard(selected)
         )
     elif current_state == HeadacheLogSG.confirm.state:
         await state.set_state(HeadacheLogSG.medication)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_MEDICATION,
             step_6_text(),
-            reply_markup=get_medication_keyboard()
+            get_medication_keyboard()
         )
 
     await callback.answer()
@@ -249,9 +312,11 @@ async def start_headache_log(message: Message, state: FSMContext):
 
     await state.clear()
     await state.set_state(HeadacheLogSG.start_time)
-    await message.answer(
+    await show_or_edit_step(
+        message,
+        IMG_FLOW,
         step_1_text(),
-        reply_markup=get_start_time_keyboard()
+        get_start_time_keyboard()
     )
 
 
@@ -283,9 +348,11 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
 
     await state.update_data(start_time=time_str)
     await state.set_state(HeadacheLogSG.intensity)
-    await callback.message.edit_text(
+    await show_or_edit_step(
+        callback,
+        IMG_PAIN_SCALE,
         step_2_text(time_str),
-        reply_markup=get_intensity_keyboard()
+        get_intensity_keyboard()
     )
     await callback.answer()
 
@@ -295,9 +362,11 @@ async def process_custom_start_time(message: Message, state: FSMContext):
     time_str = message.text.strip()
     await state.update_data(start_time=time_str)
     await state.set_state(HeadacheLogSG.intensity)
-    await message.answer(
+    await show_or_edit_step(
+        message,
+        IMG_PAIN_SCALE,
         step_2_text(time_str),
-        reply_markup=get_intensity_keyboard()
+        get_intensity_keyboard()
     )
 
 
@@ -307,9 +376,11 @@ async def process_intensity(callback: CallbackQuery, callback_data: IntensityCal
     intensity = callback_data.value
     await state.update_data(intensity=intensity)
     await state.set_state(HeadacheLogSG.location)
-    await callback.message.edit_text(
+    await show_or_edit_step(
+        callback,
+        IMG_LOCATION,
         step_3_text(intensity),
-        reply_markup=get_location_keyboard()
+        get_location_keyboard()
     )
     await callback.answer()
 
@@ -320,9 +391,11 @@ async def process_location(callback: CallbackQuery, callback_data: LocationCallb
     loc_key = callback_data.value
     await state.update_data(location=loc_key)
     await state.set_state(HeadacheLogSG.pain_type)
-    await callback.message.edit_text(
+    await show_or_edit_step(
+        callback,
+        IMG_PAIN_TYPE,
         step_4_text(loc_key),
-        reply_markup=get_pain_type_keyboard()
+        get_pain_type_keyboard()
     )
     await callback.answer()
 
@@ -333,9 +406,11 @@ async def process_pain_type(callback: CallbackQuery, callback_data: PainTypeCall
     pt_key = callback_data.value
     await state.update_data(pain_type=pt_key, symptoms=[])
     await state.set_state(HeadacheLogSG.symptoms)
-    await callback.message.edit_text(
+    await show_or_edit_step(
+        callback,
+        IMG_SYMPTOMS,
         step_5_text(pt_key),
-        reply_markup=get_symptoms_keyboard(set())
+        get_symptoms_keyboard(set())
     )
     await callback.answer()
 
@@ -365,9 +440,11 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
 
     elif action == "done":
         await state.set_state(HeadacheLogSG.medication)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_MEDICATION,
             step_6_text(),
-            reply_markup=get_medication_keyboard()
+            get_medication_keyboard()
         )
 
     await callback.answer()
@@ -380,9 +457,11 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
         await state.update_data(medication="Не принимались")
         data = await state.get_data()
         await state.set_state(HeadacheLogSG.confirm)
-        await callback.message.edit_text(
+        await show_or_edit_step(
+            callback,
+            IMG_FLOW,
             format_summary(data),
-            reply_markup=get_confirm_keyboard()
+            get_confirm_keyboard()
         )
     await callback.answer()
 
@@ -393,9 +472,11 @@ async def process_medication_input(message: Message, state: FSMContext):
     await state.update_data(medication=med_name)
     data = await state.get_data()
     await state.set_state(HeadacheLogSG.confirm)
-    await message.answer(
+    await show_or_edit_step(
+        message,
+        IMG_FLOW,
         format_summary(data),
-        reply_markup=get_confirm_keyboard()
+        get_confirm_keyboard()
     )
 
 
@@ -415,14 +496,20 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
     episode_id = await create_episode(user.id, data)
     await state.clear()
 
-    await callback.message.edit_text(
-        f"✅ <b>Приступ успешно записан в дневник!</b> (Запись #{episode_id})\n\n"
+    saved_text = (
+        f"✅ <b>Приступ успешно сохранен в дневник!</b> (Запись #{episode_id})\n\n"
         "🧘‍♂️ <b>Рекомендации первой помощи:</b>\n"
-        "💧 Выпейте стакан чистой негазированной воды\n"
-        "🌑 Прилягте в затемненной и тихой проветренной комнате\n"
-        "❄️ Положите прохладный компресс на лоб или шею\n\n"
-        "Когда головная боль стихнет, нажмите <b>«⏹ Завершить приступ»</b> в меню ниже, чтобы зафиксировать продолжительность.",
-        reply_markup=None
+        "💧 Выпейте стакан чистой воды\n"
+        "🌑 Отдохните в затемненной и тихой комнате\n"
+        "❄️ Приложите прохладный компресс на лоб или шею\n\n"
+        "Когда боль стихнет, нажмите кнопку <b>«⏹ Завершить приступ»</b>, чтобы зафиксировать продолжительность."
+    )
+
+    await show_or_edit_step(
+        callback,
+        IMG_HERO,
+        saved_text,
+        None
     )
     await callback.message.answer(
         "Вы можете в любой момент посмотреть историю или зафиксировать окончание боли через меню ниже:",
@@ -461,11 +548,21 @@ async def cmd_finish_episode(message: Message):
     except Exception:
         duration_str = "не рассчитана"
 
-    await message.answer(
+    finish_text = (
         "🎉 <b>Приступ успешно завершен!</b>\n\n"
         f"⏱ <b>Длительность:</b> <b>{duration_str}</b>\n"
         f"🗓 <b>Начало:</b> <code>{start_str}</code>\n"
         f"🏁 <b>Окончание:</b> <code>{end_time_str}</code>\n\n"
-        "<i>Данные зафиксированы в истории. Рады, что вам стало лучше! 💚</i>",
+        "<i>Данные зафиксированы в истории. Рады, что вам стало лучше! 💚</i>"
+    )
+
+    await show_or_edit_step(
+        message,
+        IMG_HERO,
+        finish_text,
+        None
+    )
+    await message.answer(
+        "Главное меню:",
         reply_markup=get_main_menu_keyboard()
     )

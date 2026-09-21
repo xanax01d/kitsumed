@@ -1,12 +1,15 @@
 from datetime import datetime
+from pathlib import Path
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from aiogram.filters import Command
 
 from db import get_all_episodes
 from keyboards.headache_kb import get_export_keyboard, ExportCallback
 from keyboards.main_menu import get_main_menu_keyboard
 from services import generate_csv, generate_pdf
+
+IMG_EXPORT = Path(__file__).parent.parent / "assets" / "images" / "ru" / "architecture_diagram.png"
 
 router = Router()
 
@@ -38,6 +41,18 @@ async def cmd_export(message: Message):
         "• Структурированная таблица (кодировка UTF-8 BOM, разделитель «;»)\n"
         "• Удобно открывать в Excel, Numbers и Google Таблицах"
     )
+
+    if IMG_EXPORT.is_file():
+        try:
+            await message.answer_photo(
+                photo=FSInputFile(str(IMG_EXPORT)),
+                caption=text,
+                reply_markup=get_export_keyboard()
+            )
+            return
+        except Exception:
+            pass
+
     await message.answer(text, reply_markup=get_export_keyboard())
 
 
