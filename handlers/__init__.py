@@ -1,3 +1,3 @@
-from . import startHandler, headache, exportHandler
+from . import startHandler, headache, exportHandler, reminderHandler
 
-__all__ = ["startHandler", "headache", "exportHandler"]
+__all__ = ["startHandler", "headache", "exportHandler", "reminderHandler"]
