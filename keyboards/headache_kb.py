@@ -211,12 +211,10 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# Cancel only keyboard for text input steps
-def get_cancel_keyboard() -> InlineKeyboardMarkup:
+# Cancel & Navigation keyboard for text input steps
+def get_cancel_keyboard(show_back: bool = True) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="❌ Отменить запись", callback_data=NavCallback(action="cancel").pack())
-    )
+    add_navigation_buttons(builder, show_back=show_back, show_cancel=True)
     return builder.as_markup()
 
 

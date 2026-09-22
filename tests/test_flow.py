@@ -10,6 +10,7 @@ from keyboards.headache_kb import (
     get_symptoms_keyboard,
     get_medication_keyboard,
     get_confirm_keyboard,
+    get_cancel_keyboard,
     get_export_keyboard,
     TimeCallback,
     IntensityCallback,
@@ -18,8 +19,11 @@ from keyboards.headache_kb import (
     SymptomCallback,
     MedicationCallback,
     ExportCallback,
+    NavCallback,
 )
 from keyboards.main_menu import get_main_menu_keyboard
+from states.headache import HeadacheLogSG
+from handlers.headache import callback_back, callback_cancel, cmd_cancel
 import db.database as db_mod
 from main import get_redis_client, get_fsm_storage
 from services import generate_csv, generate_pdf
@@ -220,6 +224,111 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         csv_text = csv_bytes.decode("utf-8-sig")
         self.assertIn("С обеих сторон", csv_text)
         self.assertIn("Тупая / ноющая", csv_text)
+
+    def test_nav_callbacks_packing(self):
+        cb_back = NavCallback(action="back").pack()
+        self.assertTrue(cb_back.startswith("hdn:back"))
+
+        cb_cancel = NavCallback(action="cancel").pack()
+        self.assertTrue(cb_cancel.startswith("hdn:cancel"))
+
+    def test_navigation_buttons_presence_in_keyboards(self):
+        def extract_nav_actions(kb):
+            actions = set()
+            for row in kb.inline_keyboard:
+                for btn in row:
+                    if btn.callback_data and btn.callback_data.startswith("hdn:"):
+                        action = btn.callback_data.split(":")[1]
+                        actions.add(action)
+            return actions
+
+        # 1. Start time has cancel, no back (first step)
+        start_actions = extract_nav_actions(get_start_time_keyboard())
+        self.assertIn("cancel", start_actions)
+        self.assertNotIn("back", start_actions)
+
+        # 2. Intensity has both back and cancel
+        int_actions = extract_nav_actions(get_intensity_keyboard())
+        self.assertIn("back", int_actions)
+        self.assertIn("cancel", int_actions)
+
+        # 3. Location has both back and cancel
+        loc_actions = extract_nav_actions(get_location_keyboard())
+        self.assertIn("back", loc_actions)
+        self.assertIn("cancel", loc_actions)
+
+        # 4. Pain type has both back and cancel
+        pt_actions = extract_nav_actions(get_pain_type_keyboard())
+        self.assertIn("back", pt_actions)
+        self.assertIn("cancel", pt_actions)
+
+        # 5. Symptoms has both back and cancel
+        sym_actions = extract_nav_actions(get_symptoms_keyboard(set()))
+        self.assertIn("back", sym_actions)
+        self.assertIn("cancel", sym_actions)
+
+        # 6. Medication has both back and cancel
+        med_actions = extract_nav_actions(get_medication_keyboard())
+        self.assertIn("back", med_actions)
+        self.assertIn("cancel", med_actions)
+
+        # 7. Confirmation has both back and cancel
+        conf_actions = extract_nav_actions(get_confirm_keyboard())
+        self.assertIn("back", conf_actions)
+        self.assertIn("cancel", conf_actions)
+
+        # 8. Cancel/text input keyboard has both back and cancel
+        cancel_actions = extract_nav_actions(get_cancel_keyboard(show_back=True))
+        self.assertIn("back", cancel_actions)
+        self.assertIn("cancel", cancel_actions)
+
+    async def test_navigation_back_fsm_transitions(self):
+        # Test back button transitions through all FSM steps
+        transitions = [
+            (HeadacheLogSG.custom_start_time.state, HeadacheLogSG.start_time),
+            (HeadacheLogSG.intensity.state, HeadacheLogSG.start_time),
+            (HeadacheLogSG.location.state, HeadacheLogSG.intensity),
+            (HeadacheLogSG.pain_type.state, HeadacheLogSG.location),
+            (HeadacheLogSG.symptoms.state, HeadacheLogSG.pain_type),
+            (HeadacheLogSG.medication.state, HeadacheLogSG.symptoms),
+            (HeadacheLogSG.confirm.state, HeadacheLogSG.medication),
+        ]
+
+        for from_state, expected_to_state in transitions:
+            mock_state = AsyncMock()
+            mock_state.get_state.return_value = from_state
+            mock_state.get_data.return_value = {
+                "start_time": "2026-09-13 22:00",
+                "intensity": 7,
+                "location": "left",
+                "pain_type": "throbbing",
+                "symptoms": ["nausea"]
+            }
+
+            mock_cb = AsyncMock()
+            mock_cb.message = AsyncMock()
+
+            await callback_back(mock_cb, mock_state)
+            mock_state.set_state.assert_called_with(expected_to_state)
+            mock_cb.answer.assert_called()
+
+    async def test_cancel_flow_clears_state(self):
+        # 1. Callback cancel
+        mock_state = AsyncMock()
+        mock_cb = AsyncMock()
+        mock_cb.message = AsyncMock()
+
+        await callback_cancel(mock_cb, mock_state)
+        mock_state.clear.assert_called_once()
+        mock_cb.answer.assert_called_once()
+
+        # 2. Text command cancel with active state
+        mock_state_cmd = AsyncMock()
+        mock_state_cmd.get_state.return_value = HeadacheLogSG.intensity.state
+        mock_msg = AsyncMock()
+
+        await cmd_cancel(mock_msg, mock_state_cmd)
+        mock_state_cmd.clear.assert_called_once()
 
 
 if __name__ == "__main__":

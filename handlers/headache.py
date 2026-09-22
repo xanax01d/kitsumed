@@ -219,13 +219,25 @@ async def cmd_cancel(message: Message, state: FSMContext):
         return
 
     await state.clear()
-    await message.answer("❌ Запись приступа отменена.", reply_markup=get_main_menu_keyboard())
+    await message.answer("❌ <b>Запись приступа отменена.</b>", reply_markup=get_main_menu_keyboard())
 
 
 @router.callback_query(NavCallback.filter(F.action == "cancel"))
 async def callback_cancel(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text("❌ Запись приступа отменена.")
+    try:
+        await callback.message.edit_caption(
+            caption="❌ <b>Запись приступа отменена.</b>",
+            reply_markup=None
+        )
+    except Exception:
+        try:
+            await callback.message.edit_text(
+                text="❌ <b>Запись приступа отменена.</b>",
+                reply_markup=None
+            )
+        except Exception:
+            pass
     await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
     await callback.answer()
 
@@ -235,7 +247,15 @@ async def callback_cancel(callback: CallbackQuery, state: FSMContext):
 async def callback_back(callback: CallbackQuery, state: FSMContext):
     current_state = await state.get_state()
 
-    if current_state == HeadacheLogSG.intensity.state:
+    if current_state == HeadacheLogSG.custom_start_time.state:
+        await state.set_state(HeadacheLogSG.start_time)
+        await show_or_edit_step(
+            callback,
+            IMG_FLOW,
+            step_1_text(),
+            get_start_time_keyboard()
+        )
+    elif current_state == HeadacheLogSG.intensity.state:
         await state.set_state(HeadacheLogSG.start_time)
         await show_or_edit_step(
             callback,
@@ -336,10 +356,15 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
         time_str = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M")
     elif preset == "custom":
         await state.set_state(HeadacheLogSG.custom_start_time)
-        await callback.message.edit_text(
-            "✍️ <b>Введите время начала приступа</b> текстом:\n"
-            "<i>(Например: <code>15:40</code> или <code>вчера в 21:00</code>)</i>",
-            reply_markup=get_cancel_keyboard()
+        custom_prompt = (
+            "✍️ <b>Введите время начала приступа</b> текстом в чат:\n\n"
+            "<i>(Например: <code>15:40</code> или <code>вчера в 21:00</code>)</i>"
+        )
+        await show_or_edit_step(
+            callback,
+            IMG_FLOW,
+            custom_prompt,
+            get_cancel_keyboard(show_back=True)
         )
         await callback.answer()
         return
@@ -485,7 +510,19 @@ async def process_medication_input(message: Message, state: FSMContext):
 async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCallback, state: FSMContext):
     if callback_data.action == "cancel":
         await state.clear()
-        await callback.message.edit_text("❌ Запись приступа отменена.")
+        try:
+            await callback.message.edit_caption(
+                caption="❌ <b>Запись приступа отменена.</b>",
+                reply_markup=None
+            )
+        except Exception:
+            try:
+                await callback.message.edit_text(
+                    text="❌ <b>Запись приступа отменена.</b>",
+                    reply_markup=None
+                )
+            except Exception:
+                pass
         await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
         await callback.answer()
         return
