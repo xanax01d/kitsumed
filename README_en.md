@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(7%2F7)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(11%2F11)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -28,6 +28,7 @@
   <a href="#-user-workflow--scenarios">🎮 Workflow</a> •
   <a href="#-tech-stack">🛠 Stack</a> •
   <a href="#-quick-start">⚙️ Quick Start</a> •
+  <a href="#-testing">🧪 Testing</a> •
   <a href="#-server-deployment-systemd">🚀 Deployment</a> •
   <a href="#-database-schema">📋 Database</a>
 </p>
@@ -189,15 +190,36 @@ POSTGRES_TIMEOUT=10.0
 POSTGRES_COMMAND_TIMEOUT=15.0
 ```
 
-### 3. Run Test Suite
+### 3. Start the Bot
+```bash
+python3 main.py
+```
+
+---
+
+## 🧪 Testing
+
+The repository contains an asynchronous unit test suite (`unittest.IsolatedAsyncioTestCase` with `AsyncMock` isolation) verifying the integrity of business logic, FSM transitions, navigation, database persistence, and export generation:
+
 ```bash
 python3 -m unittest tests/test_flow.py -v
 ```
 
-### 4. Start the Bot
-```bash
-python3 main.py
-```
+### Test Suite Structure (11 Tests):
+
+| Test | Category | Verified Functionality |
+| :--- | :--- | :--- |
+| `test_nav_callbacks_packing` | 🧭 Navigation | Callback data packing for `hdn:back` ("Back") and `hdn:cancel` ("Cancel") |
+| `test_navigation_buttons_presence_in_keyboards` | 🧭 Navigation | Verification of "Back" and "Cancel" buttons across all 8 questionnaire keyboards (including custom time entry) |
+| `test_navigation_back_fsm_transitions` | 🧭 Navigation | Step-by-step backward FSM state transitions (`confirm` ➔ `medication` ➔ `symptoms` ➔ `pain_type` ➔ `location` ➔ `intensity` ➔ `start_time`, `custom_start_time` ➔ `start_time`) |
+| `test_cancel_flow_clears_state` | 🧭 Navigation | Reliable FSM state clearing (`state.clear()`) on cancel button click and `/cancel` text command |
+| `test_callback_packing` | 🔘 Keyboards | Correct prefixes and serialization of callbacks for all questionnaire steps (time, intensity, location, pain type, symptoms, medication, export) |
+| `test_keyboards_structure` | 🔘 Keyboards | Validation of button layouts, captions, and callback payloads across all inline keyboards |
+| `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables without errors |
+| `test_cjk_and_nickname_export` | 📄 Export | Support for Cyrillic, Latin, CJK characters, and usernames via the `VL-Gothic` font stack |
+| `test_redis_fsm_storage_config` | 🗄 Storage | Key namespace isolation for FSM states in Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
+| `test_postgres_dsn_generation` | 🗄 Database | Proper PostgreSQL DSN connection string generation with timeout and SSL settings |
+| `test_postgres_db_lifecycle_mocked` | 🗄 Database | CRUD lifecycle: user profile registration, episode creation, history retrieval, and episode resolution |
 
 ---
 
