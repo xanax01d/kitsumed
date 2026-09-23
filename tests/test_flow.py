@@ -531,6 +531,41 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             mock_bot.send_message.assert_called_once()
             mock_mark.assert_called_once()
 
+    def test_media_cache_functions(self):
+        from pathlib import Path
+        import services.media_cache as mc
+        from aiogram.types import PhotoSize, FSInputFile
+
+        # Backup existing cache
+        orig_cache = dict(mc._FILE_ID_CACHE)
+        try:
+            with patch.object(mc, "save_media_cache"):
+                test_path = Path("/tmp/test_img.png")
+                mc.record_photo_file_id(test_path, "test_file_id_12345")
+
+                self.assertEqual(mc.get_cached_file_id(test_path), "test_file_id_12345")
+                self.assertEqual(mc.get_photo_source(test_path), "test_file_id_12345")
+
+                input_media = mc.get_input_media(test_path, caption="test caption")
+                self.assertEqual(input_media.media, "test_file_id_12345")
+                self.assertEqual(input_media.caption, "test caption")
+
+                # Test fallback for unknown file
+                unknown_path = Path("/tmp/unknown_img.png")
+                self.assertIsNone(mc.get_cached_file_id(unknown_path))
+                self.assertIsInstance(mc.get_photo_source(unknown_path), FSInputFile)
+
+                # Test extract_and_record
+                mock_msg = MagicMock()
+                mock_photo = MagicMock(spec=PhotoSize)
+                mock_photo.file_id = "extracted_file_id_999"
+                mock_msg.photo = [mock_photo]
+
+                mc.extract_and_record(unknown_path, mock_msg)
+                self.assertEqual(mc.get_cached_file_id(unknown_path), "extracted_file_id_999")
+        finally:
+            mc._FILE_ID_CACHE = orig_cache
+
 
 if __name__ == "__main__":
     unittest.main()

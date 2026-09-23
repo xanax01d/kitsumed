@@ -1,10 +1,12 @@
 import asyncio
 import logging
 import os
+import aiohttp
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from redis.asyncio import Redis
@@ -62,8 +64,13 @@ async def main() -> None:
     dp.include_router(exportHandler.router)
     dp.include_router(reminderHandler.router)
 
-    # 4. Create Bot instance
-    bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    # 4. Create Bot instance with connection pooling
+    session = AiohttpSession(limit=100)
+    bot = Bot(
+        token=token,
+        session=session,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     await bot.delete_webhook(drop_pending_updates=True)
 
     # 5. Start background reminder scheduler
@@ -81,6 +88,7 @@ async def main() -> None:
             pass
         await close_db()
         await redis_client.aclose()
+        await bot.session.close()
 
 
 if __name__ == "__main__":

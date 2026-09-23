@@ -32,6 +32,12 @@ from keyboards.headache_kb import (
 )
 from keyboards.main_menu import get_main_menu_keyboard
 from db import create_episode, get_active_episode, finish_episode, upsert_user
+from services.media_cache import (
+    get_input_media,
+    get_photo_source,
+    extract_and_record,
+    get_cached_file_id,
+)
 
 router = Router()
 
@@ -52,17 +58,28 @@ async def show_or_edit_step(
     caption: str,
     reply_markup: InlineKeyboardMarkup | None = None
 ):
-    """Seamlessly updates or sends a step with image, caption and inline keyboard."""
+    """Seamlessly updates or sends a step with cached image file_id, caption and inline keyboard."""
     if isinstance(target, CallbackQuery):
         msg = target.message
         if image_path.is_file():
+            # 1. Try fast path with cached file_id or InputMedia
+            media_obj = get_input_media(image_path, caption)
             try:
-                await msg.edit_media(
-                    media=InputMediaPhoto(media=FSInputFile(str(image_path)), caption=caption),
-                    reply_markup=reply_markup
-                )
+                res = await msg.edit_media(media=media_obj, reply_markup=reply_markup)
+                extract_and_record(image_path, res)
                 return
             except Exception:
+                # If cached file_id failed, retry once with raw file upload
+                if get_cached_file_id(image_path):
+                    try:
+                        res = await msg.edit_media(
+                            media=InputMediaPhoto(media=FSInputFile(str(image_path)), caption=caption),
+                            reply_markup=reply_markup
+                        )
+                        extract_and_record(image_path, res)
+                        return
+                    except Exception:
+                        pass
                 try:
                     await msg.edit_caption(caption=caption, reply_markup=reply_markup)
                     return
@@ -74,15 +91,28 @@ async def show_or_edit_step(
             await msg.answer(text=caption, reply_markup=reply_markup)
     else:
         if image_path.is_file():
+            photo_src = get_photo_source(image_path)
             try:
-                await target.answer_photo(
-                    photo=FSInputFile(str(image_path)),
+                res = await target.answer_photo(
+                    photo=photo_src,
                     caption=caption,
                     reply_markup=reply_markup
                 )
+                extract_and_record(image_path, res)
                 return
             except Exception:
-                pass
+                # Fallback to FSInputFile if cached file_id failed
+                if isinstance(photo_src, str):
+                    try:
+                        res = await target.answer_photo(
+                            photo=FSInputFile(str(image_path)),
+                            caption=caption,
+                            reply_markup=reply_markup
+                        )
+                        extract_and_record(image_path, res)
+                        return
+                    except Exception:
+                        pass
         await target.answer(text=caption, reply_markup=reply_markup)
 
 
@@ -224,6 +254,7 @@ async def cmd_cancel(message: Message, state: FSMContext):
 
 @router.callback_query(NavCallback.filter(F.action == "cancel"))
 async def callback_cancel(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     await state.clear()
     try:
         await callback.message.edit_caption(
@@ -239,12 +270,12 @@ async def callback_cancel(callback: CallbackQuery, state: FSMContext):
         except Exception:
             pass
     await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
-    await callback.answer()
 
 
 # --- Navigation Back Handler ---
 @router.callback_query(NavCallback.filter(F.action == "back"))
 async def callback_back(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     current_state = await state.get_state()
 
     if current_state == HeadacheLogSG.custom_start_time.state:
@@ -309,8 +340,6 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
             get_medication_keyboard()
         )
 
-    await callback.answer()
-
 
 # --- Entry Point: Start Logging ---
 @router.message(Command("log"))
@@ -343,6 +372,7 @@ async def start_headache_log(message: Message, state: FSMContext):
 # --- Step 1: Start Time ---
 @router.callback_query(HeadacheLogSG.start_time, TimeCallback.filter())
 async def process_start_time(callback: CallbackQuery, callback_data: TimeCallback, state: FSMContext):
+    await callback.answer()
     now = datetime.now()
     preset = callback_data.preset
 
@@ -366,7 +396,6 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
             custom_prompt,
             get_cancel_keyboard(show_back=True)
         )
-        await callback.answer()
         return
     else:
         time_str = now.strftime("%Y-%m-%d %H:%M")
@@ -379,7 +408,6 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
         step_2_text(time_str),
         get_intensity_keyboard()
     )
-    await callback.answer()
 
 
 @router.message(HeadacheLogSG.custom_start_time, F.text)
@@ -398,6 +426,7 @@ async def process_custom_start_time(message: Message, state: FSMContext):
 # --- Step 2: Intensity ---
 @router.callback_query(HeadacheLogSG.intensity, IntensityCallback.filter())
 async def process_intensity(callback: CallbackQuery, callback_data: IntensityCallback, state: FSMContext):
+    await callback.answer()
     intensity = callback_data.value
     await state.update_data(intensity=intensity)
     await state.set_state(HeadacheLogSG.location)
@@ -407,12 +436,12 @@ async def process_intensity(callback: CallbackQuery, callback_data: IntensityCal
         step_3_text(intensity),
         get_location_keyboard()
     )
-    await callback.answer()
 
 
 # --- Step 3: Location ---
 @router.callback_query(HeadacheLogSG.location, LocationCallback.filter())
 async def process_location(callback: CallbackQuery, callback_data: LocationCallback, state: FSMContext):
+    await callback.answer()
     loc_key = callback_data.value
     await state.update_data(location=loc_key)
     await state.set_state(HeadacheLogSG.pain_type)
@@ -422,12 +451,12 @@ async def process_location(callback: CallbackQuery, callback_data: LocationCallb
         step_4_text(loc_key),
         get_pain_type_keyboard()
     )
-    await callback.answer()
 
 
 # --- Step 4: Pain Type ---
 @router.callback_query(HeadacheLogSG.pain_type, PainTypeCallback.filter())
 async def process_pain_type(callback: CallbackQuery, callback_data: PainTypeCallback, state: FSMContext):
+    await callback.answer()
     pt_key = callback_data.value
     await state.update_data(pain_type=pt_key, symptoms=[])
     await state.set_state(HeadacheLogSG.symptoms)
@@ -437,12 +466,12 @@ async def process_pain_type(callback: CallbackQuery, callback_data: PainTypeCall
         step_5_text(pt_key),
         get_symptoms_keyboard(set())
     )
-    await callback.answer()
 
 
 # --- Step 5: Symptoms (Multi-select) ---
 @router.callback_query(HeadacheLogSG.symptoms, SymptomCallback.filter())
 async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallback, state: FSMContext):
+    await callback.answer()
     data = await state.get_data()
     selected: Set[str] = set(data.get("symptoms", []))
     action = callback_data.action
@@ -472,12 +501,11 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
             get_medication_keyboard()
         )
 
-    await callback.answer()
-
 
 # --- Step 6: Medication (Manual entry + skip button) ---
 @router.callback_query(HeadacheLogSG.medication, MedicationCallback.filter())
 async def process_medication_skip(callback: CallbackQuery, callback_data: MedicationCallback, state: FSMContext):
+    await callback.answer()
     if callback_data.value == "none":
         await state.update_data(medication="Не принимались")
         data = await state.get_data()
@@ -488,7 +516,6 @@ async def process_medication_skip(callback: CallbackQuery, callback_data: Medica
             format_summary(data),
             get_confirm_keyboard()
         )
-    await callback.answer()
 
 
 @router.message(HeadacheLogSG.medication, F.text)
@@ -508,6 +535,7 @@ async def process_medication_input(message: Message, state: FSMContext):
 # --- Step 7: Confirmation ---
 @router.callback_query(HeadacheLogSG.confirm, ConfirmCallback.filter())
 async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCallback, state: FSMContext):
+    await callback.answer()
     if callback_data.action == "cancel":
         await state.clear()
         try:
@@ -524,7 +552,6 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
             except Exception:
                 pass
         await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
-        await callback.answer()
         return
 
     # Save to database
@@ -552,7 +579,6 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
         "Вы можете в любой момент посмотреть историю или зафиксировать окончание боли через меню ниже:",
         reply_markup=get_main_menu_keyboard()
     )
-    await callback.answer()
 
 
 # --- Finish Episode Button ---
