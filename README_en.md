@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(16%2F16)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(17%2F17)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -83,8 +83,12 @@ Fully asynchronous, fault-tolerant microservice architecture based on Python asy
   - `🤕 Yes, had pain` — launches step-by-step episode logging immediately.
   - `👌 No, feeling great` — saves asymptomatic day record in diary.
   - `⚙️ Adjust time` — directly open reminder settings.
-- **Flexible Timing & Presets**: Select from common presets (`09:00`, `14:00`, `19:00`, `21:00`, `22:00`, `23:00` MSK) or enter any custom `HH:MM` time.
-- **Background Scheduler**: Async background worker checks every minute, respects user timezone (Europe/Moscow), and prevents duplicate notifications within the same calendar day.
+- **Timezone Customization (11 Russian Zones + Worldwide)**:
+  - Supports all timezones from Kaliningrad (UTC+2) to Kamchatka (UTC+12), London (UTC+0), Berlin (UTC+1), New York (UTC-5), and more.
+  - Manual entry via standard UTC offsets (`UTC+5`, `+4`, `-5`) or IANA identifiers (`Asia/Almaty`, `Europe/Minsk`).
+  - Displays user's current local time directly in the configuration menu.
+- **Flexible Timing & Presets**: Select from common presets (`09:00`, `14:00`, `19:00`, `21:00`, `22:00`, `23:00`) or enter any custom `HH:MM` time.
+- **Background Scheduler**: Async background worker checks every minute according to each user's individual timezone and prevents duplicate notifications within the same calendar day.
 
 ---
 
@@ -219,7 +223,7 @@ The repository contains an asynchronous unit test suite (`unittest.IsolatedAsync
 python3 -m unittest tests/test_flow.py -v
 ```
 
-### Test Suite Structure (16 Tests):
+### Test Suite Structure (17 Tests):
 
 | Test | Category | Verified Functionality |
 | :--- | :--- | :--- |
@@ -230,10 +234,11 @@ python3 -m unittest tests/test_flow.py -v
 | `test_callback_packing` | 🔘 Keyboards | Correct prefixes and serialization of callbacks for all questionnaire steps (time, intensity, location, pain type, symptoms, medication, export) |
 | `test_keyboards_structure` | 🔘 Keyboards | Validation of button layouts, captions, and callback payloads across all inline keyboards |
 | `test_reminder_keyboards_and_callbacks` | ⏰ Reminders | Keyboard builder verification, callback serialization with `rem\|...` and `rem_p\|...` prefixes |
+| `test_timezone_resolution_and_formatting` | ⏰ Timezones | Parsing and validation of timezone identifiers (IANA, city presets, UTC±X offsets), local time formatting |
 | `test_reminder_custom_time_validation` | ⏰ Reminders | Regex validation for arbitrary custom `HH:MM` time entries (00:00 to 23:59) |
-| `test_reminder_db_methods_mocked` | ⏰ Reminders | Querying due users, updating reminder schedule/status, and logging dispatch dates |
+| `test_reminder_db_methods_mocked` | ⏰ Reminders | Querying due users, updating reminder schedule/status/timezone, and logging dispatch dates |
 | `test_reminder_prompt_callbacks` | ⏰ Reminders | Responses to daily inquiries ("Had pain" ➔ launch FSM, "No pain" ➔ save healthy day) |
-| `test_reminder_scheduler_tick` | ⏰ Reminders | Unit execution of reminder background scheduler tick and user message dispatch |
+| `test_reminder_scheduler_tick` | ⏰ Reminders | Unit execution of reminder background scheduler tick with per-user timezone support |
 | `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables without errors |
 | `test_cjk_and_nickname_export` | 📄 Export | Support for Cyrillic, Latin, CJK characters, and usernames via the `VL-Gothic` font stack |
 | `test_redis_fsm_storage_config` | 🗄 Storage | Key namespace isolation for FSM states in Redis (`DefaultKeyBuilder(with_bot_id=True)`) |

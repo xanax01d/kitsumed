@@ -12,6 +12,7 @@ from .database import (
     set_user_reminder,
     get_users_due_for_reminder,
     mark_user_reminded,
+    get_enabled_reminder_users,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "set_user_reminder",
     "get_users_due_for_reminder",
     "mark_user_reminded",
+    "get_enabled_reminder_users",
 ]
