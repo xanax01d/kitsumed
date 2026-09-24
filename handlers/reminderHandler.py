@@ -69,17 +69,14 @@ def resolve_timezone(input_str: str) -> Optional[str]:
 
 
 def _format_reminder_text(reminder_time: str, enabled: bool, tz_name: str = "Europe/Moscow") -> str:
-    status_str = f"🟢 <b>Включено</b>" if enabled else "🔴 <b>Отключено</b>"
+    status_str = "Включен" if enabled else "Отключен"
     tz_label = get_tz_label(tz_name)
     local_time = get_tz_local_time(tz_name)
     return (
-        "⏰ <b>Ежедневный опрос о самочувствии</b>\n\n"
-        f"Текущий статус: {status_str}\n"
-        f"⏰ Время опроса: <b>{reminder_time}</b>\n"
-        f"🌍 Часовой пояс: <b>{tz_label}</b> <i>(сейчас {local_time})</i>\n\n"
-        f"Каждый день в <b>{reminder_time}</b> по вашему местному времени бот спросит:\n"
-        "<i>«Болела ли голова сегодня?»</i> — для ведения точной медицинской статистики.\n\n"
-        "Выберите удобное время, часовой пояс или укажите своё время:"
+        "<b>Ежедневный опрос</b>\n\n"
+        f"• Статус: <b>{status_str}</b>\n"
+        f"• Время: <b>{reminder_time}</b>\n"
+        f"• Пояс: {tz_label} (сейчас {local_time})"
     )
 
 
@@ -87,10 +84,9 @@ def _format_timezone_text(tz_name: str) -> str:
     tz_label = get_tz_label(tz_name)
     local_time = get_tz_local_time(tz_name)
     return (
-        "🌍 <b>Настройка часового пояса</b>\n\n"
-        f"Текущий пояс: <b>{tz_label}</b>\n"
-        f"Местное время: <b>{local_time}</b>\n\n"
-        "Выберите ваш регион из списка или укажите смещение вручную:"
+        "<b>Часовой пояс</b>\n\n"
+        f"• Пояс: <b>{tz_label}</b>\n"
+        f"• Местное время: <b>{local_time}</b>"
     )
 
 
@@ -135,7 +131,7 @@ async def process_preset_time(callback: CallbackQuery, callback_data: ReminderCa
         except Exception:
             pass
 
-    await callback.answer(f"✅ Время установлено на {new_time}")
+    await callback.answer(f"Время: {new_time}")
 
 
 @router.callback_query(ReminderCallback.filter(F.action == "toggle"))
@@ -159,16 +155,16 @@ async def process_toggle_reminder(callback: CallbackQuery):
         except Exception:
             pass
 
-    status_msg = "Включено" if new_enabled else "Отключено"
-    await callback.answer(f"🔔 Напоминания: {status_msg}")
+    status_msg = "Включен" if new_enabled else "Отключен"
+    await callback.answer(f"Опрос: {status_msg}")
 
 
 @router.callback_query(ReminderCallback.filter(F.action == "custom"))
 async def process_custom_time_request(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ReminderSG.custom_time)
     prompt = (
-        "✍️ <b>Введите время ежедневного опроса</b> в формате <code>ЧЧ:ММ</code>:\n\n"
-        "<i>(Например: <code>20:30</code> или <code>08:15</code>)</i>"
+        "<b>Время опроса</b>\n"
+        "Введите время в формате <code>ЧЧ:ММ</code> (например: <code>20:30</code>):"
     )
     try:
         await callback.message.edit_text(text=prompt, reply_markup=get_reminder_custom_cancel_keyboard())
@@ -186,9 +182,8 @@ async def process_custom_time_input(message: Message, state: FSMContext):
     match = TIME_REGEX.match(text)
     if not match:
         await message.answer(
-            "⚠️ <b>Некорректный формат времени.</b>\n\n"
-            "Пожалуйста, введите время в формате <code>ЧЧ:ММ</code> (от <code>00:00</code> до <code>23:59</code>):\n"
-            "<i>(Например: <code>21:30</code> или <code>09:00</code>)</i>",
+            "<b>Неверный формат времени</b>\n"
+            "Введите время в формате <code>ЧЧ:ММ</code> (например: <code>21:30</code>):",
             reply_markup=get_reminder_custom_cancel_keyboard()
         )
         return
@@ -207,8 +202,7 @@ async def process_custom_time_input(message: Message, state: FSMContext):
 
     await state.clear()
     await message.answer(
-        f"✅ <b>Время успешно сохранено!</b>\n\n"
-        f"Каждый день в <b>{normalized_time}</b> ({tz_label}) бот будет отправлять вопрос о самочувствии.",
+        f"Время опроса установлено: <b>{normalized_time}</b> ({tz_label}).",
         reply_markup=get_main_menu_keyboard()
     )
 
@@ -255,15 +249,15 @@ async def process_set_timezone(callback: CallbackQuery, callback_data: ReminderC
             pass
 
     tz_label = get_tz_label(new_tz)
-    await callback.answer(f"✅ Часовой пояс: {tz_label}")
+    await callback.answer(f"Пояс: {tz_label}")
 
 
 @router.callback_query(ReminderCallback.filter(F.action == "custom_tz"))
 async def process_custom_tz_request(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ReminderSG.custom_timezone)
     prompt = (
-        "✍️ <b>Введите ваш часовой пояс или город</b> текстом:\n\n"
-        "<i>Например: <code>UTC+5</code>, <code>+4</code>, <code>-5</code> или официальное имя <code>Asia/Almaty</code></i>"
+        "<b>Часовой пояс</b>\n"
+        "Введите смещение или город (например: <code>UTC+5</code>, <code>+4</code> или <code>Asia/Almaty</code>):"
     )
     try:
         await callback.message.edit_text(text=prompt, reply_markup=get_timezone_cancel_keyboard())
@@ -281,9 +275,8 @@ async def process_custom_timezone_input(message: Message, state: FSMContext):
     resolved_tz = resolve_timezone(text)
     if not resolved_tz:
         await message.answer(
-            "⚠️ <b>Не удалось распознать часовой пояс.</b>\n\n"
-            "Пожалуйста, укажите смещение (например: <code>UTC+4</code> или <code>+5</code>) "
-            "или официальное название часового пояса (например: <code>Europe/Minsk</code> или <code>Asia/Tashkent</code>):",
+            "<b>Пояс не распознан</b>\n"
+            "Укажите смещение (например <code>UTC+4</code>) или название (<code>Europe/Minsk</code>):",
             reply_markup=get_timezone_cancel_keyboard()
         )
         return
@@ -298,9 +291,7 @@ async def process_custom_timezone_input(message: Message, state: FSMContext):
     local_time = get_tz_local_time(resolved_tz)
 
     await message.answer(
-        f"✅ <b>Часовой пояс успешно сохранен!</b>\n\n"
-        f"🌍 Пояс: <b>{tz_label}</b>\n"
-        f"🕒 Местное время сейчас: <b>{local_time}</b>",
+        f"Часовой пояс сохранен: <b>{tz_label}</b> (сейчас {local_time})",
         reply_markup=get_main_menu_keyboard()
     )
 
@@ -343,11 +334,7 @@ async def process_close_settings(callback: CallbackQuery, state: FSMContext):
 # --- Handlers for Daily Check-in Prompt ---
 @router.callback_query(ReminderPromptCallback.filter(F.action == "healthy"))
 async def process_daily_healthy(callback: CallbackQuery):
-    response_text = (
-        "🎉 <b>Замечательно!</b>\n\n"
-        "Рады, что сегодня обошлось без головной боли. Отметка сохранена в дневнике!\n"
-        "Крепкого вам здоровья и отличного отдыха. ✨"
-    )
+    response_text = "Отметка сохранена: день без головной боли."
     try:
         await callback.message.edit_text(text=response_text, reply_markup=None)
     except Exception:

@@ -19,28 +19,14 @@ DB_PATH = Path(__file__).parent.parent / "assets" / "images" / "ru" / "db_diagra
 router = Router()
 
 
-def _get_intensity_badge(val: int) -> tuple[str, str]:
-    if val <= 3:
-        return "🟢", "Слабая"
-    elif val <= 6:
-        return "🟡", "Умеренная"
-    elif val <= 8:
-        return "🟠", "Сильная"
-    else:
-        return "🔴", "Невыносимая"
 
 
 def _format_episode_card(ep: Dict[str, Any]) -> str:
     status = ep.get("status")
-    if status == "completed":
-        status_badge = "🟢 <i>Завершен</i>"
-    else:
-        status_badge = "🔴 <b>АКТИВЕН СЕЙЧАС</b>"
+    status_str = "Завершен" if status == "completed" else "Активен"
 
     intensity = ep.get("intensity", 0)
-    dot, level_name = _get_intensity_badge(intensity)
-    filled = min(max(intensity, 0), 10)
-    bar = "█" * filled + "░" * (10 - filled)
+    level_name = "Слабая" if intensity <= 3 else ("Умеренная" if intensity <= 6 else ("Сильная" if intensity <= 8 else "Невыносимая"))
 
     loc = LOCATION_MAP.get(ep.get("location"), ep.get("location"))
     pt = PAIN_TYPE_MAP.get(ep.get("pain_type"), ep.get("pain_type"))
@@ -61,20 +47,17 @@ def _format_episode_card(ep: Dict[str, Any]) -> str:
         med = "Не принимались"
     med = MEDICATION_MAP.get(med, med)
 
-    time_line = f"<code>{ep.get('start_time')}</code>"
+    time_line = f"{ep.get('start_time')}"
     if ep.get("end_time"):
-        time_line += f" → <code>{ep.get('end_time')}</code>"
+        time_line += f" → {ep.get('end_time')}"
 
     return (
-        f"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"┃ <b>Приступ #{ep.get('id')}</b> • {status_badge}\n"
-        f"┃ 🗓 {time_line}\n"
-        f"┃ 💥 <b>Боль:</b> <b>{intensity}/10</b> {dot} <code>[{bar}]</code>\n"
-        f"┃ 📍 <b>Локация:</b> {loc}\n"
-        f"┃ ⚡️ <b>Характер:</b> {pt}\n"
-        f"┃ 🩺 <b>Симптомы:</b> {sym_str}\n"
-        f"┃ 💊 <b>Препарат:</b> <b>{med}</b>\n"
-        f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        f"<b>Приступ #{ep.get('id')}</b> ({status_str})\n"
+        f"• Время: <code>{time_line}</code>\n"
+        f"• Боль: <b>{intensity}/10</b> ({level_name})\n"
+        f"• Локация: {loc} | {pt}\n"
+        f"• Симптомы: {sym_str}\n"
+        f"• Препарат: {med}"
     )
 
 
@@ -84,26 +67,9 @@ async def start(message: Message):
     if user:
         await upsert_user(user.id, user.username, user.first_name)
 
-    greeting_name = ""
-    if user:
-        name_parts = []
-        if user.first_name and user.first_name.strip():
-            name_parts.append(user.first_name.strip())
-        if user.username:
-            name_parts.append(f"(@{user.username})")
-        if name_parts:
-            greeting_name = f", {' '.join(name_parts)}"
-
     welcome_text = (
-        f"👋 <b>Привет{greeting_name}!</b>\n"
-        "Добро пожаловать в <b>Migrebot</b> — твой умный дневник головной боли и мигрени.\n\n"
-        "💡 <b>Возможности бота:</b>\n"
-        "▫️ <b>Быстрая запись:</b> опрос за 30 секунд (сила боли 1–10, локализация, симптомы)\n"
-        "▫️ <b>Ежедневный опрос:</b> напоминания в удобное время («Болела ли голова?»)\n"
-        "▫️ <b>Учет лекарств:</b> точная фиксация препаратов и дозировок\n"
-        "▫️ <b>Хронометраж:</b> расчет точной продолжительности каждого приступа\n"
-        "▫️ <b>Медицинский экспорт:</b> отчеты в <b>PDF</b> и <b>Excel/CSV</b> для невролога\n\n"
-        "<i>Нажмите <b>«🤕 Записать приступ»</b> в меню ниже, чтобы зафиксировать боль.</i>"
+        "<b>Migrebot</b> — дневник головной боли и мигрени.\n\n"
+        "Нажмите <b>«🤕 Записать приступ»</b>, чтобы зафиксировать боль."
     )
 
     if BANNER_PATH.is_file():
@@ -136,14 +102,12 @@ async def start(message: Message):
 @router.message(F.text == "ℹ️ Справка")
 async def help_command(message: Message):
     help_text = (
-        "📖 <b>Справка и навигация по Migrebot:</b>\n\n"
-        "• <b>🤕 Записать приступ</b> (<code>/log</code>) — пошаговый опрос о текущей боли.\n"
-        "• <b>⏹ Завершить приступ</b> (<code>/finish</code>) — зафиксировать окончание боли и время.\n"
-        "• <b>📊 Мои приступы</b> — последние записи из дневника в виде наглядных карточек.\n"
-        "• <b>📥 Экспорт отчета</b> (<code>/export</code>) — скачать отчет для врача (PDF) или таблицу (CSV).\n"
-        "• <b>⏰ Напоминания</b> (<code>/reminder</code>) — настроить время ежедневного опроса самочувствия.\n"
-        "• <b>/cancel</b> — прервать текущий опрос в любой момент.\n\n"
-        "💡 <i>Дневник позволяет врачу-неврологу поставить точный диагноз (мигрень, ГБН, кластерная боль) и подобрать эффективную терапию.</i>"
+        "<b>Команды бота:</b>\n\n"
+        "• <b>/log</b> — записать приступ\n"
+        "• <b>/finish</b> — завершить активный приступ\n"
+        "• <b>/export</b> — выгрузить отчет (PDF / CSV)\n"
+        "• <b>/reminder</b> — настроить ежедневный опрос\n"
+        "• <b>/cancel</b> — отмена действия"
     )
 
     if FLOW_PATH.is_file():
@@ -178,10 +142,7 @@ async def view_history(message: Message):
     episodes = await get_recent_episodes(user.id, limit=5)
 
     if not episodes:
-        empty_text = (
-            "📭 <b>В дневнике пока нет сохраненных записей о приступах.</b>\n\n"
-            "Чтобы добавить первую запись, нажмите <b>«🤕 Записать приступ»</b>."
-        )
+        empty_text = "В дневнике пока нет сохраненных записей."
         if DB_PATH.is_file():
             photo_src = get_photo_source(DB_PATH)
             try:
@@ -208,9 +169,8 @@ async def view_history(message: Message):
         return
 
     cards = [_format_episode_card(ep) for ep in episodes]
-    header = "📊 <b>ПОСЛЕДНИЕ ПРИСТУПЫ В ДНЕВНИКЕ:</b>\n\n"
-    footer = "\n\n📥 <i>Для выгрузки всех записей нажмите «📥 Экспорт отчета».</i>"
-    full_text = header + "\n\n".join(cards) + footer
+    header = "<b>История приступов:</b>\n\n"
+    full_text = header + "\n\n".join(cards)
 
     if DB_PATH.is_file():
         photo_src = get_photo_source(DB_PATH)

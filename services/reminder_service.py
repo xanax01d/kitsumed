@@ -58,23 +58,7 @@ async def reminder_scheduler(bot: Bot) -> None:
 
                 if user_time_str == target_time:
                     if last_date is None or str(last_date) < user_date_str:
-                        first_name = user.get("first_name") or ""
-                        greeting = (
-                            "Доброе утро"
-                            if 5 <= user_now.hour < 12
-                            else (
-                                "Добрый день"
-                                if 12 <= user_now.hour < 18
-                                else ("Добрый вечер" if 18 <= user_now.hour < 23 else "Привет")
-                            )
-                        )
-                        name_str = f", {first_name}" if first_name else ""
-
-                        prompt_text = (
-                            f"👋 <b>{greeting}{name_str}!</b>\n\n"
-                            "Время ежедневной отметки в дневнике:\n"
-                            "❓ <b>Болела ли голова сегодня?</b>"
-                        )
+                        prompt_text = "<b>Болела ли голова сегодня?</b>"
 
                         try:
                             await bot.send_message(

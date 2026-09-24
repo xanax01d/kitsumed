@@ -117,94 +117,47 @@ async def show_or_edit_step(
 
 
 # --- Helpers for Visual Badges & Summary ---
-def _get_intensity_badge(val: int) -> tuple[str, str]:
+def _get_intensity_label(val: int) -> str:
     if val <= 3:
-        return "🟢", "Слабая"
+        return "Слабая"
     elif val <= 6:
-        return "🟡", "Умеренная"
+        return "Умеренная"
     elif val <= 8:
-        return "🟠", "Сильная"
+        return "Сильная"
     else:
-        return "🔴", "Невыносимая"
-
-
-def _get_progress_bar(val: int, max_val: int = 10) -> str:
-    filled = min(max(val, 0), max_val)
-    return "█" * filled + "░" * (max_val - filled)
+        return "Невыносимая"
 
 
 def step_1_text() -> str:
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 1 из 6 • Время ]  ▰▱▱▱▱▱ 17%</code>\n\n"
-        "⏰ <b>Когда началась головная боль?</b>\n"
-        "<i>Выберите быстрый вариант или укажите точное время:</i>"
-    )
+    return "<b>Когда началась боль?</b>"
 
 
 def step_2_text(time_str: str) -> str:
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 2 из 6 • Сила боли ]  ▰▰▱▱▱▱ 33%</code>\n\n"
-        f"⏰ Начало: <code>{time_str}</code>\n\n"
-        "📊 <b>Оцените интенсивность боли по шкале от 1 до 10:</b>\n"
-        "🟢 <b>1–3</b> — Слабая <i>(фоновая, работоспособность сохранена)</i>\n"
-        "🟡 <b>4–6</b> — Умеренная <i>(снижает концентрацию)</i>\n"
-        "🟠 <b>7–8</b> — Сильная <i>(тяжело выполнять обычные дела)</i>\n"
-        "🔴 <b>9–10</b> — Невыносимая <i>(сильнейшая боль, постельный режим)</i>"
-    )
+    return f"<b>Интенсивность боли (1–10)</b>\nНачало: <code>{time_str}</code>"
 
 
 def step_3_text(intensity: int) -> str:
-    dot, level_name = _get_intensity_badge(intensity)
-    bar = _get_progress_bar(intensity, 10)
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 3 из 6 • Локализация ]  ▰▰▰▱▱▱ 50%</code>\n\n"
-        f"📊 Интенсивность: <b>{intensity}/10</b> {dot} <i>({level_name})</i>\n"
-        f"    <code>[{bar}]</code>\n\n"
-        "📍 <b>Где именно локализуется боль?</b>\n"
-        "<i>Выберите зону сосредоточения боли:</i>"
-    )
+    level = _get_intensity_label(intensity)
+    return f"<b>Локализация боли</b>\nБоль: <b>{intensity}/10</b> ({level})"
 
 
 def step_4_text(loc_key: str) -> str:
     loc_text = LOCATION_MAP.get(loc_key, loc_key)
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 4 из 6 • Характер ]  ▰▰▰▰▱▱ 67%</code>\n\n"
-        f"📍 Зона: <b>{loc_text}</b>\n\n"
-        "⚡️ <b>Каков характер головной боли?</b>\n"
-        "<i>Выберите тип ощущений (важно для клинической дифференциации):</i>"
-    )
+    return f"<b>Характер боли</b>\nЛокация: <b>{loc_text}</b>"
 
 
 def step_5_text(pt_key: str) -> str:
     pt_text = PAIN_TYPE_MAP.get(pt_key, pt_key)
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 5 из 6 • Симптомы ]  ▰▰▰▰▰▱ 83%</code>\n\n"
-        f"⚡️ Характер: <b>{pt_text}</b>\n\n"
-        "🩺 <b>Есть ли сопутствующие симптомы?</b>\n"
-        "<i>Отметьте нужные симптомы и нажмите «➡️ Продолжить»:</i>"
-    )
+    return f"<b>Сопутствующие симптомы</b>\nХарактер: <b>{pt_text}</b>"
 
 
 def step_6_text() -> str:
-    return (
-        "🤕 <b>ЗАПИСЬ ПРИСТУПА</b>\n"
-        "<code>[ Шаг 6 из 6 • Препарат ]  ▰▰▰▰▰▰ 100%</code>\n\n"
-        "💊 <b>Укажите принятый препарат и дозировку</b> сообщением в чат:\n\n"
-        "<i>(Например: <code>Суматриптан 50 мг</code>, <code>Ибупрофен 400 мг</code>, "
-        "<code>Цитрамон 1 таб</code>)</i>\n\n"
-        "Если вы ничего не принимали, нажмите кнопку ниже:"
-    )
+    return "<b>Принятый препарат</b>\nУкажите название и дозировку или нажмите кнопку ниже:"
 
 
 def format_summary(data: Dict[str, Any]) -> str:
     intensity = data.get("intensity", 0)
-    dot, level_name = _get_intensity_badge(intensity)
-    bar = _get_progress_bar(intensity, 10)
+    level = _get_intensity_label(intensity)
 
     loc_key = data.get("location", "")
     loc_text = LOCATION_MAP.get(loc_key, loc_key)
@@ -214,7 +167,7 @@ def format_summary(data: Dict[str, Any]) -> str:
 
     symptoms_list = data.get("symptoms", [])
     if not symptoms_list or "none" in symptoms_list:
-        symptoms_str = "<i>Не отмечено</i>"
+        symptoms_str = "—"
     else:
         symptoms_str = ", ".join(ALL_SYMPTOMS.get(s, s) for s in symptoms_list)
 
@@ -224,18 +177,14 @@ def format_summary(data: Dict[str, Any]) -> str:
     med_text = MEDICATION_MAP.get(med_val, med_val)
 
     return (
-        "╔═══════════════════════════════════╗\n"
-        "║   📋 <b>ИТОГОВАЯ КАРТОЧКА ПРИСТУПА</b>     ║\n"
-        "╚═══════════════════════════════════╝\n\n"
-        f"⏰ <b>Начало:</b> <code>{data.get('start_time', 'Не указано')}</code>\n"
-        f"📊 <b>Интенсивность:</b> <b>{intensity}/10</b> {dot} <i>({level_name})</i>\n"
-        f"    <code>[{bar}]</code>\n"
-        f"📍 <b>Локализация:</b> {loc_text}\n"
-        f"⚡️ <b>Характер:</b> {pt_text}\n"
-        f"🩺 <b>Симптомы:</b> {symptoms_str}\n"
-        f"💊 <b>Препарат:</b> <b>{med_text}</b>\n\n"
-        "───────────────────────────────────\n"
-        "<i>Все данные указаны верно? Сохранить запись в дневник?</i>"
+        "<b>Итог записи</b>\n\n"
+        f"• Время: <code>{data.get('start_time', '—')}</code>\n"
+        f"• Боль: <b>{intensity}/10</b> ({level})\n"
+        f"• Локация: {loc_text}\n"
+        f"• Характер: {pt_text}\n"
+        f"• Симптомы: {symptoms_str}\n"
+        f"• Препарат: {med_text}\n\n"
+        "Сохранить запись?"
     )
 
 
@@ -245,11 +194,11 @@ def format_summary(data: Dict[str, Any]) -> str:
 async def cmd_cancel(message: Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
-        await message.answer("Нет активного процесса для отмены.", reply_markup=get_main_menu_keyboard())
+        await message.answer("Нет активного действия.", reply_markup=get_main_menu_keyboard())
         return
 
     await state.clear()
-    await message.answer("❌ <b>Запись приступа отменена.</b>", reply_markup=get_main_menu_keyboard())
+    await message.answer("Запись отменена.", reply_markup=get_main_menu_keyboard())
 
 
 @router.callback_query(NavCallback.filter(F.action == "cancel"))
@@ -258,18 +207,18 @@ async def callback_cancel(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     try:
         await callback.message.edit_caption(
-            caption="❌ <b>Запись приступа отменена.</b>",
+            caption="Запись отменена.",
             reply_markup=None
         )
     except Exception:
         try:
             await callback.message.edit_text(
-                text="❌ <b>Запись приступа отменена.</b>",
+                text="Запись отменена.",
                 reply_markup=None
             )
         except Exception:
             pass
-    await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
+    await callback.message.answer("Главное меню:", reply_markup=get_main_menu_keyboard())
 
 
 # --- Navigation Back Handler ---
@@ -354,9 +303,8 @@ async def start_headache_log(message: Message, state: FSMContext):
         active = await get_active_episode(user.id)
         if active:
             await message.answer(
-                "⚠️ <b>У вас уже есть незавершенный приступ!</b>\n"
-                f"🗓 Начало: <code>{active.get('start_time')}</code>\n\n"
-                "Вы можете завершить его кнопкой <b>«⏹ Завершить приступ»</b> или начать новую запись.",
+                f"Есть незавершенный приступ (начало: <code>{active.get('start_time')}</code>).\n"
+                "Завершите его перед началом новой записи.",
             )
 
     await state.clear()
@@ -387,8 +335,8 @@ async def process_start_time(callback: CallbackQuery, callback_data: TimeCallbac
     elif preset == "custom":
         await state.set_state(HeadacheLogSG.custom_start_time)
         custom_prompt = (
-            "✍️ <b>Введите время начала приступа</b> текстом в чат:\n\n"
-            "<i>(Например: <code>15:40</code> или <code>вчера в 21:00</code>)</i>"
+            "<b>Время начала приступа</b>\n"
+            "Введите время (например: <code>15:40</code> или <code>вчера в 21:00</code>):"
         )
         await show_or_edit_step(
             callback,
@@ -540,18 +488,18 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
         await state.clear()
         try:
             await callback.message.edit_caption(
-                caption="❌ <b>Запись приступа отменена.</b>",
+                caption="Запись отменена.",
                 reply_markup=None
             )
         except Exception:
             try:
                 await callback.message.edit_text(
-                    text="❌ <b>Запись приступа отменена.</b>",
+                    text="Запись отменена.",
                     reply_markup=None
                 )
             except Exception:
                 pass
-        await callback.message.answer("Вы вернулись в главное меню:", reply_markup=get_main_menu_keyboard())
+        await callback.message.answer("Главное меню:", reply_markup=get_main_menu_keyboard())
         return
 
     # Save to database
@@ -561,12 +509,8 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
     await state.clear()
 
     saved_text = (
-        f"✅ <b>Приступ успешно сохранен в дневник!</b> (Запись #{episode_id})\n\n"
-        "🧘‍♂️ <b>Рекомендации первой помощи:</b>\n"
-        "💧 Выпейте стакан чистой воды\n"
-        "🌑 Отдохните в затемненной и тихой комнате\n"
-        "❄️ Приложите прохладный компресс на лоб или шею\n\n"
-        "Когда боль стихнет, нажмите кнопку <b>«⏹ Завершить приступ»</b>, чтобы зафиксировать продолжительность."
+        f"<b>Приступ сохранен</b> (#{episode_id})\n\n"
+        "Для фиксации окончания нажмите «⏹ Завершить приступ»."
     )
 
     await show_or_edit_step(
@@ -576,7 +520,7 @@ async def process_confirmation(callback: CallbackQuery, callback_data: ConfirmCa
         None
     )
     await callback.message.answer(
-        "Вы можете в любой момент посмотреть историю или зафиксировать окончание боли через меню ниже:",
+        "Главное меню:",
         reply_markup=get_main_menu_keyboard()
     )
 
@@ -590,8 +534,7 @@ async def cmd_finish_episode(message: Message):
 
     if not active:
         await message.answer(
-            "ℹ️ <b>У вас сейчас нет активного незавершенного приступа.</b>\n\n"
-            "Чтобы зафиксировать новый приступ, нажмите кнопку <b>«🤕 Записать приступ»</b>.",
+            "Нет активного незавершенного приступа.",
             reply_markup=get_main_menu_keyboard()
         )
         return
@@ -609,14 +552,13 @@ async def cmd_finish_episode(message: Message):
         minutes = int((diff.total_seconds() % 3600) // 60)
         duration_str = f"{hours} ч {minutes} мин"
     except Exception:
-        duration_str = "не рассчитана"
+        duration_str = "—"
 
     finish_text = (
-        "🎉 <b>Приступ успешно завершен!</b>\n\n"
-        f"⏱ <b>Длительность:</b> <b>{duration_str}</b>\n"
-        f"🗓 <b>Начало:</b> <code>{start_str}</code>\n"
-        f"🏁 <b>Окончание:</b> <code>{end_time_str}</code>\n\n"
-        "<i>Данные зафиксированы в истории. Рады, что вам стало лучше! 💚</i>"
+        "<b>Приступ завершен</b>\n\n"
+        f"• Длительность: <b>{duration_str}</b>\n"
+        f"• Начало: <code>{start_str}</code>\n"
+        f"• Конец: <code>{end_time_str}</code>"
     )
 
     await show_or_edit_step(
