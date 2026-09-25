@@ -86,6 +86,7 @@ async def init_db(dsn: Optional[str] = None):
             ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_enabled BOOLEAN DEFAULT TRUE;
             ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Europe/Moscow';
             ALTER TABLE users ADD COLUMN IF NOT EXISTS last_reminded_date VARCHAR(16) DEFAULT NULL;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS language VARCHAR(16) DEFAULT 'ru';
 
             CREATE TABLE IF NOT EXISTS headache_episodes (
                 id SERIAL PRIMARY KEY,
@@ -98,8 +99,17 @@ async def init_db(dsn: Optional[str] = None):
                 symptoms JSONB,
                 medication TEXT,
                 status VARCHAR(32) DEFAULT 'active',
+                medication_relief VARCHAR(32) DEFAULT NULL,
+                pain_resolved BOOLEAN DEFAULT NULL,
+                followup_due_at TIMESTAMPTZ DEFAULT NULL,
+                followup_sent BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
+
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS medication_relief VARCHAR(32) DEFAULT NULL;
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS pain_resolved BOOLEAN DEFAULT NULL;
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_due_at TIMESTAMPTZ DEFAULT NULL;
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_sent BOOLEAN DEFAULT FALSE;
 
             CREATE INDEX IF NOT EXISTS idx_headache_episodes_user_status
             ON headache_episodes(user_id, status);
@@ -122,17 +132,58 @@ def _get_pool() -> asyncpg.Pool:
     return _pool
 
 
-async def upsert_user(user_id: int, username: Optional[str] = None, first_name: Optional[str] = None):
+async def upsert_user(
+    user_id: int,
+    username: Optional[str] = None,
+    first_name: Optional[str] = None,
+    language: Optional[str] = None,
+):
     """Inserts or updates Telegram user info."""
     pool = _get_pool()
     async with pool.acquire() as conn:
-        await conn.execute("""
-            INSERT INTO users (user_id, username, first_name)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (user_id) DO UPDATE SET
-                username = EXCLUDED.username,
-                first_name = EXCLUDED.first_name;
-        """, user_id, username, first_name)
+        if language:
+            await conn.execute("""
+                INSERT INTO users (user_id, username, first_name, language)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    username = EXCLUDED.username,
+                    first_name = EXCLUDED.first_name,
+                    language = EXCLUDED.language;
+            """, user_id, username, first_name, language)
+        else:
+            await conn.execute("""
+                INSERT INTO users (user_id, username, first_name)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    username = EXCLUDED.username,
+                    first_name = EXCLUDED.first_name;
+            """, user_id, username, first_name)
+
+
+async def get_user_language(user_id: int) -> str:
+    """Retrieves the preferred language for a user (default: 'ru')."""
+    try:
+        pool = _get_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT language FROM users WHERE user_id = $1;", user_id)
+            if row and row["language"]:
+                return row["language"]
+    except Exception:
+        pass
+    return "ru"
+
+
+async def set_user_language(user_id: int, language: str) -> bool:
+    """Updates user preferred language."""
+    try:
+        pool = _get_pool()
+        async with pool.acquire() as conn:
+            res = await conn.execute("""
+                UPDATE users SET language = $2 WHERE user_id = $1;
+            """, user_id, language)
+            return res.endswith("1")
+    except Exception:
+        return False
 
 
 async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
@@ -149,8 +200,12 @@ async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
     async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             INSERT INTO headache_episodes (
-                user_id, start_time, intensity, location, pain_type, symptoms, medication, status
-            ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, 'active')
+                user_id, start_time, intensity, location, pain_type, symptoms,
+                medication, status, followup_due_at, followup_sent
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6::jsonb, $7, 'active',
+                NOW() + INTERVAL '2 hours', FALSE
+            )
             RETURNING id;
         """, user_id, start_time, intensity, location, pain_type, symptoms_json, medication)
         return row["id"]
@@ -173,11 +228,28 @@ async def get_active_episode(user_id: int) -> Optional[Dict[str, Any]]:
     async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, created_at
+                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_resolved, followup_due_at, followup_sent, created_at
             FROM headache_episodes
             WHERE user_id = $1 AND status = 'active'
             ORDER BY id DESC LIMIT 1;
         """, user_id)
+        if row:
+            return _format_episode_row(row)
+        return None
+
+
+async def get_episode_by_id(episode_id: int) -> Optional[Dict[str, Any]]:
+    """Retrieves an episode by its primary key ID."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            SELECT id, user_id, start_time, end_time, intensity, location,
+                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_resolved, followup_due_at, followup_sent, created_at
+            FROM headache_episodes
+            WHERE id = $1;
+        """, episode_id)
         if row:
             return _format_episode_row(row)
         return None
@@ -190,7 +262,7 @@ async def finish_episode(user_id: int, end_time: Optional[str] = None) -> bool:
     async with pool.acquire() as conn:
         result = await conn.execute("""
             UPDATE headache_episodes
-            SET status = 'completed', end_time = $2
+            SET status = 'completed', end_time = $2, pain_resolved = TRUE, followup_sent = TRUE
             WHERE id = (
                 SELECT id FROM headache_episodes
                 WHERE user_id = $1 AND status = 'active'
@@ -200,13 +272,81 @@ async def finish_episode(user_id: int, end_time: Optional[str] = None) -> bool:
         return result.endswith("1")
 
 
+async def resolve_episode_pain(episode_id: int, pain_passed: bool, end_time: Optional[str] = None) -> bool:
+    """
+    Updates the episode status when checking if pain passed:
+    - If pain_passed is True: sets status = 'completed', pain_resolved = TRUE, end_time.
+    - If pain_passed is False: sets status = 'not_resolved', pain_resolved = FALSE, end_time = NULL.
+    """
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        if pain_passed:
+            finish_time = end_time or datetime.now().strftime("%Y-%m-%d %H:%M")
+            res = await conn.execute("""
+                UPDATE headache_episodes
+                SET status = 'completed', pain_resolved = TRUE, end_time = $2, followup_sent = TRUE
+                WHERE id = $1;
+            """, episode_id, finish_time)
+            return res.endswith("1")
+        else:
+            res = await conn.execute("""
+                UPDATE headache_episodes
+                SET status = 'not_resolved', pain_resolved = FALSE, end_time = NULL, followup_sent = TRUE
+                WHERE id = $1;
+            """, episode_id)
+            return res.endswith("1")
+
+
+async def update_medication_relief(episode_id: int, relief: str) -> bool:
+    """Records whether medication helped ('helped', 'partially', 'not_helped')."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        res = await conn.execute("""
+            UPDATE headache_episodes
+            SET medication_relief = $2
+            WHERE id = $1;
+        """, episode_id, relief)
+        return res.endswith("1")
+
+
+async def get_pending_followup_episodes() -> List[Dict[str, Any]]:
+    """Retrieves active episodes ready for automated follow-up inquiry."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT e.id, e.user_id, e.start_time, e.intensity, e.location,
+                   e.pain_type, e.symptoms, e.medication, e.status, e.medication_relief,
+                   e.pain_resolved, u.language
+            FROM headache_episodes e
+            JOIN users u ON e.user_id = u.user_id
+            WHERE e.status = 'active'
+              AND e.followup_sent = FALSE
+              AND (e.followup_due_at IS NULL OR e.followup_due_at <= NOW())
+            ORDER BY e.id ASC;
+        """)
+        return [_format_episode_row(r) for r in rows]
+
+
+async def mark_followup_sent(episode_id: int) -> bool:
+    """Marks that the follow-up prompt was delivered for this episode."""
+    pool = _get_pool()
+    async with pool.acquire() as conn:
+        res = await conn.execute("""
+            UPDATE headache_episodes
+            SET followup_sent = TRUE
+            WHERE id = $1;
+        """, episode_id)
+        return res.endswith("1")
+
+
 async def get_recent_episodes(user_id: int, limit: int = 5) -> List[Dict[str, Any]]:
     """Fetches the latest recorded episodes for a user."""
     pool = _get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, created_at
+                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_resolved, created_at
             FROM headache_episodes
             WHERE user_id = $1
             ORDER BY id DESC LIMIT $2;
@@ -220,7 +360,8 @@ async def get_all_episodes(user_id: int) -> List[Dict[str, Any]]:
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
-                   pain_type, symptoms, medication, status, created_at
+                   pain_type, symptoms, medication, status, medication_relief,
+                   pain_resolved, created_at
             FROM headache_episodes
             WHERE user_id = $1
             ORDER BY id ASC;
@@ -313,7 +454,7 @@ async def get_enabled_reminder_users() -> List[Dict[str, Any]]:
     pool = _get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT user_id, username, first_name, reminder_time, timezone, last_reminded_date
+            SELECT user_id, username, first_name, reminder_time, timezone, last_reminded_date, language
             FROM users
             WHERE reminder_enabled = TRUE;
         """)

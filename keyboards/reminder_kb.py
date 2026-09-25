@@ -175,24 +175,37 @@ def get_reminder_custom_cancel_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_reminder_prompt_keyboard() -> InlineKeyboardMarkup:
+def get_reminder_prompt_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     """Interactive buttons sent during daily check-in inquiry."""
     builder = InlineKeyboardBuilder()
+    if lang == "meme":
+        b_yes = "🤕 Да, был кринж"
+        b_no = "👌 Не, я гигачад"
+        b_set = "⚙️ Настроить будильник"
+    elif lang == "en":
+        b_yes = "🤕 Yes, it did"
+        b_no = "👌 No, felt great"
+        b_set = "⚙️ Adjust time"
+    else:
+        b_yes = "🤕 Да, болела"
+        b_no = "👌 Нет, всё отлично"
+        b_set = "⚙️ Настроить время"
+
     builder.row(
         InlineKeyboardButton(
-            text="🤕 Да, болела",
+            text=b_yes,
             callback_data=ReminderPromptCallback(action="headache").pack()
         )
     )
     builder.row(
         InlineKeyboardButton(
-            text="👌 Нет, всё отлично",
+            text=b_no,
             callback_data=ReminderPromptCallback(action="healthy").pack()
         )
     )
     builder.row(
         InlineKeyboardButton(
-            text="⚙️ Настроить время",
+            text=b_set,
             callback_data=ReminderPromptCallback(action="settings").pack()
         )
     )
