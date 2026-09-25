@@ -81,7 +81,7 @@ def get_start_time_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if lang == "meme":
         builder.row(
-            InlineKeyboardButton(text="⚡️ Щас (только что)", callback_data=TimeCallback(preset="now").pack()),
+            InlineKeyboardButton(text="⚡️ Щас (свежий завоз)", callback_data=TimeCallback(preset="now").pack()),
             InlineKeyboardButton(text="⏱ Полчаса назад", callback_data=TimeCallback(preset="-30m").pack())
         )
         builder.row(
@@ -162,12 +162,12 @@ def get_location_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="Справа (полбашки) 👉", callback_data=LocationCallback(value="right").pack())
         )
         builder.row(
-            InlineKeyboardButton(text="↔️ Виски с двух сторон", callback_data=LocationCallback(value="both").pack()),
+            InlineKeyboardButton(text="↔️ Бархатные тяги (с 2 сторон)", callback_data=LocationCallback(value="both").pack()),
             InlineKeyboardButton(text="🎯 Лоб (facepalm)", callback_data=LocationCallback(value="forehead_temples").pack())
         )
         builder.row(
             InlineKeyboardButton(text="🔙 Затылок (база)", callback_data=LocationCallback(value="back_head").pack()),
-            InlineKeyboardButton(text="🌐 Вся башка (джигурда)", callback_data=LocationCallback(value="diffuse").pack())
+            InlineKeyboardButton(text="🌐 Вся башка (шеф, это тотал)", callback_data=LocationCallback(value="diffuse").pack())
         )
     elif lang == "en":
         builder.row(
@@ -212,11 +212,11 @@ def get_pain_type_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if lang == "meme":
         m_types = [
-            ("throbbing", "💓 Пульсирует (жесткий бит)"),
-            ("pressing", "🗜 Давит как дедлайн"),
-            ("bursting", "💥 Башка щас лопнет"),
+            ("throbbing", "💓 Фонк долбит (пульсирует)"),
+            ("pressing", "🗜 Давит как дедлайн и долги"),
+            ("bursting", "💥 Башка щас сделает бум"),
             ("stabbing", "🎯 Стреляет как пулемет"),
-            ("dull", "🌧 Тупая как пробка"),
+            ("dull", "🌧 Тупая как диалог с тюбиком"),
         ]
         for key, text in m_types:
             builder.row(InlineKeyboardButton(text=text, callback_data=PainTypeCallback(value=key).pack()))
@@ -235,6 +235,7 @@ def get_pain_type_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
             builder.row(InlineKeyboardButton(text=text, callback_data=PainTypeCallback(value=key).pack()))
     add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
     return builder.as_markup()
+
 
 
 # --- 5. Symptoms Keyboard ---
