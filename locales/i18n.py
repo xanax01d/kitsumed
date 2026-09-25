@@ -5,12 +5,13 @@ Supports 'ru' (Russian), 'en' (English), and 'meme' (Runet Memes).
 
 from typing import Dict, Any, Optional
 
-from locales import ru, en, meme
+from locales import ru, en, meme, cyberpunk
 
 SUPPORTED_LANGUAGES = {
     "ru": "🇷🇺 Русский",
     "en": "🇬🇧 English",
     "meme": "🎭 Мемный (Рунет)",
+    "cyberpunk": "🦾 Киберпанк (Night City)",
 }
 
 DEFAULT_LANGUAGE = "ru"
@@ -19,6 +20,7 @@ _MODULES = {
     "ru": ru,
     "en": en,
     "meme": meme,
+    "cyberpunk": cyberpunk,
 }
 
 
@@ -33,7 +35,10 @@ def normalize_lang(lang: Optional[str]) -> str:
         return "en"
     if "mem" in cleaned:
         return "meme"
+    if "cyber" in cleaned or cleaned == "cp":
+        return "cyberpunk"
     return DEFAULT_LANGUAGE
+
 
 
 def get_text(key: str, lang: str = DEFAULT_LANGUAGE, **kwargs: Any) -> str:

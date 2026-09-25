@@ -91,6 +91,18 @@ def get_start_time_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
         builder.row(
             InlineKeyboardButton(text="✍️ Свое время (вручную)", callback_data=TimeCallback(preset="custom").pack())
         )
+    elif lang == "cyberpunk":
+        builder.row(
+            InlineKeyboardButton(text="⚡️ Прямо сейчас (онлайн)", callback_data=TimeCallback(preset="now").pack()),
+            InlineKeyboardButton(text="⏱ 30 мин назад", callback_data=TimeCallback(preset="-30m").pack())
+        )
+        builder.row(
+            InlineKeyboardButton(text="🕐 1 час назад", callback_data=TimeCallback(preset="-1h").pack()),
+            InlineKeyboardButton(text="🕑 2 часа назад", callback_data=TimeCallback(preset="-2h").pack())
+        )
+        builder.row(
+            InlineKeyboardButton(text="✍️ Ввести таймкод вручную", callback_data=TimeCallback(preset="custom").pack())
+        )
     elif lang == "en":
         builder.row(
             InlineKeyboardButton(text="⚡️ Right now", callback_data=TimeCallback(preset="now").pack()),
@@ -169,6 +181,19 @@ def get_location_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🔙 Затылок (база)", callback_data=LocationCallback(value="back_head").pack()),
             InlineKeyboardButton(text="🌐 Вся башка (шеф, это тотал)", callback_data=LocationCallback(value="diffuse").pack())
         )
+    elif lang == "cyberpunk":
+        builder.row(
+            InlineKeyboardButton(text="👈 Левый височный имплант", callback_data=LocationCallback(value="left").pack()),
+            InlineKeyboardButton(text="Правый височный имплант 👉", callback_data=LocationCallback(value="right").pack())
+        )
+        builder.row(
+            InlineKeyboardButton(text="↔️ Оба полушария (КЗ)", callback_data=LocationCallback(value="both").pack()),
+            InlineKeyboardButton(text="🎯 Лобовая кора (нейропорт)", callback_data=LocationCallback(value="forehead_temples").pack())
+        )
+        builder.row(
+            InlineKeyboardButton(text="🔙 Чип Релик / Шея", callback_data=LocationCallback(value="back_head").pack()),
+            InlineKeyboardButton(text="🌐 Тотальный перегрев CPU", callback_data=LocationCallback(value="diffuse").pack())
+        )
     elif lang == "en":
         builder.row(
             InlineKeyboardButton(text="👈 Left side", callback_data=LocationCallback(value="left").pack()),
@@ -220,6 +245,16 @@ def get_pain_type_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
         ]
         for key, text in m_types:
             builder.row(InlineKeyboardButton(text=text, callback_data=PainTypeCallback(value=key).pack()))
+    elif lang == "cyberpunk":
+        cp_types = [
+            ("throbbing", "💓 Пульсирующий импульс (шина)"),
+            ("pressing", "🗜 Давление гидравлики (тиски)"),
+            ("bursting", "💥 Риск разрыва сосудов"),
+            ("stabbing", "🎯 Прострел Черного льда"),
+            ("dull", "🌧 Фоновый нейрошум"),
+        ]
+        for key, text in cp_types:
+            builder.row(InlineKeyboardButton(text=text, callback_data=PainTypeCallback(value=key).pack()))
     elif lang == "en":
         en_types = [
             ("throbbing", "💓 Throbbing / Pulsating"),
@@ -265,6 +300,18 @@ def get_symptoms_keyboard(selected: Set[str] = None, lang: str = "ru") -> Inline
         }
         no_sym_text = "❌ Без допов (чистый кайф)"
         done_text = "➡️ Далее"
+    elif lang == "cyberpunk":
+        sym_dict = {
+            "photophobia": "💡 Перегрузка оптики Kiroshi (свет)",
+            "phonophobia": "🔊 Глитч аудиопроцессора (звук)",
+            "nausea": "🤢 Сбой вестибулярного модуля",
+            "vomiting": "🤮 Выброс биомассы (рвота)",
+            "aura": "✨ Глитчи матрицы / Аура",
+            "dizziness": "🌀 Дрифт гироскопа",
+            "odor": "👃 Перегрузка ольфакторного чипа",
+        }
+        no_sym_text = "❌ Без аномалий (чистый хром)"
+        done_text = "➡️ Подтвердить"
     elif lang == "en":
         sym_dict = {
             "photophobia": "💡 Light sensitivity",
@@ -321,6 +368,8 @@ def get_medication_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if lang == "meme":
         skip_text = "❌ Терплю без колес (терпила)"
+    elif lang == "cyberpunk":
+        skip_text = "❌ Без химии (чистый хром)"
     elif lang == "en":
         skip_text = "❌ No medication taken"
     else:
