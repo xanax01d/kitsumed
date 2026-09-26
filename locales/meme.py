@@ -35,6 +35,12 @@ MESSAGES = {
     "history_card_status_completed": "Попустило (сюдааа)",
     "history_card_status_active": "На суете (болит)",
     "history_card_status_not_resolved": "Плаки-плаки (не прошло)",
+    "history_card_header": "Суета #{id} ({status})",
+    "history_card_time": "• Время: <code>{time}</code>\n",
+    "history_card_pain": "• Урон: <b>{intensity}/10</b> ({level})\n",
+    "history_card_loc": "• Локация: {loc} | {pt}\n",
+    "history_card_sym": "• Допы: {sym}\n",
+    "history_card_med": "• Колеса: {med}",
 
     # Headache Log Steps
     "step_1_title": "<b>Когда начался этот кринж?</b>",
@@ -161,10 +167,12 @@ PAIN_TYPE_MAP = {
 
 SYMPTOMS_MAP = {
     "nausea": "Тошнота (кринж поймал)",
+    "vomiting": "Рвота (полный тотал)",
     "photophobia": "Свет слепит (вырубите солнце)",
     "phonophobia": "Звуки бесят (осуждаю на максимум)",
     "aura": "Мультики (глитчи матрицы)",
     "dizziness": "Вертолеты (шатает как после вписки)",
+    "odor": "Запахи душат",
     "osmophobia": "Запахи душат",
     "none": "Без допов (чистый вайб)",
 }

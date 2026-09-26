@@ -81,12 +81,12 @@ def _format_episode_card(ep: Dict[str, Any], lang: str = "ru") -> str:
         time_line += f" → {ep.get('end_time')}"
 
     return (
-        f"<b>Приступ #{ep.get('id')}</b> ({status_str})\n"
-        f"• Время: <code>{time_line}</code>\n"
-        f"• Боль: <b>{intensity}/10</b> ({level_name})\n"
-        f"• Локация: {loc} | {pt}\n"
-        f"• Симптомы: {sym_str}\n"
-        f"• Препарат: {med_str}"
+        f"<b>{get_text('history_card_header', lang, id=ep.get('id'), status=status_str)}</b>\n"
+        f"{get_text('history_card_time', lang, time=time_line)}"
+        f"{get_text('history_card_pain', lang, intensity=intensity, level=level_name)}"
+        f"{get_text('history_card_loc', lang, loc=loc, pt=pt)}"
+        f"{get_text('history_card_sym', lang, sym=sym_str)}"
+        f"{get_text('history_card_med', lang, med=med_str)}"
     )
 
 
