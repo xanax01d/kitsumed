@@ -57,17 +57,15 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         menu = get_main_menu_keyboard()
         self.assertGreaterEqual(len(menu.keyboard), 2)
 
-        self.assertIsNotNone(get_start_time_keyboard())
-        self.assertIsNotNone(get_intensity_keyboard())
-        self.assertIsNotNone(get_location_keyboard())
-        self.assertIsNotNone(get_pain_type_keyboard())
-        self.assertIsNotNone(get_confirm_keyboard())
-        self.assertIsNotNone(get_export_keyboard())
-
-        kb_empty = get_symptoms_keyboard(set())
-        kb_with_sym = get_symptoms_keyboard({"nausea", "aura"})
-        self.assertGreater(len(kb_empty.inline_keyboard), 0)
-        self.assertGreater(len(kb_with_sym.inline_keyboard), 0)
+        for lang in ["ru", "en", "meme", "cyberpunk"]:
+            self.assertIsNotNone(get_start_time_keyboard(lang=lang))
+            self.assertIsNotNone(get_location_keyboard(lang=lang))
+            self.assertIsNotNone(get_pain_type_keyboard(lang=lang))
+            self.assertIsNotNone(get_symptoms_keyboard(set(), lang=lang))
+            self.assertIsNotNone(get_symptoms_keyboard({"nausea", "aura"}, lang=lang))
+            self.assertIsNotNone(get_medication_keyboard(lang=lang))
+            self.assertIsNotNone(get_confirm_keyboard(lang=lang))
+            self.assertIsNotNone(get_export_keyboard(lang=lang))
 
     def test_callback_packing(self):
         cb_time = TimeCallback(preset="now").pack()
@@ -565,6 +563,238 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(mc.get_cached_file_id(unknown_path), "extracted_file_id_999")
         finally:
             mc._FILE_ID_CACHE = orig_cache
+
+    def test_i18n_locales_and_mappings(self):
+        from locales import (
+            get_text,
+            get_intensity_label,
+            get_location_map,
+            get_pain_type_map,
+            get_symptoms_map,
+            get_medication_map,
+            SUPPORTED_LANGUAGES,
+        )
+
+        self.assertIn("ru", SUPPORTED_LANGUAGES)
+        self.assertIn("en", SUPPORTED_LANGUAGES)
+        self.assertIn("meme", SUPPORTED_LANGUAGES)
+        self.assertIn("cyberpunk", SUPPORTED_LANGUAGES)
+
+        # Test Russian strings
+        self.assertIn("Migrebot", get_text("start_welcome", "ru"))
+        self.assertEqual(get_intensity_label(2, "ru"), "Слабая")
+        self.assertEqual(get_intensity_label(10, "ru"), "Невыносимая")
+
+        # Test English strings
+        self.assertIn("Migrebot", get_text("start_welcome", "en"))
+        self.assertEqual(get_intensity_label(2, "en"), "Mild")
+        self.assertEqual(get_intensity_label(10, "en"), "Unbearable")
+        self.assertIn("Forehead", get_location_map("en")["forehead"])
+
+        # Test Meme Russian strings (old and new Runet memes)
+        meme_welcome = get_text("start_welcome", "meme")
+        self.assertTrue("бо-бо" in meme_welcome or "сожрет" in meme_welcome or "суету" in meme_welcome)
+        self.assertTrue("фиаско" in get_intensity_label(10, "meme") or "Press F" in get_intensity_label(10, "meme"))
+        self.assertIn("facepalm", get_location_map("meme")["forehead"])
+        self.assertIn("дедлайн", get_pain_type_map("meme")["pressing"])
+        self.assertIn("кринж", get_symptoms_map("meme")["nausea"])
+        self.assertIn("артиллерия", get_medication_map("meme")["triptan"])
+
+        # Test Cyberpunk strings
+        cp_welcome = get_text("start_welcome", "cyberpunk")
+        self.assertTrue("чумба" in cp_welcome or "биомонитор" in cp_welcome or "нейрочип" in cp_welcome)
+        self.assertTrue("киберпсихоз" in get_intensity_label(10, "cyberpunk") or "Травма Тим" in get_intensity_label(10, "cyberpunk"))
+        self.assertIn("нейропорт", get_location_map("cyberpunk")["forehead"])
+        self.assertIn("Черного льда", get_pain_type_map("cyberpunk")["stabbing"])
+        self.assertIn("Kiroshi", get_symptoms_map("cyberpunk")["photophobia"])
+        self.assertIn("нейроблокатор", get_medication_map("cyberpunk")["triptan"])
+
+        # Test symptom and location coverage across all languages
+        for l_code in SUPPORTED_LANGUAGES:
+            s_map = get_symptoms_map(l_code)
+            self.assertIn("vomiting", s_map, f"vomiting missing from {l_code}")
+            self.assertIn("nausea", s_map, f"nausea missing from {l_code}")
+            self.assertIn("odor", s_map, f"odor missing from {l_code}")
+            self.assertIn("photophobia", s_map, f"photophobia missing from {l_code}")
+            self.assertIn("phonophobia", s_map, f"phonophobia missing from {l_code}")
+            self.assertIn("aura", s_map, f"aura missing from {l_code}")
+            self.assertIn("dizziness", s_map, f"dizziness missing from {l_code}")
+
+            l_map = get_location_map(l_code)
+            self.assertIn("left", l_map, f"left missing from {l_code}")
+            self.assertIn("right", l_map, f"right missing from {l_code}")
+            self.assertIn("both", l_map, f"both missing from {l_code}")
+            self.assertIn("forehead_temples", l_map, f"forehead_temples missing from {l_code}")
+            self.assertIn("back_head", l_map, f"back_head missing from {l_code}")
+            self.assertIn("diffuse", l_map, f"diffuse missing from {l_code}")
+
+            p_map = get_pain_type_map(l_code)
+            self.assertIn("throbbing", p_map, f"throbbing missing from {l_code}")
+            self.assertIn("pressing", p_map, f"pressing missing from {l_code}")
+            self.assertIn("stabbing", p_map, f"stabbing missing from {l_code}")
+            self.assertIn("dull", p_map, f"dull missing from {l_code}")
+            self.assertIn("bursting", p_map, f"bursting missing from {l_code}")
+
+        # Test fallback to Russian
+        self.assertIsNotNone(get_text("unknown_key_xyz", "en"))
+
+    def test_format_episode_card_no_raw_vomiting(self):
+        from handlers.startHandler import _format_episode_card
+        ep = {
+            "id": 6,
+            "start_time": "2026-09-13 22:23",
+            "end_time": "2026-09-13 22:36",
+            "intensity": 10,
+            "location": "diffuse",
+            "pain_type": "dull",
+            "symptoms": ["aura", "phonophobia", "vomiting", "nausea", "photophobia", "dizziness"],
+            "medication": "none",
+            "status": "completed"
+        }
+        # Verify Russian
+        card_ru = _format_episode_card(ep, lang="ru")
+        self.assertNotIn("vomiting", card_ru)
+        self.assertIn("Рвота", card_ru)
+        self.assertIn("Тошнота", card_ru)
+
+        # Verify English
+        card_en = _format_episode_card(ep, lang="en")
+        self.assertNotIn("vomiting", card_en)
+        self.assertIn("Vomiting", card_en)
+        self.assertIn("Nausea", card_en)
+
+        # Verify Meme
+        card_meme = _format_episode_card(ep, lang="meme")
+        self.assertNotIn("vomiting", card_meme)
+        self.assertIn("Рвота (полный тотал)", card_meme)
+
+        # Verify Cyberpunk
+        card_cp = _format_episode_card(ep, lang="cyberpunk")
+        self.assertNotIn("vomiting", card_cp)
+        self.assertIn("Выброс биомассы", card_cp)
+
+    async def test_language_handler_and_switching(self):
+        from handlers.languageHandler import cmd_select_language, process_language_choice
+        from keyboards.headache_kb import LanguageCallback
+
+        # 1. Test /language command
+        mock_msg = AsyncMock()
+        mock_msg.from_user = MagicMock()
+        mock_msg.from_user.id = 12345
+        mock_msg.from_user.username = "testuser"
+        mock_msg.from_user.first_name = "Test"
+
+        with patch("handlers.languageHandler.upsert_user", new=AsyncMock()), \
+             patch("handlers.languageHandler.get_user_language", new=AsyncMock(return_value="ru")):
+            await cmd_select_language(mock_msg)
+            mock_msg.answer.assert_called_once()
+            args, kwargs = mock_msg.answer.call_args
+            self.assertIn("Выбор языка", kwargs["text"])
+
+        # 2. Test language selection callback
+        mock_cb = AsyncMock()
+        mock_cb.from_user = mock_msg.from_user
+        mock_cb.message = AsyncMock()
+        cb_data = LanguageCallback(code="meme")
+
+        with patch("handlers.languageHandler.upsert_user", new=AsyncMock()), \
+             patch("handlers.languageHandler.set_user_language", new=AsyncMock(return_value=True)):
+            await process_language_choice(mock_cb, cb_data)
+            mock_cb.answer.assert_called_with("Language: MEME")
+
+    async def test_followup_flow_and_medication_relief(self):
+        from handlers.followupHandler import (
+            cmd_check_pain_status,
+            process_pain_passed,
+            process_pain_not_passed,
+            process_set_when,
+            process_medication_relief,
+        )
+        from keyboards.headache_kb import FollowUpCallback
+
+        # 1. Test /status or finish check
+        mock_msg = AsyncMock()
+        mock_msg.from_user = MagicMock()
+        mock_msg.from_user.id = 12345
+        mock_state = AsyncMock()
+
+        with patch("handlers.followupHandler.get_active_episode", new=AsyncMock(return_value={"id": 42, "user_id": 12345})):
+            await cmd_check_pain_status(mock_msg, mock_state)
+            mock_msg.answer.assert_called_once()
+            args, kwargs = mock_msg.answer.call_args
+            self.assertIn("Прошла ли", kwargs["text"])
+
+        # 2. Pain passed -> asks when
+        mock_cb = AsyncMock()
+        mock_cb.from_user = mock_msg.from_user
+        mock_cb.message = AsyncMock()
+        cb_passed = FollowUpCallback(action="pain_passed", episode_id=42)
+        await process_pain_passed(mock_cb, cb_passed)
+        mock_cb.message.edit_text.assert_called_once()
+        args, kwargs = mock_cb.message.edit_text.call_args
+        self.assertIn("Когда прошла", kwargs["text"])
+
+        # 3. Time selected -> resolves pain & asks medication if taken
+        cb_when = FollowUpCallback(action="set_when", episode_id=42, value="-30m")
+        mock_ep = {
+            "id": 42,
+            "user_id": 12345,
+            "medication": "Суматриптан 50мг",
+            "medication_relief": None,
+        }
+        with patch("handlers.followupHandler.resolve_episode_pain", new=AsyncMock(return_value=True)) as mock_resolve, \
+             patch("handlers.followupHandler.get_episode_by_id", new=AsyncMock(return_value=mock_ep)):
+            await process_set_when(mock_cb, cb_when)
+            mock_resolve.assert_called_with(42, pain_passed=True, end_time=unittest.mock.ANY)
+            args, kwargs = mock_cb.message.edit_text.call_args
+            self.assertIn("Помог ли", kwargs["text"])
+
+        # 4. Medication relief recorded -> stores in DB
+        mock_cb_med = AsyncMock()
+        mock_cb_med.from_user = mock_msg.from_user
+        mock_cb_med.message = AsyncMock()
+        cb_relief = FollowUpCallback(action="med_relief", episode_id=42, value="helped")
+        with patch("handlers.followupHandler.update_medication_relief", new=AsyncMock(return_value=True)) as mock_up_med:
+            await process_medication_relief(mock_cb_med, cb_relief)
+            mock_up_med.assert_called_with(42, "helped")
+            mock_cb_med.answer.assert_called_once()
+
+        # 5. Pain NOT passed -> marks not resolved in DB
+        cb_not_passed = FollowUpCallback(action="pain_not_passed", episode_id=42)
+        with patch("handlers.followupHandler.resolve_episode_pain", new=AsyncMock(return_value=True)) as mock_resolve_no, \
+             patch("handlers.followupHandler.get_episode_by_id", new=AsyncMock(return_value={"id": 42, "medication": "none"})):
+            await process_pain_not_passed(mock_cb, cb_not_passed)
+            mock_resolve_no.assert_called_with(42, pain_passed=False)
+
+    async def test_followup_scheduler_worker(self):
+        from services.followup_service import followup_scheduler
+        mock_bot = AsyncMock()
+
+        test_episodes = [
+            {
+                "id": 99,
+                "user_id": 12345,
+                "language": "meme",
+                "medication": "Ибупрофен",
+            }
+        ]
+
+        calls = 0
+        async def fake_sleep(duration):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                raise asyncio.CancelledError()
+
+        with patch("services.followup_service.get_pending_followup_episodes", new=AsyncMock(return_value=test_episodes)), \
+             patch("services.followup_service.mark_followup_sent", new=AsyncMock(return_value=True)) as mock_sent, \
+             patch("asyncio.sleep", side_effect=fake_sleep):
+            await followup_scheduler(mock_bot)
+            mock_bot.send_message.assert_called_once()
+            args, kwargs = mock_bot.send_message.call_args
+            self.assertEqual(kwargs["chat_id"], 12345)
+            self.assertTrue("отпустила" in kwargs["text"] or "суета" in kwargs["text"])
+            mock_sent.assert_called_with(99)
 
 
 if __name__ == "__main__":
