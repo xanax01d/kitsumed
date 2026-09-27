@@ -796,6 +796,41 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             self.assertTrue("отпустила" in kwargs["text"] or "суета" in kwargs["text"])
             mock_sent.assert_called_with(99)
 
+    def test_localized_assets(self):
+        from services.media_cache import get_localized_asset, ASSETS_DIR
+        from PIL import Image
+
+        required_assets = [
+            "hero_banner.png",
+            "architecture_diagram.png",
+            "flow_diagram.png",
+            "db_diagram.png",
+            "steps/pain_scale.png",
+            "steps/location.png",
+            "steps/pain_type.png",
+            "steps/symptoms.png",
+            "steps/medication.png",
+        ]
+
+        for loc in ["ru", "en"]:
+            for asset in required_assets:
+                p = ASSETS_DIR / loc / asset
+                self.assertTrue(p.is_file(), f"Asset {p} does not exist!")
+                self.assertGreater(p.stat().st_size, 1000, f"Asset {p} is empty!")
+                with Image.open(p) as img:
+                    self.assertEqual(img.size, (1376, 768), f"Asset {p} dimensions != (1376, 768)")
+
+        # Verify get_localized_asset helper
+        ru_step = get_localized_asset("steps/pain_scale.png", "ru")
+        self.assertEqual(ru_step, ASSETS_DIR / "ru" / "steps" / "pain_scale.png")
+
+        en_step = get_localized_asset("steps/pain_scale.png", "en")
+        self.assertEqual(en_step, ASSETS_DIR / "en" / "steps" / "pain_scale.png")
+
+        # Fallback for meme / cyberpunk
+        meme_step = get_localized_asset("steps/pain_scale.png", "meme")
+        self.assertEqual(meme_step, ASSETS_DIR / "ru" / "steps" / "pain_scale.png")
+
 
 if __name__ == "__main__":
     unittest.main()
