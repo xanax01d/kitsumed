@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - TOKEN=${TOKEN}
+      - TELOXIDE_TOKEN=${TOKEN}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=migrebot
+      - POSTGRES_PASSWORD=migrebot_secure_pass
+      - POSTGRES_DB=migrebot
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RUST_LOG=info
+    volumes:
+      - ./assets:/app/assets:ro
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: migrebot
+      POSTGRES_PASSWORD: migrebot_secure_pass
+      POSTGRES_DB: migrebot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U migrebot -d migrebot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:
