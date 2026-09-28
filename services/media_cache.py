@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -10,7 +11,7 @@ CACHE_FILE = Path(__file__).parent.parent / "assets" / "image_cache.json"
 ASSETS_DIR = Path(__file__).parent.parent / "assets" / "images"
 
 # In-memory storage for telegram photo file_ids
-_FILE_ID_CACHE: dict[str, str] = {}
+_FILE_ID_CACHE: dict[str, Any] = {}
 
 
 def get_localized_asset(rel_path: str, lang: str = "ru") -> Path:
@@ -26,18 +27,43 @@ def get_localized_asset(rel_path: str, lang: str = "ru") -> Path:
     return fallback
 
 
-def _get_keys(image_path: Union[Path, str]) -> list[str]:
-    """Generates candidate keys for cache lookup."""
-    p = Path(image_path)
-    keys = [p.name]
+def _compute_file_hash(p: Path) -> Optional[str]:
+    """Computes MD5 hash of an image file if it exists on disk."""
     try:
-        assets_dir = ASSETS_DIR
-        if assets_dir in p.resolve().parents or p.is_relative_to(assets_dir):
-            rel = str(p.relative_to(assets_dir))
+        if not p.is_file():
+            return None
+        h = hashlib.md5()
+        with open(p, "rb") as f:
+            while chunk := f.read(65536):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
+def _get_keys(image_path: Union[Path, str]) -> list[str]:
+    """
+    Generates candidate keys for cache lookup.
+    Prioritizes specific relative path under ASSETS_DIR (e.g. 'ru/steps/pain_scale.png'
+    vs 'en/steps/pain_scale.png'). Does NOT use bare filename if the path is inside ASSETS_DIR
+    to avoid cross-language cache collisions!
+    """
+    p = Path(image_path)
+    keys: list[str] = []
+    is_under_assets = False
+    try:
+        resolved_p = p.resolve()
+        resolved_assets = ASSETS_DIR.resolve()
+        if resolved_assets in resolved_p.parents or p.is_relative_to(ASSETS_DIR):
+            rel = str(p.relative_to(ASSETS_DIR))
             keys.append(rel)
+            is_under_assets = True
     except Exception:
         pass
+
     keys.append(str(p))
+    if not is_under_assets:
+        keys.append(p.name)
     return keys
 
 
@@ -66,25 +92,51 @@ def save_media_cache() -> None:
 
 
 def get_cached_file_id(image_path: Union[Path, str]) -> Optional[str]:
-    """Retrieves telegram file_id if cached."""
-    for k in _get_keys(image_path):
+    """
+    Retrieves telegram file_id if cached and file hash is unchanged.
+    Invalidates stale cache if the local image file was modified.
+    """
+    p = Path(image_path)
+    current_hash = _compute_file_hash(p)
+    keys = _get_keys(image_path)
+    for k in keys:
         if k in _FILE_ID_CACHE:
-            return _FILE_ID_CACHE[k]
+            val = _FILE_ID_CACHE[k]
+            if isinstance(val, dict):
+                fid = val.get("file_id")
+                cached_hash = val.get("hash")
+                if current_hash is not None and cached_hash is not None:
+                    if current_hash != cached_hash:
+                        logger.info(f"Media cache hash mismatch for {k}, invalidating.")
+                        del _FILE_ID_CACHE[k]
+                        save_media_cache()
+                        continue
+                return fid
+            elif isinstance(val, str):
+                if current_hash is not None:
+                    logger.info(f"Invalidating legacy unhashed cache entry for {k}")
+                    del _FILE_ID_CACHE[k]
+                    save_media_cache()
+                    continue
+                return val
     return None
 
 
 def record_photo_file_id(image_path: Union[Path, str], file_id: str) -> None:
-    """Stores file_id for given image path and persists cache."""
+    """Stores file_id and file hash for given image path and persists cache."""
     if not isinstance(file_id, str) or not file_id.strip():
         return
+    p = Path(image_path)
+    file_hash = _compute_file_hash(p)
     updated = False
     for k in _get_keys(image_path):
-        if _FILE_ID_CACHE.get(k) != file_id:
-            _FILE_ID_CACHE[k] = file_id
+        entry = {"file_id": file_id, "hash": file_hash}
+        if _FILE_ID_CACHE.get(k) != entry:
+            _FILE_ID_CACHE[k] = entry
             updated = True
     if updated:
         save_media_cache()
-        logger.info(f"Cached file_id for {Path(image_path).name}: {file_id[:16]}...")
+        logger.info(f"Cached file_id for {p.name}: {file_id[:16]}...")
 
 
 def extract_and_record(image_path: Union[Path, str], result: Any) -> None:
