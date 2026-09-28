@@ -822,6 +822,8 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             "architecture_diagram.png",
             "flow_diagram.png",
             "db_diagram.png",
+            "history.png",
+            "export.png",
             "steps/start_time.png",
             "steps/pain_scale.png",
             "steps/location.png",

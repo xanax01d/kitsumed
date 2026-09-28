@@ -24,7 +24,7 @@ from locales import (
 
 BANNER_PATH = get_localized_asset("hero_banner.png", "ru")
 FLOW_PATH = get_localized_asset("flow_diagram.png", "ru")
-DB_PATH = get_localized_asset("db_diagram.png", "ru")
+HISTORY_PATH = get_localized_asset("history.png", "ru")
 
 router = Router()
 
@@ -169,28 +169,29 @@ async def view_history(message: Message):
     lang = await get_user_language(user.id) if user else "ru"
     main_kb = get_main_menu_keyboard(lang)
     episodes = await get_recent_episodes(user.id, limit=5)
+    history_img = get_localized_asset("history.png", lang)
 
     if not episodes:
         empty_text = get_text("history_empty", lang)
-        if DB_PATH.is_file():
-            photo_src = get_photo_source(DB_PATH)
+        if history_img.is_file():
+            photo_src = get_photo_source(history_img)
             try:
                 res = await message.answer_photo(
                     photo=photo_src,
                     caption=empty_text,
                     reply_markup=main_kb
                 )
-                extract_and_record(DB_PATH, res)
+                extract_and_record(history_img, res)
                 return
             except Exception:
                 if isinstance(photo_src, str):
                     try:
                         res = await message.answer_photo(
-                            photo=FSInputFile(str(DB_PATH)),
+                            photo=FSInputFile(str(history_img)),
                             caption=empty_text,
                             reply_markup=main_kb
                         )
-                        extract_and_record(DB_PATH, res)
+                        extract_and_record(history_img, res)
                         return
                     except Exception:
                         pass
@@ -201,8 +202,8 @@ async def view_history(message: Message):
     header = get_text("history_title", lang)
     full_text = header + "\n\n".join(cards)
 
-    if DB_PATH.is_file():
-        photo_src = get_photo_source(DB_PATH)
+    if history_img.is_file():
+        photo_src = get_photo_source(history_img)
         try:
             if len(full_text) <= 1024:
                 res = await message.answer_photo(
@@ -210,14 +211,14 @@ async def view_history(message: Message):
                     caption=full_text,
                     reply_markup=main_kb
                 )
-                extract_and_record(DB_PATH, res)
+                extract_and_record(history_img, res)
                 return
             else:
                 res = await message.answer_photo(
                     photo=photo_src,
                     caption=header.strip()
                 )
-                extract_and_record(DB_PATH, res)
+                extract_and_record(history_img, res)
                 await message.answer(full_text, reply_markup=main_kb)
                 return
         except Exception:
@@ -225,18 +226,18 @@ async def view_history(message: Message):
                 try:
                     if len(full_text) <= 1024:
                         res = await message.answer_photo(
-                            photo=FSInputFile(str(DB_PATH)),
+                            photo=FSInputFile(str(history_img)),
                             caption=full_text,
                             reply_markup=main_kb
                         )
-                        extract_and_record(DB_PATH, res)
+                        extract_and_record(history_img, res)
                         return
                     else:
                         res = await message.answer_photo(
-                            photo=FSInputFile(str(DB_PATH)),
+                            photo=FSInputFile(str(history_img)),
                             caption=header.strip()
                         )
-                        extract_and_record(DB_PATH, res)
+                        extract_and_record(history_img, res)
                         await message.answer(full_text, reply_markup=main_kb)
                         return
                 except Exception:

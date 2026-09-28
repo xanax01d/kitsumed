@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery, FSInputFile, InputMediaPhoto
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
@@ -20,7 +20,7 @@ from keyboards.headache_kb import (
 )
 from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS, CANCEL_BUTTONS
 from db import create_episode, get_active_episode, upsert_user, get_user_language
-from services.media_cache import get_photo_source, extract_and_record, get_localized_asset
+from services.media_cache import get_photo_source, extract_and_record, get_localized_asset, get_input_media
 from locales import (
     get_text,
     get_intensity_label,
@@ -91,7 +91,21 @@ async def show_or_edit_step(
 
     if isinstance(target, CallbackQuery):
         msg = target.message
-        if msg and msg.photo and photo_source:
+        if msg and msg.photo and photo_path and photo_path.is_file():
+            # Dynamically edit the photo to match the new step's illustration!
+            try:
+                media = get_input_media(photo_path, caption=text)
+                res = await msg.edit_media(media=media, reply_markup=reply_markup)
+                extract_and_record(photo_path, res)
+                return
+            except Exception:
+                try:
+                    fallback_media = InputMediaPhoto(media=FSInputFile(str(photo_path)), caption=text)
+                    res = await msg.edit_media(media=fallback_media, reply_markup=reply_markup)
+                    extract_and_record(photo_path, res)
+                    return
+                except Exception:
+                    pass
             try:
                 await msg.edit_caption(caption=text, reply_markup=reply_markup)
                 return
