@@ -10,6 +10,7 @@ from keyboards.headache_kb import (
     get_pain_type_keyboard,
     get_symptoms_keyboard,
     get_medication_keyboard,
+    get_medication_relief_keyboard,
     get_confirm_keyboard,
     get_cancel_keyboard,
     get_export_keyboard,
@@ -19,6 +20,7 @@ from keyboards.headache_kb import (
     PainTypeCallback,
     SymptomCallback,
     MedicationCallback,
+    MedicationReliefCallback,
     ExportCallback,
     NavCallback,
 )
@@ -36,7 +38,15 @@ from keyboards.reminder_kb import (
 )
 from states.headache import HeadacheLogSG
 from states.reminder import ReminderSG
-from handlers.headache import callback_back, callback_cancel, cmd_cancel
+from handlers.headache import (
+    callback_back,
+    callback_cancel,
+    cmd_cancel,
+    process_medication_skip,
+    process_medication_input,
+    process_medication_relief,
+    format_summary,
+)
 from handlers.reminderHandler import (
     TIME_REGEX,
     resolve_timezone,
@@ -64,6 +74,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(get_symptoms_keyboard(set(), lang=lang))
             self.assertIsNotNone(get_symptoms_keyboard({"nausea", "aura"}, lang=lang))
             self.assertIsNotNone(get_medication_keyboard(lang=lang))
+            self.assertIsNotNone(get_medication_relief_keyboard(lang=lang))
             self.assertIsNotNone(get_confirm_keyboard(lang=lang))
             self.assertIsNotNone(get_export_keyboard(lang=lang))
 
@@ -85,6 +96,9 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
         cb_med = MedicationCallback(value="triptan").pack()
         self.assertIn("triptan", cb_med)
+
+        cb_relief = MedicationReliefCallback(value="helped").pack()
+        self.assertTrue(cb_relief.startswith("hdmr:helped"))
 
         cb_exp = ExportCallback(format="pdf").pack()
         self.assertIn("pdf", cb_exp)
@@ -292,6 +306,11 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("back", med_actions)
         self.assertIn("cancel", med_actions)
 
+        # 6b. Medication relief has both back and cancel
+        medr_actions = extract_nav_actions(get_medication_relief_keyboard())
+        self.assertIn("back", medr_actions)
+        self.assertIn("cancel", medr_actions)
+
         # 7. Confirmation has both back and cancel
         conf_actions = extract_nav_actions(get_confirm_keyboard())
         self.assertIn("back", conf_actions)
@@ -303,7 +322,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("cancel", cancel_actions)
 
     async def test_navigation_back_fsm_transitions(self):
-        # Test back button transitions through all FSM steps
+        # Test back button transitions through all FSM steps (with no medication taken)
         transitions = [
             (HeadacheLogSG.custom_start_time.state, HeadacheLogSG.start_time),
             (HeadacheLogSG.intensity.state, HeadacheLogSG.start_time),
@@ -312,6 +331,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             (HeadacheLogSG.symptoms.state, HeadacheLogSG.pain_type),
             (HeadacheLogSG.medication.state, HeadacheLogSG.symptoms),
             (HeadacheLogSG.confirm.state, HeadacheLogSG.medication),
+            (HeadacheLogSG.medication_relief.state, HeadacheLogSG.medication),
         ]
 
         for from_state, expected_to_state in transitions:
@@ -322,7 +342,8 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
                 "intensity": 7,
                 "location": "left",
                 "pain_type": "throbbing",
-                "symptoms": ["nausea"]
+                "symptoms": ["nausea"],
+                "medication": "none"
             }
 
             mock_cb = AsyncMock()
@@ -331,6 +352,20 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             await callback_back(mock_cb, mock_state)
             mock_state.set_state.assert_called_with(expected_to_state)
             mock_cb.answer.assert_called()
+
+        # Test back button from confirm when medication was taken -> goes to medication_relief
+        mock_state_med = AsyncMock()
+        mock_state_med.get_state.return_value = HeadacheLogSG.confirm.state
+        mock_state_med.get_data.return_value = {
+            "start_time": "2026-09-13 22:00",
+            "medication": "Суматриптан 50мг",
+            "medication_relief": "helped"
+        }
+        mock_cb_med = AsyncMock()
+        mock_cb_med.message = AsyncMock()
+
+        await callback_back(mock_cb_med, mock_state_med)
+        mock_state_med.set_state.assert_called_with(HeadacheLogSG.medication_relief)
 
     async def test_cancel_flow_clears_state(self):
         # 1. Callback cancel
@@ -852,6 +887,61 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         # Fallback for meme / cyberpunk
         meme_step = get_localized_asset("steps/pain_scale.png", "meme")
         self.assertEqual(meme_step, ASSETS_DIR / "ru" / "steps" / "pain_scale.png")
+
+    async def test_medication_relief_flow_branching(self):
+        # 1. When medication is skipped ("none") -> advances directly to HeadacheLogSG.confirm
+        state_dict_none = {"lang": "ru"}
+        mock_state_none = AsyncMock()
+        mock_state_none.get_data.side_effect = lambda: state_dict_none
+        async def fake_update_none(**kwargs):
+            state_dict_none.update(kwargs)
+        mock_state_none.update_data.side_effect = fake_update_none
+
+        mock_cb_none = AsyncMock()
+        mock_cb_none.from_user = MagicMock()
+        mock_cb_none.from_user.id = 12345
+        mock_cb_none.message = AsyncMock()
+
+        cb_none = MedicationCallback(value="none")
+        await process_medication_skip(mock_cb_none, cb_none, mock_state_none)
+
+        self.assertEqual(state_dict_none.get("medication"), "none")
+        self.assertIsNone(state_dict_none.get("medication_relief"))
+        mock_state_none.set_state.assert_called_with(HeadacheLogSG.confirm)
+
+        # 2. When medication is entered as text -> advances to HeadacheLogSG.medication_relief
+        state_dict_med = {"lang": "ru"}
+        mock_state_med = AsyncMock()
+        mock_state_med.get_data.side_effect = lambda: state_dict_med
+        async def fake_update_med(**kwargs):
+            state_dict_med.update(kwargs)
+        mock_state_med.update_data.side_effect = fake_update_med
+
+        mock_msg = AsyncMock()
+        mock_msg.from_user = MagicMock()
+        mock_msg.from_user.id = 12345
+        mock_msg.text = "Суматриптан 50мг"
+
+        await process_medication_input(mock_msg, mock_state_med)
+
+        self.assertEqual(state_dict_med.get("medication"), "Суматриптан 50мг")
+        mock_state_med.set_state.assert_called_with(HeadacheLogSG.medication_relief)
+
+        # 3. When medication relief option is selected -> saves relief and advances to HeadacheLogSG.confirm
+        mock_cb_relief = AsyncMock()
+        mock_cb_relief.from_user = mock_msg.from_user
+        mock_cb_relief.message = AsyncMock()
+
+        cb_relief = MedicationReliefCallback(value="helped")
+        await process_medication_relief(mock_cb_relief, cb_relief, mock_state_med)
+
+        self.assertEqual(state_dict_med.get("medication_relief"), "helped")
+        mock_state_med.set_state.assert_called_with(HeadacheLogSG.confirm)
+
+        # 4. Summary format check with medication relief
+        summary = format_summary(state_dict_med, "ru")
+        self.assertIn("Суматриптан 50мг", summary)
+        self.assertIn("Помогло", summary)
 
 
 if __name__ == "__main__":

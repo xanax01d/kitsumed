@@ -32,6 +32,9 @@ class SymptomCallback(CallbackData, prefix="hds"):
 class MedicationCallback(CallbackData, prefix="hdm"):
     value: str
 
+class MedicationReliefCallback(CallbackData, prefix="hdmr"):
+    value: str  # "helped", "partially", "not_helped"
+
 class ConfirmCallback(CallbackData, prefix="hdc"):
     action: str  # "save", "cancel"
 
@@ -385,6 +388,29 @@ def get_medication_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 get_manual_medication_keyboard = get_medication_keyboard
+
+
+# --- 6b. Medication Relief Keyboard ---
+def get_medication_relief_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text=get_text("fu_med_helped", lang),
+            callback_data=MedicationReliefCallback(value="helped").pack()
+        ),
+        InlineKeyboardButton(
+            text=get_text("fu_med_partially", lang),
+            callback_data=MedicationReliefCallback(value="partially").pack()
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=get_text("fu_med_not_helped", lang),
+            callback_data=MedicationReliefCallback(value="not_helped").pack()
+        )
+    )
+    add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
+    return builder.as_markup()
 
 
 # --- 7. Confirmation Keyboard ---
