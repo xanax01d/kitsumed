@@ -10,7 +10,9 @@ from keyboards.headache_kb import (
     get_pain_type_keyboard,
     get_symptoms_keyboard,
     get_medication_keyboard,
+    get_medication_time_keyboard,
     get_medication_relief_keyboard,
+    get_relief_time_keyboard,
     get_confirm_keyboard,
     get_cancel_keyboard,
     get_export_keyboard,
@@ -20,7 +22,9 @@ from keyboards.headache_kb import (
     PainTypeCallback,
     SymptomCallback,
     MedicationCallback,
+    MedicationTimeCallback,
     MedicationReliefCallback,
+    ReliefTimeCallback,
     ExportCallback,
     NavCallback,
 )
@@ -44,7 +48,11 @@ from handlers.headache import (
     cmd_cancel,
     process_medication_skip,
     process_medication_input,
+    process_medication_time,
     process_medication_relief,
+    process_relief_time,
+    _parse_delay_minutes,
+    _calculate_end_time_and_duration,
     format_summary,
 )
 from handlers.reminderHandler import (
@@ -99,6 +107,12 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
         cb_relief = MedicationReliefCallback(value="helped").pack()
         self.assertTrue(cb_relief.startswith("hdmr:helped"))
+
+        cb_med_time = MedicationTimeCallback(value="30m").pack()
+        self.assertTrue(cb_med_time.startswith("hdmt:30m"))
+
+        cb_relief_time = ReliefTimeCallback(value="60m").pack()
+        self.assertTrue(cb_relief_time.startswith("hdmrt:60m"))
 
         cb_exp = ExportCallback(format="pdf").pack()
         self.assertIn("pdf", cb_exp)
@@ -331,7 +345,9 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             (HeadacheLogSG.symptoms.state, HeadacheLogSG.pain_type),
             (HeadacheLogSG.medication.state, HeadacheLogSG.symptoms),
             (HeadacheLogSG.confirm.state, HeadacheLogSG.medication),
-            (HeadacheLogSG.medication_relief.state, HeadacheLogSG.medication),
+            (HeadacheLogSG.medication_time.state, HeadacheLogSG.medication),
+            (HeadacheLogSG.medication_relief.state, HeadacheLogSG.medication_time),
+            (HeadacheLogSG.relief_time.state, HeadacheLogSG.medication_relief),
         ]
 
         for from_state, expected_to_state in transitions:
@@ -353,19 +369,35 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             mock_state.set_state.assert_called_with(expected_to_state)
             mock_cb.answer.assert_called()
 
-        # Test back button from confirm when medication was taken -> goes to medication_relief
-        mock_state_med = AsyncMock()
-        mock_state_med.get_state.return_value = HeadacheLogSG.confirm.state
-        mock_state_med.get_data.return_value = {
+        # Test back button from confirm when medication helped & completed -> goes to relief_time
+        mock_state_helped = AsyncMock()
+        mock_state_helped.get_state.return_value = HeadacheLogSG.confirm.state
+        mock_state_helped.get_data.return_value = {
             "start_time": "2026-09-13 22:00",
             "medication": "Суматриптан 50мг",
-            "medication_relief": "helped"
+            "medication_relief": "helped",
+            "status": "completed",
         }
-        mock_cb_med = AsyncMock()
-        mock_cb_med.message = AsyncMock()
+        mock_cb_helped = AsyncMock()
+        mock_cb_helped.message = AsyncMock()
 
-        await callback_back(mock_cb_med, mock_state_med)
-        mock_state_med.set_state.assert_called_with(HeadacheLogSG.medication_relief)
+        await callback_back(mock_cb_helped, mock_state_helped)
+        mock_state_helped.set_state.assert_called_with(HeadacheLogSG.relief_time)
+
+        # Test back button from confirm when medication did not help -> goes to medication_relief
+        mock_state_not_helped = AsyncMock()
+        mock_state_not_helped.get_state.return_value = HeadacheLogSG.confirm.state
+        mock_state_not_helped.get_data.return_value = {
+            "start_time": "2026-09-13 22:00",
+            "medication": "Суматриптан 50мг",
+            "medication_relief": "not_helped",
+            "status": "active",
+        }
+        mock_cb_not_helped = AsyncMock()
+        mock_cb_not_helped.message = AsyncMock()
+
+        await callback_back(mock_cb_not_helped, mock_state_not_helped)
+        mock_state_not_helped.set_state.assert_called_with(HeadacheLogSG.medication_relief)
 
     async def test_cancel_flow_clears_state(self):
         # 1. Callback cancel
@@ -889,7 +921,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(meme_step, ASSETS_DIR / "ru" / "steps" / "pain_scale.png")
 
     async def test_medication_relief_flow_branching(self):
-        # 1. When medication is skipped ("none") -> advances directly to HeadacheLogSG.confirm
+        # 1. When medication is skipped ("none") -> advances directly to HeadacheLogSG.confirm as active
         state_dict_none = {"lang": "ru"}
         mock_state_none = AsyncMock()
         mock_state_none.get_data.side_effect = lambda: state_dict_none
@@ -906,11 +938,13 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         await process_medication_skip(mock_cb_none, cb_none, mock_state_none)
 
         self.assertEqual(state_dict_none.get("medication"), "none")
+        self.assertEqual(state_dict_none.get("status"), "active")
+        self.assertFalse(state_dict_none.get("pain_resolved"))
         self.assertIsNone(state_dict_none.get("medication_relief"))
         mock_state_none.set_state.assert_called_with(HeadacheLogSG.confirm)
 
-        # 2. When medication is entered as text -> advances to HeadacheLogSG.medication_relief
-        state_dict_med = {"lang": "ru"}
+        # 2. When medication is entered as text -> advances to HeadacheLogSG.medication_time
+        state_dict_med = {"lang": "ru", "start_time": "2026-09-14 12:00"}
         mock_state_med = AsyncMock()
         mock_state_med.get_data.side_effect = lambda: state_dict_med
         async def fake_update_med(**kwargs):
@@ -925,23 +959,154 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         await process_medication_input(mock_msg, mock_state_med)
 
         self.assertEqual(state_dict_med.get("medication"), "Суматриптан 50мг")
+        mock_state_med.set_state.assert_called_with(HeadacheLogSG.medication_time)
+
+        # 3. When medication intake time is selected -> advances to HeadacheLogSG.medication_relief
+        mock_cb_med_time = AsyncMock()
+        mock_cb_med_time.from_user = mock_msg.from_user
+        mock_cb_med_time.message = AsyncMock()
+
+        cb_med_time = MedicationTimeCallback(value="30m")
+        await process_medication_time(mock_cb_med_time, cb_med_time, mock_state_med)
+
+        self.assertEqual(state_dict_med.get("med_take_delay"), "30m")
         mock_state_med.set_state.assert_called_with(HeadacheLogSG.medication_relief)
 
-        # 3. When medication relief option is selected -> saves relief and advances to HeadacheLogSG.confirm
-        mock_cb_relief = AsyncMock()
-        mock_cb_relief.from_user = mock_msg.from_user
-        mock_cb_relief.message = AsyncMock()
+        # 4a. When medication did NOT help -> status remains active, advances to confirm
+        state_not_helped = dict(state_dict_med)
+        mock_state_not_helped = AsyncMock()
+        mock_state_not_helped.get_data.side_effect = lambda: state_not_helped
+        async def fake_update_nh(**kwargs):
+            state_not_helped.update(kwargs)
+        mock_state_not_helped.update_data.side_effect = fake_update_nh
 
-        cb_relief = MedicationReliefCallback(value="helped")
-        await process_medication_relief(mock_cb_relief, cb_relief, mock_state_med)
+        mock_cb_nh = AsyncMock()
+        mock_cb_nh.from_user = mock_msg.from_user
+        mock_cb_nh.message = AsyncMock()
+
+        cb_nh = MedicationReliefCallback(value="not_helped")
+        await process_medication_relief(mock_cb_nh, cb_nh, mock_state_not_helped)
+
+        self.assertEqual(state_not_helped.get("medication_relief"), "not_helped")
+        self.assertEqual(state_not_helped.get("status"), "active")
+        self.assertFalse(state_not_helped.get("pain_resolved"))
+        mock_state_not_helped.set_state.assert_called_with(HeadacheLogSG.confirm)
+
+        summary_nh = format_summary(state_not_helped, "ru")
+        self.assertIn("Активен", summary_nh)
+        self.assertIn("Не помогло", summary_nh)
+
+        # 4b. When medication HELPED -> advances to HeadacheLogSG.relief_time
+        cb_helped = MedicationReliefCallback(value="helped")
+        await process_medication_relief(mock_cb_med_time, cb_helped, mock_state_med)
 
         self.assertEqual(state_dict_med.get("medication_relief"), "helped")
+        mock_state_med.set_state.assert_called_with(HeadacheLogSG.relief_time)
+
+        # 5. When relief duration is selected -> calculates duration, completes episode, advances to confirm
+        mock_cb_relief_time = AsyncMock()
+        mock_cb_relief_time.from_user = mock_msg.from_user
+        mock_cb_relief_time.message = AsyncMock()
+
+        cb_relief_time = ReliefTimeCallback(value="60m")
+        await process_relief_time(mock_cb_relief_time, cb_relief_time, mock_state_med)
+
+        self.assertEqual(state_dict_med.get("relief_delay"), "60m")
+        self.assertEqual(state_dict_med.get("status"), "completed")
+        self.assertTrue(state_dict_med.get("pain_resolved"))
+        self.assertEqual(state_dict_med.get("end_time"), "2026-09-14 13:30")
+        self.assertEqual(state_dict_med.get("duration"), "1 ч 30 мин")
         mock_state_med.set_state.assert_called_with(HeadacheLogSG.confirm)
 
-        # 4. Summary format check with medication relief
-        summary = format_summary(state_dict_med, "ru")
-        self.assertIn("Суматриптан 50мг", summary)
-        self.assertIn("Помогло", summary)
+        # 6. Summary format check for resolved episode
+        summary_res = format_summary(state_dict_med, "ru")
+        self.assertIn("Купирован", summary_res)
+        self.assertIn("1 ч 30 мин", summary_res)
+        self.assertIn("2026-09-14 12:00 → 2026-09-14 13:30", summary_res)
+        self.assertIn("Суматриптан 50мг", summary_res)
+        self.assertIn("Помогло", summary_res)
+
+    async def test_medication_time_and_relief_calculation(self):
+        # 1. Test _parse_delay_minutes
+        self.assertEqual(_parse_delay_minutes("0m"), 0)
+        self.assertEqual(_parse_delay_minutes("30m"), 30)
+        self.assertEqual(_parse_delay_minutes("60m"), 60)
+        self.assertEqual(_parse_delay_minutes("120m"), 120)
+        self.assertEqual(_parse_delay_minutes("180m"), 180)
+        self.assertEqual(_parse_delay_minutes("2h"), 120)
+        self.assertEqual(_parse_delay_minutes(None), 0)
+        self.assertEqual(_parse_delay_minutes("invalid"), 0)
+
+        # 2. Test _calculate_end_time_and_duration
+        # Russian
+        end_ru, dur_ru = _calculate_end_time_and_duration("2026-09-14 10:00", 90, "ru")
+        self.assertEqual(end_ru, "2026-09-14 11:30")
+        self.assertEqual(dur_ru, "1 ч 30 мин")
+
+        end_ru_60, dur_ru_60 = _calculate_end_time_and_duration("2026-09-14 10:00", 60, "ru")
+        self.assertEqual(end_ru_60, "2026-09-14 11:00")
+        self.assertEqual(dur_ru_60, "1 ч")
+
+        end_ru_30, dur_ru_30 = _calculate_end_time_and_duration("2026-09-14 10:00", 30, "ru")
+        self.assertEqual(end_ru_30, "2026-09-14 10:30")
+        self.assertEqual(dur_ru_30, "30 мин")
+
+        # English
+        end_en, dur_en = _calculate_end_time_and_duration("2026-09-14 10:00", 90, "en")
+        self.assertEqual(end_en, "2026-09-14 11:30")
+        self.assertEqual(dur_en, "1h 30m")
+
+        end_en_30, dur_en_30 = _calculate_end_time_and_duration("2026-09-14 10:00", 30, "en")
+        self.assertEqual(end_en_30, "2026-09-14 10:30")
+        self.assertEqual(dur_en_30, "30m")
+
+        # 3. Test keyboard generation
+        for lang in ["ru", "en", "meme", "cyberpunk"]:
+            kb_time = get_medication_time_keyboard(lang)
+            time_cbs = [
+                MedicationTimeCallback.unpack(b.callback_data).value
+                for row in kb_time.inline_keyboard
+                for b in row
+                if b.callback_data and b.callback_data.startswith("hdmt:")
+            ]
+            self.assertEqual(time_cbs, ["0m", "30m", "60m", "120m"])
+
+            kb_relief = get_relief_time_keyboard(lang)
+            relief_cbs = [
+                ReliefTimeCallback.unpack(b.callback_data).value
+                for row in kb_relief.inline_keyboard
+                for b in row
+                if b.callback_data and b.callback_data.startswith("hdmrt:")
+            ]
+            self.assertEqual(relief_cbs, ["30m", "60m", "120m", "180m"])
+
+        # 4. Test database create_episode with status='completed'
+        mock_pool = MagicMock()
+        mock_conn = AsyncMock()
+        mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
+        mock_conn.fetchrow.return_value = {"id": 999}
+
+        with patch("db.database._get_pool", return_value=mock_pool):
+            data_completed = {
+                "start_time": "2026-09-14 10:00",
+                "end_time": "2026-09-14 11:30",
+                "intensity": 7,
+                "location": "left",
+                "pain_type": "throbbing",
+                "symptoms": ["nausea"],
+                "medication": "Суматриптан 50мг",
+                "medication_relief": "helped",
+                "med_take_delay": "30m",
+                "relief_delay": "60m",
+                "status": "completed",
+                "pain_resolved": True,
+            }
+            ep_id = await db_mod.create_episode(12345, data_completed)
+            self.assertEqual(ep_id, 999)
+
+            # Check that fetchrow received query with 'completed'
+            sql_call = mock_conn.fetchrow.call_args[0][0]
+            self.assertIn("'completed'", sql_call)
 
 
 if __name__ == "__main__":

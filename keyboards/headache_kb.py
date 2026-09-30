@@ -32,8 +32,14 @@ class SymptomCallback(CallbackData, prefix="hds"):
 class MedicationCallback(CallbackData, prefix="hdm"):
     value: str
 
+class MedicationTimeCallback(CallbackData, prefix="hdmt"):
+    value: str  # "0m", "30m", "60m", "120m"
+
 class MedicationReliefCallback(CallbackData, prefix="hdmr"):
     value: str  # "helped", "partially", "not_helped"
+
+class ReliefTimeCallback(CallbackData, prefix="hdmrt"):
+    value: str  # "15m", "30m", "60m", "120m", "180m"
 
 class ConfirmCallback(CallbackData, prefix="hdc"):
     action: str  # "save", "cancel"
@@ -390,6 +396,49 @@ def get_medication_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
 get_manual_medication_keyboard = get_medication_keyboard
 
 
+# --- 6a. Medication Time Taken Keyboard ---
+def get_medication_time_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if lang == "meme":
+        labels = [
+            ("⚡️ Сразу вкинул(а)", "0m"),
+            ("⏱ Через 30 мин", "30m"),
+            ("⏱ Через 1 час", "60m"),
+            ("⏱ Спустя 2+ часа", "120m"),
+        ]
+    elif lang == "cyberpunk":
+        labels = [
+            ("⚡️ Мгновенный инжект (<15м)", "0m"),
+            ("⏱ Через 30 мин", "30m"),
+            ("⏱ Через 1 час", "60m"),
+            ("⏱ Через 2+ часа", "120m"),
+        ]
+    elif lang == "en":
+        labels = [
+            ("⚡️ Immediately / <15m", "0m"),
+            ("⏱ After 30 min", "30m"),
+            ("⏱ After 1 hour", "60m"),
+            ("⏱ After 2+ hours", "120m"),
+        ]
+    else:
+        labels = [
+            ("⚡️ Сразу / до 15 мин", "0m"),
+            ("⏱ Через 30 минут", "30m"),
+            ("⏱ Через 1 час", "60m"),
+            ("⏱ Через 2+ часа", "120m"),
+        ]
+
+    for i in range(0, len(labels), 2):
+        row_btns = [
+            InlineKeyboardButton(text=lbl, callback_data=MedicationTimeCallback(value=val).pack())
+            for lbl, val in labels[i:i+2]
+        ]
+        builder.row(*row_btns)
+
+    add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
+    return builder.as_markup()
+
+
 # --- 6b. Medication Relief Keyboard ---
 def get_medication_relief_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -409,6 +458,49 @@ def get_medication_relief_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
             callback_data=MedicationReliefCallback(value="not_helped").pack()
         )
     )
+    add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
+    return builder.as_markup()
+
+
+# --- 6c. Relief Duration Keyboard ---
+def get_relief_time_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if lang == "meme":
+        labels = [
+            ("⏱ За 30 мин (имба)", "30m"),
+            ("⏱ За 1 час (норм)", "60m"),
+            ("⏱ За 2 часа (потно)", "120m"),
+            ("⏱ За 3+ часа (еле выжил)", "180m"),
+        ]
+    elif lang == "cyberpunk":
+        labels = [
+            ("⏱ Стабилизация за 30 мин", "30m"),
+            ("⏱ Стабилизация за 1 час", "60m"),
+            ("⏱ Стабилизация за 2 часа", "120m"),
+            ("⏱ Стабилизация за 3+ часа", "180m"),
+        ]
+    elif lang == "en":
+        labels = [
+            ("⏱ Within 30 min", "30m"),
+            ("⏱ Within 1 hour", "60m"),
+            ("⏱ Within 2 hours", "120m"),
+            ("⏱ After 3+ hours", "180m"),
+        ]
+    else:
+        labels = [
+            ("⏱ Через 30 минут", "30m"),
+            ("⏱ Через 1 час", "60m"),
+            ("⏱ Через 2 часа", "120m"),
+            ("⏱ Через 3+ часа", "180m"),
+        ]
+
+    for i in range(0, len(labels), 2):
+        row_btns = [
+            InlineKeyboardButton(text=lbl, callback_data=ReliefTimeCallback(value=val).pack())
+            for lbl, val in labels[i:i+2]
+        ]
+        builder.row(*row_btns)
+
     add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
     return builder.as_markup()
 

@@ -49,6 +49,8 @@ MESSAGES = {
     "step_4_title": "<b>Характер нейрошума и спазма</b>\nСектор: <b>{loc_text}</b>",
     "step_5_title": "<b>Сопутствующие аномалии биосистемы</b>\nШум: <b>{pt_text}</b>",
     "step_6_title": "<b>Инъекция стимуляторов / Блокаторы</b>\nУкажи химсостав или нажми клавишу на деке:",
+    "med_time_question": "<b>Когда был введен стимулятор ({medication}) после сбоя нейросети?</b>",
+    "relief_time_question": "<b>Через сколько времени после стимулятора нейросеть стабилизировалась?</b>",
 
     # Intensity labels
     "intensity_mild": "Минорный глитч интерфейса",
@@ -59,6 +61,9 @@ MESSAGES = {
     # Summary
     "summary_title": "<b>Дамп отчета биомонитора:</b>\n\n",
     "summary_time": "• Таймкод: <code>{start_time}</code>\n",
+    "summary_time_resolved": "• Таймлайн: <code>{start_time} → {end_time}</code> ({duration})\n",
+    "summary_status_completed": "• Статус: 🟢 Стабилизировано (нейросеть в норме)\n",
+    "summary_status_active": "• Статус: 🔴 Активный сбой (перегрузка продолжается)\n",
     "summary_pain": "• Урон нейросети: <b>{intensity}/10</b> ({level})\n",
     "summary_location": "• Сектор: {loc_text}\n",
     "summary_pain_type": "• Характер сбоя: {pt_text}\n",
@@ -74,6 +79,7 @@ MESSAGES = {
     "action_cancelled": "Операция прервана. Буфер очищен.",
     "no_active_action": "Нет активных потоков выполнения.",
     "saved_success": "<b>Сбой залогирован!</b> (#{episode_id})\n\nБиомонитор проведет контрольный пинг узлов через заданный интервал.",
+    "saved_completed_success": "<b>Сбой купирован и занесен в архив</b> (#{episode_id})\n\n🟢 Время до стабилизации: <code>{duration}</code>.\nВсе системы в норме, самурай!",
 
     # Follow-up Flow (Pain resolution & Medication efficacy)
     "fu_no_active": "Активных сигнатур боли в нейроинтерфейсе не обнаружено. Ты в строю, самурай.",

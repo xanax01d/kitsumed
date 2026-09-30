@@ -101,6 +101,8 @@ async def init_db(dsn: Optional[str] = None):
                 status VARCHAR(32) DEFAULT 'active',
                 medication_relief VARCHAR(32) DEFAULT NULL,
                 pain_resolved BOOLEAN DEFAULT NULL,
+                med_take_delay VARCHAR(32) DEFAULT NULL,
+                relief_delay VARCHAR(32) DEFAULT NULL,
                 followup_due_at TIMESTAMPTZ DEFAULT NULL,
                 followup_sent BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMPTZ DEFAULT NOW()
@@ -108,6 +110,8 @@ async def init_db(dsn: Optional[str] = None):
 
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS medication_relief VARCHAR(32) DEFAULT NULL;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS pain_resolved BOOLEAN DEFAULT NULL;
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS med_take_delay VARCHAR(32) DEFAULT NULL;
+            ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS relief_delay VARCHAR(32) DEFAULT NULL;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_due_at TIMESTAMPTZ DEFAULT NULL;
             ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_sent BOOLEAN DEFAULT FALSE;
 
@@ -192,23 +196,48 @@ async def create_episode(user_id: int, data: Dict[str, Any]) -> int:
     symptoms_list = list(data.get("symptoms", []))
     symptoms_json = json.dumps(symptoms_list, ensure_ascii=False)
     start_time = data.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
+    end_time = data.get("end_time")
     intensity = int(data.get("intensity", 5))
     location = str(data.get("location", ""))
     pain_type = str(data.get("pain_type", ""))
     medication = str(data.get("medication", "none"))
     medication_relief = data.get("medication_relief")
+    med_take_delay = data.get("med_take_delay")
+    relief_delay = data.get("relief_delay")
+    status = data.get("status", "active")
+    pain_resolved = data.get("pain_resolved")
 
     async with pool.acquire() as conn:
-        row = await conn.fetchrow("""
-            INSERT INTO headache_episodes (
-                user_id, start_time, intensity, location, pain_type, symptoms,
-                medication, medication_relief, status, followup_due_at, followup_sent
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6::jsonb, $7, $8, 'active',
-                NOW() + INTERVAL '2 hours', FALSE
-            )
-            RETURNING id;
-        """, user_id, start_time, intensity, location, pain_type, symptoms_json, medication, medication_relief)
+        if status == "completed":
+            row = await conn.fetchrow("""
+                INSERT INTO headache_episodes (
+                    user_id, start_time, end_time, intensity, location, pain_type, symptoms,
+                    medication, medication_relief, med_take_delay, relief_delay, status,
+                    pain_resolved, followup_due_at, followup_sent
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7::jsonb,
+                    $8, $9, $10, $11, 'completed',
+                    $12, NULL, TRUE
+                )
+                RETURNING id;
+            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json,
+                medication, medication_relief, med_take_delay, relief_delay,
+                True if pain_resolved is None else pain_resolved)
+        else:
+            row = await conn.fetchrow("""
+                INSERT INTO headache_episodes (
+                    user_id, start_time, end_time, intensity, location, pain_type, symptoms,
+                    medication, medication_relief, med_take_delay, relief_delay, status,
+                    pain_resolved, followup_due_at, followup_sent
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7::jsonb,
+                    $8, $9, $10, $11, 'active',
+                    $12, NOW() + INTERVAL '2 hours', FALSE
+                )
+                RETURNING id;
+            """, user_id, start_time, end_time, intensity, location, pain_type, symptoms_json,
+                medication, medication_relief, med_take_delay, relief_delay,
+                False if pain_resolved is None else pain_resolved)
         return row["id"]
 
 
@@ -230,7 +259,8 @@ async def get_active_episode(user_id: int) -> Optional[Dict[str, Any]]:
         row = await conn.fetchrow("""
             SELECT id, user_id, start_time, end_time, intensity, location,
                    pain_type, symptoms, medication, status, medication_relief,
-                   pain_resolved, followup_due_at, followup_sent, created_at
+                   pain_resolved, med_take_delay, relief_delay,
+                   followup_due_at, followup_sent, created_at
             FROM headache_episodes
             WHERE user_id = $1 AND status = 'active'
             ORDER BY id DESC LIMIT 1;
@@ -247,7 +277,8 @@ async def get_episode_by_id(episode_id: int) -> Optional[Dict[str, Any]]:
         row = await conn.fetchrow("""
             SELECT id, user_id, start_time, end_time, intensity, location,
                    pain_type, symptoms, medication, status, medication_relief,
-                   pain_resolved, followup_due_at, followup_sent, created_at
+                   pain_resolved, med_take_delay, relief_delay,
+                   followup_due_at, followup_sent, created_at
             FROM headache_episodes
             WHERE id = $1;
         """, episode_id)
@@ -347,7 +378,7 @@ async def get_recent_episodes(user_id: int, limit: int = 5) -> List[Dict[str, An
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
                    pain_type, symptoms, medication, status, medication_relief,
-                   pain_resolved, created_at
+                   pain_resolved, med_take_delay, relief_delay, created_at
             FROM headache_episodes
             WHERE user_id = $1
             ORDER BY id DESC LIMIT $2;
@@ -362,7 +393,7 @@ async def get_all_episodes(user_id: int) -> List[Dict[str, Any]]:
         rows = await conn.fetch("""
             SELECT id, user_id, start_time, end_time, intensity, location,
                    pain_type, symptoms, medication, status, medication_relief,
-                   pain_resolved, created_at
+                   pain_resolved, med_take_delay, relief_delay, created_at
             FROM headache_episodes
             WHERE user_id = $1
             ORDER BY id ASC;

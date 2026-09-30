@@ -9,5 +9,7 @@ class HeadacheLogSG(StatesGroup):
     symptoms = State()           # Multi-select symptoms (nausea, aura, etc.)
     medication = State()         # Medication choice
     custom_medication = State()  # Text input for custom medication
+    medication_time = State()    # When medication was taken after start of pain
     medication_relief = State()  # Did medication help or not (helped, partially, not_helped)
+    relief_time = State()        # How long after medication did pain stop
     confirm = State()            # Final summary confirmation

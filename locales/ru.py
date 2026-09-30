@@ -48,6 +48,8 @@ MESSAGES = {
     "step_4_title": "<b>Характер боли</b>\nЛокация: <b>{loc_text}</b>",
     "step_5_title": "<b>Сопутствующие симптомы</b>\nХарактер: <b>{pt_text}</b>",
     "step_6_title": "<b>Принятый препарат</b>\nУкажите название и дозировку или нажмите кнопку ниже:",
+    "med_time_question": "<b>Когда вы приняли препарат ({medication}) относительно начала боли?</b>",
+    "relief_time_question": "<b>Через сколько времени после приема таблетки боль полностью прошла?</b>",
 
     # Intensity labels
     "intensity_mild": "Слабая",
@@ -58,6 +60,9 @@ MESSAGES = {
     # Summary
     "summary_title": "<b>Итог записи</b>\n\n",
     "summary_time": "• Время: <code>{start_time}</code>\n",
+    "summary_time_resolved": "• Время: <code>{start_time} → {end_time}</code> ({duration})\n",
+    "summary_status_completed": "• Статус: 🟢 Купирован (боль прошла)\n",
+    "summary_status_active": "• Статус: 🔴 Активен (приступ продолжается)\n",
     "summary_pain": "• Боль: <b>{intensity}/10</b> ({level})\n",
     "summary_location": "• Локация: {loc_text}\n",
     "summary_pain_type": "• Характер: {pt_text}\n",
@@ -73,6 +78,7 @@ MESSAGES = {
     "action_cancelled": "Запись отменена.",
     "no_active_action": "Нет активного действия.",
     "saved_success": "<b>Приступ сохранен</b> (#{episode_id})\n\nБот сам поинтересуется самочувствием через некоторое время.",
+    "saved_completed_success": "<b>Приступ зафиксирован и завершен</b> (#{episode_id})\n\n🟢 Длительность: <code>{duration}</code>.\nРады, что вам стало лучше!",
 
     # Follow-up Flow (Pain resolution & Medication efficacy)
     "fu_no_active": "Нет активного приступа для проверки.",

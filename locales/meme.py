@@ -49,6 +49,8 @@ MESSAGES = {
     "step_4_title": "<b>Какой вайб у боли?</b>\nЗона: <b>{loc_text}</b>",
     "step_5_title": "<b>Что еще завезли? (Симптомы)</b>\nВайб: <b>{pt_text}</b>",
     "step_6_title": "<b>Закинулся колесами?</b>\nВведи название и дозу или тыкни кнопку ниже:",
+    "med_time_question": "<b>Когда закинулся колесами ({medication}) после начала кринжа?</b>",
+    "relief_time_question": "<b>Через сколько после колес боль отпустила и наступил чиназес?</b>",
 
     # Intensity labels
     "intensity_mild": "Нормалдаки (понедельник)",
@@ -59,6 +61,9 @@ MESSAGES = {
     # Summary
     "summary_title": "<b>Итог суеты:</b>\n\n",
     "summary_time": "• Время: <code>{start_time}</code>\n",
+    "summary_time_resolved": "• Тайминг: <code>{start_time} → {end_time}</code> ({duration})\n",
+    "summary_status_completed": "• Статус: 🟢 Попустило (чиназес, боль ушла)\n",
+    "summary_status_active": "• Статус: 🔴 Суета продолжается (приступ в разгаре)\n",
     "summary_pain": "• Урон: <b>{intensity}/10</b> ({level})\n",
     "summary_location": "• Локация: {loc_text}\n",
     "summary_pain_type": "• Вайб: {pt_text}\n",
@@ -74,6 +79,7 @@ MESSAGES = {
     "action_cancelled": "Суета отменена, расходимся.",
     "no_active_action": "Тут ничего не происходит, отдыхай, нормис.",
     "saved_success": "<b>Суета зафиксирована!</b> (#{episode_id})\n\nПозже бот сам спросит, попустило или суета продолжается. Думайте.",
+    "saved_completed_success": "<b>Суета закрыта и побеждена!</b> (#{episode_id})\n\n🟢 Длительность: <code>{duration}</code>.\nСюдааа, живи, скуф!",
 
     # Follow-up Flow (Pain resolution & Medication efficacy)
     "fu_no_active": "Активной боли нет, живем! Сюдааа!",
