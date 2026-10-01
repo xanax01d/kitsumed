@@ -1179,17 +1179,19 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             "location": "left",
             "pain_type": "throbbing",
             "symptoms": ["nausea"],
-            "triggers": ["stress", "sleep", "кондиционер в офисе"],
+            "triggers": ["stress", "sleep", "oversleep", "кондиционер в офисе"],
             "medication": "none",
         }
         summary_ru = format_summary(summary_data, "ru")
         self.assertIn("Стресс", summary_ru)
         self.assertIn("Недосып", summary_ru)
+        self.assertIn("Много сна", summary_ru)
         self.assertIn("кондиционер в офисе", summary_ru)
 
         summary_en = format_summary(summary_data, "en")
         self.assertIn("Stress", summary_en)
         self.assertIn("Lack of sleep", summary_en)
+        self.assertIn("Oversleeping", summary_en)
 
     async def test_calendar_history_flow_and_callbacks(self):
         from handlers.startHandler import (

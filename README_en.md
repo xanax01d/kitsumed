@@ -10,26 +10,26 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-FSM%20Storage-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![ReportLab](https://img.shields.io/badge/ReportLab-PDF%20%26%20CSV-2B6CB0?style=for-the-badge)](https://www.reportlab.com/)
-[![Tests](https://img.shields.io/badge/Tests-Passing%20(26%2F26)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
-[![i18n](https://img.shields.io/badge/Languages-4%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#4--multilingual-support-4-locales)
-[![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#3--automated-follow-up--medication-efficacy-tracking)
-[![Response Time](https://img.shields.io/badge/Response%20Time-~50ms-success?style=for-the-badge&logo=fastapi&logoColor=white)](#8-️-high-performance--media-caching)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20(29%2F29)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/test_flow.py)
+[![i18n](https://img.shields.io/badge/Languages-4%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#4-🌐-multilingual-support-4-locales)
+[![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#3-🩺-automated-follow-up--medication-efficacy-tracking)
+[![Response Time](https://img.shields.io/badge/Response%20Time-~50ms-success?style=for-the-badge&logo=fastapi&logoColor=white)](#8-⚡️-high-performance--media-caching)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; <b>🇬🇧 English</b>
+  <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
 </p>
 
 <p align="center">
-  <b>An intelligent bot for structured recording of symptoms, pain character and intensity,<br>
-  dynamic step-by-step visual transitions, automated relief tracking, and clinical report generation for neurologists.</b>
+  <b>Smart Telegram bot for structured tracking of headache symptoms, character, and intensity,<br>
+  dynamic step visual cards, automated pain relief follow-ups, and clinical neurologist report generation.</b>
 </p>
 
 <p align="center">
   <a href="#-key-features">✨ Features</a> •
   <a href="#-system-architecture">📐 Architecture</a> •
-  <a href="#-user-workflow--scenarios">🎮 Workflow</a> •
-  <a href="#-tech-stack">🛠 Stack</a> •
+  <a href="#-user-workflow--scenarios">🎮 Workflows</a> •
+  <a href="#-tech-stack">🛠 Tech Stack</a> •
   <a href="#-quick-start">⚙️ Quick Start</a> •
   <a href="#-testing">🧪 Testing</a> •
   <a href="#-server-deployment-systemd">🚀 Deployment</a> •
@@ -42,7 +42,7 @@
 
 ## 📐 System Architecture
 
-Fully asynchronous, fault-tolerant microservice architecture based on Python asyncio, distributed Redis FSM storage, PostgreSQL, and background task schedulers:
+Fully asynchronous, resilient microservice-like architecture integrating Python, distributed Redis FSM, PostgreSQL, and background task workers:
 
 <div align="center">
   <img src="assets/images/en/architecture_diagram.png" alt="Migrebot Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
@@ -50,13 +50,13 @@ Fully asynchronous, fault-tolerant microservice architecture based on Python asy
 
 <br>
 
-| Component | Technology | Responsibility |
+| Component | Technology | Role |
 | :--- | :--- | :--- |
-| **Telegram Client** | Telegram Bot API | User interface: inline keyboards, multi-select checkboxes, reply menu, dynamic step card transitions via `edit_media` |
-| **Core Engine** | `aiogram 3.x` (Python) | Asynchronous message routing, callback processing, multilingual router filters, and FSM navigation |
-| **Session Cache** | `Redis` (port `6532`) | Isolated FSM dialogue states via `DefaultKeyBuilder(with_bot_id=True)` |
-| **Primary Database** | `PostgreSQL 14+` (`asyncpg`) | Persistent storage of user profiles, language settings, headache episodes (JSONB), and medication relief scores |
-| **Follow-up Scheduler** | `asyncio` Background Task | Automated 2-hour pain resolution inquiry worker with medication efficacy evaluation |
+| **Telegram Client** | Telegram API | User interface: inline buttons, checkboxes, reply menus, dynamic step cards via `edit_media` |
+| **Core Engine** | `aiogram 3.x` (Python) | Async message dispatching, callback handlers, multilingual routing, and FSM navigation |
+| **Session Cache** | `Redis` (port `6532`) | Isolated dialog state storage with `DefaultKeyBuilder(with_bot_id=True)` |
+| **Primary Database** | `PostgreSQL 14+` (`asyncpg`) | Persistent storage for user profiles, languages, headache episodes (JSONB), and follow-up metrics |
+| **Follow-up Scheduler**| `asyncio` Background Task | 2-hour pain resolution check and medication efficacy assessment scheduler |
 | **Reminder Scheduler** | `asyncio` Background Task | Daily wellness check-in scheduler with per-user timezone resolution |
 | **Reporting Engine**| `ReportLab` + TTF Fonts | Medical PDF generation (A4 Landscape) and UTF-8 BOM CSV exports |
 
@@ -65,13 +65,25 @@ Fully asynchronous, fault-tolerant microservice architecture based on Python asy
 ## 🌟 Key Features
 
 ### 1. ⏱ Step-by-Step FSM Questionnaire with Dynamic Card Transitions
-- **Smooth `edit_media` Transitions**: Across all 7 questionnaire stages, the bot smoothly updates a dedicated minimalist medical illustration (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) in the chosen language (RU/EN).
+- **Smooth `edit_media` Transitions**: Across questionnaire stages, the bot smoothly updates a dedicated minimalist medical illustration (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) in the chosen language (RU/EN).
 - **Start Time**: Quick presets (*Right now, 30 min ago, 1 hour ago, 2 hours ago*) or manual custom time entry (`HH:MM` or `YYYY-MM-DD HH:MM`).
 - **Pain Scale (1–10)**: Clear intensity rating from mild (1) to unbearable (10).
 - **Localization**: Left side, right side, both sides, forehead and temples, back of head, diffuse pain.
 - **Pain Character**: Throbbing, pressing/tightening, bursting, stabbing/shooting, dull/aching.
 - **Multi-Select Symptoms**: Interactive inline checkboxes with instant live state updates (nausea, vomiting, photophobia, phonophobia, visual aura, dizziness, odor sensitivity).
-- **Medication Taken**: Category selection (triptans, NSAIDs, combination analgesics, paracetamol) or custom drug entry.
+- **Headache Triggers Tracking**: Comprehensive multi-select toggle questionnaire:
+  - *Stress / Fatigue*
+  - *Lack of sleep*
+  - *Oversleeping / Too much sleep*
+  - *Weather / Pressure changes*
+  - *Hunger / Skipped meals*
+  - *Alcohol*
+  - *Caffeine*
+  - *Sensory stimuli (noise, bright light, stuffiness)*
+  - *Physical exertion*
+  - *No clear trigger*
+  - **Custom trigger**: `✍️ Custom trigger` button or direct free-text message submission.
+- **Medication Taken & Efficacy**: Category selection (triptans, NSAIDs, analgesics, paracetamol), intake delay calculation, and interactive relief status assessment.
 
 ### 2. ⏹ Automatic Duration Chronometry
 - When pain subsides, tapping **«⏹ Finish episode»** (or command `/finish`) records the end timestamp and calculates total duration (e.g. `2h 13m`).
@@ -95,12 +107,16 @@ Fully asynchronous, fault-tolerant microservice architecture based on Python asy
 
 ### 5. 📥 Clinical Export for Neurologists
 - Displays dedicated export artwork (`export.png`).
-- 📄 **PDF Medical Report (Landscape A4)**: Clinical table with patient metadata, episode history, relief ratings, and aggregate statistics (average intensity, episode count). Full CJK and Cyrillic support via embedded `VL-Gothic` TrueType font.
+- 📄 **PDF Medical Report (Landscape A4)**: Clinical table with patient metadata, episode history, triggers list, relief ratings, and aggregate statistics (average intensity, episode count). Full CJK and Cyrillic support via embedded `VL-Gothic` TrueType font.
 - 📊 **CSV Table (Excel)**: UTF-8 BOM encoded spreadsheet with semicolon (`;`) delimiters — opens seamlessly in Excel and Google Sheets without encoding glitches.
 
-### 6. 📊 Instant History Access
-- Displays dedicated medical history artwork (`history.png`).
-- On-demand history review of recent episodes directly in Telegram with clear status badges (🟢 completed / 🔴 active), duration, symptom lists, and relief notes.
+### 6. 📅 Interactive Episode Calendar (`📊 My episodes` / `/history`)
+- **Monthly Grid View**: Full calendar grid displayed inside Telegram with color-coded daily health indicators:
+  - 🔴 `{day}` — day with a recorded headache episode;
+  - 🟢 `{day}` — pain-free day (asymptomatic days from 1st of month up to today);
+  - `{day}` — upcoming days (protected against inadvertent taps with a friendly notice).
+- **Month Navigation**: Cycle backward/forward through months (`◀️` / `▶️`) and quick return to the current month (`[ 📅 Month Year ]`).
+- **Day Details Card**: Clicking any day reveals the comprehensive episode card (onset, duration, intensity, triggers, medication, relief outcome) or confirms a healthy day (*«No headache recorded on this day 🎉»*), with an instant `◀️ Back to calendar` button.
 
 ### 7. ⏰ Daily Personalized Check-ins
 - **Routine Inquiries**: Daily automated check-in prompt at user-configured time: *«Did you have a headache today?»*.
@@ -141,7 +157,7 @@ Interactive flow from initial recording to automated follow-up, persistent stora
 | `/finish` | `⏹ Finish episode` | Closes the active episode and computes elapsed time |
 | `/status` | — | Check active episode status and record medication efficacy |
 | `/export` | `📥 Export report` | Report export menu (PDF / CSV / Both) |
-| — | `📊 My episodes` | Displays recent entries from clinical diary |
+| `/history` | `📊 My episodes` | Interactive monthly calendar of episodes (🔴 headache / 🟢 pain-free) with day inspection |
 | `/reminder`, `/settings` | `⏰ Reminders` | Daily wellness check-in schedule & timezone settings |
 | `/language` | `🌐 Language` | Switch interface locale (RU, EN, Meme, Cyberpunk) |
 | `/help` | `ℹ️ Help` | Comprehensive diary guide and pain scale documentation |
@@ -175,11 +191,11 @@ migrebot_analog/
 │   └── image_cache.json   # Persistent registry of Telegram photo file_ids & MD5 hashes
 ├── db/
 │   ├── __init__.py        # Database interface exports
-│   └── database.py        # Asynchronous PostgreSQL pool (asyncpg), DDL & CRUD
+│   └── database.py        # Asynchronous PostgreSQL pool (asyncpg), DDL, monthly queries & CRUD
 ├── handlers/
 │   ├── __init__.py        # Handlers root router
-│   ├── startHandler.py    # /start, /help, and episode history handlers (history.png)
-│   ├── headache.py        # FSM logging flow with dynamic step transitions (edit_media)
+│   ├── startHandler.py    # /start, /help, and interactive history calendar (history.png)
+│   ├── headache.py        # FSM logging flow with dynamic step transitions (edit_media) & triggers
 │   ├── followupHandler.py # Interactive pain relief check & medication rating
 │   ├── languageHandler.py # Language switching interface (/language)
 │   ├── reminderHandler.py # Daily check-in scheduling and timezone configuration
@@ -188,7 +204,8 @@ migrebot_analog/
 │   ├── __init__.py
 │   ├── main_menu.py       # Persistent bottom reply keyboard
 │   ├── reminder_kb.py     # Inline keyboards for reminders and check-in prompt
-│   └── headache_kb.py     # Inline keyboards, callbacks, follow-up, and navigation
+│   ├── calendar_kb.py     # Interactive monthly calendar grid with status indicators
+│   └── headache_kb.py     # Inline keyboards, triggers, callbacks, follow-up, and navigation
 ├── locales/
 │   ├── __init__.py        # Localization dispatcher and dictionary resolvers
 │   ├── ru.py              # Russian (clinical)
@@ -206,7 +223,7 @@ migrebot_analog/
 │   ├── reminder.py        # FSM states for reminder settings (ReminderSG)
 │   └── headache.py        # FSM states for questionnaire (HeadacheLogSG)
 ├── tests/
-│   └── test_flow.py       # Comprehensive unit tests (24 tests: FSM, DB, i18n, assets)
+│   └── test_flow.py       # Comprehensive unit tests (29 tests: FSM, DB, i18n, calendar, triggers)
 ├── .env                   # Environment secrets (bot token, Redis, Postgres)
 ├── .gitignore             # Git ignored files and directories
 ├── requirements.txt       # Python dependencies
@@ -271,16 +288,19 @@ The repository contains a full asynchronous unit test suite (`unittest.IsolatedA
 python3 -m unittest discover -s tests -v
 ```
 
-### Test Suite Structure (26 Tests):
+### Test Suite Structure (29 Tests):
 
 | Test | Category | Verified Functionality |
 | :--- | :--- | :--- |
 | `test_nav_callbacks_packing` | 🧭 Navigation | Callback data packing for `hdn:back` ("Back") and `hdn:cancel` ("Cancel") |
-| `test_navigation_buttons_presence_in_keyboards` | 🧭 Navigation | Verification of "Back" and "Cancel" buttons across all 8 questionnaire keyboards (including custom time entry) |
-| `test_navigation_back_fsm_transitions` | 🧭 Navigation | Step-by-step backward FSM state transitions (`confirm` ➔ `medication` ➔ `symptoms` ➔ `pain_type` ➔ `location` ➔ `intensity` ➔ `start_time`, `custom_start_time` ➔ `start_time`) |
+| `test_navigation_buttons_presence_in_keyboards` | 🧭 Navigation | Verification of "Back" and "Cancel" buttons across all questionnaire keyboards (including triggers) |
+| `test_navigation_back_fsm_transitions` | 🧭 Navigation | Step-by-step backward FSM state transitions (`confirm` ➔ `medication` ➔ `triggers` ➔ `symptoms` ➔ `pain_type` ➔ `location` ➔ `intensity` ➔ `start_time`) |
 | `test_cancel_flow_clears_state` | 🧭 Navigation | Reliable FSM state clearing (`state.clear()`) on cancel button click and `/cancel` text command |
-| `test_callback_packing` | 🔘 Keyboards | Correct prefixes and serialization of callbacks for all questionnaire steps (time, intensity, location, pain type, symptoms, medication, export) |
+| `test_callback_packing` | 🔘 Keyboards | Correct prefixes and serialization of callbacks for all questionnaire steps (time, intensity, location, pain type, symptoms, triggers, medication, export) |
 | `test_keyboards_structure` | 🔘 Keyboards | Validation of button layouts, captions, and callback payloads across all 4 supported languages |
+| `test_triggers_flow_and_summary` | ⚡️ Triggers | Triggers multi-selection (stress, sleep, oversleep), clearing, custom text entry, summary inclusion |
+| `test_calendar_history_flow_and_callbacks` | 📅 Calendar | Interactive month grid rendering, 🔴/🟢 day badges, `◀️`/`▶️` navigation, day detail and healthy day cards |
+| `test_database_calendar_methods` | 🗄 Database | Month range query (`get_episodes_for_month`), date query (`get_episodes_for_date`), and table truncate |
 | `test_reminder_keyboards_and_callbacks` | ⏰ Reminders | Keyboard builder verification, callback serialization with `rem\|...` and `rem_p\|...` prefixes |
 | `test_timezone_resolution_and_formatting` | ⏰ Timezones | Parsing and validation of timezone identifiers (IANA, city presets, UTC±X offsets), local time formatting |
 | `test_reminder_custom_time_validation` | ⏰ Reminders | Regex validation for arbitrary custom `HH:MM` time entries (00:00 to 23:59) |
@@ -291,12 +311,12 @@ python3 -m unittest discover -s tests -v
 | `test_medication_time_and_relief_calculation` | 💊 Medication | Pain resolution calculation, medication intake delay, episode duration calculation, and closing episode as `completed` |
 | `test_followup_flow_and_medication_relief` | 🩺 Follow-up | Full lifecycle: pain resolution check, time of relief selection, and medication efficacy rating (`helped`, `partial`, `not_helped`) |
 | `test_followup_scheduler_worker` | 🩺 Follow-up | Background scheduler worker for 2-hour checks and `followup_sent` state tracking |
-| `test_i18n_locales_and_mappings` | 🌐 Localization | Completeness of dictionaries across all 4 locales (RU, EN, Meme, Cyberpunk): symptoms, locations, intensity, fallback |
-| `test_format_episode_card_no_raw_vomiting` | 🌐 Localization | Zero technical code leakage (`vomiting`, `odor`) in formatted episode cards across all languages |
+| `test_i18n_locales_and_mappings` | 🌐 Localization | Completeness of dictionaries across all 4 locales (RU, EN, Meme, Cyberpunk): symptoms, triggers, locations, intensity, fallback |
+| `test_format_episode_card_no_raw_vomiting` | 🌐 Localization | Zero technical code leakage in formatted episode cards across all languages |
 | `test_language_handler_and_switching` | 🌐 Localization | `/language` command, language callback processing, DB storage, and prompt updating |
 | `test_media_cache_functions` | ⚡️ Media Cache | Permanent `file_id` storage & retrieval, fallback to `FSInputFile`, MD5 hash invalidation, and locale isolation |
 | `test_localized_assets` | 🎨 Media Assets | Verification of existence and dimensions (1376×768) of all 28 assets in RU and EN folders |
-| `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables without errors |
+| `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables with triggers column |
 | `test_cjk_and_nickname_export` | 📄 Export | Support for Cyrillic, Latin, CJK characters, and usernames via the `VL-Gothic` font stack |
 | `test_redis_fsm_storage_config` | 🗄 Storage | Key namespace isolation for FSM states in Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
 | `test_postgres_dsn_generation` | 🗄 Database | Proper PostgreSQL DSN connection string generation with timeout and SSL settings |
@@ -385,6 +405,7 @@ Tables and indexes are automatically initialized on startup via `asyncpg`:
 | `location` | `VARCHAR(64)` | Pain localization zone |
 | `pain_type` | `VARCHAR(64)` | Pain character type |
 | `symptoms` | `JSONB` | List of selected symptoms (JSON array) |
+| `triggers` | `JSONB` | List of selected and custom headache triggers |
 | `medication` | `VARCHAR(255)` | Medication taken |
 | `status` | `VARCHAR(32)` | Status: `active` or `completed` |
 | `medication_relief` | `VARCHAR(32)` | Efficacy rating (`helped`, `partial`, `not_helped`) |
