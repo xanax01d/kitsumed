@@ -2,6 +2,7 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
+import datetime
 
 from keyboards.headache_kb import (
     get_start_time_keyboard,
@@ -9,6 +10,7 @@ from keyboards.headache_kb import (
     get_location_keyboard,
     get_pain_type_keyboard,
     get_symptoms_keyboard,
+    get_triggers_keyboard,
     get_medication_keyboard,
     get_medication_time_keyboard,
     get_medication_relief_keyboard,
@@ -21,12 +23,18 @@ from keyboards.headache_kb import (
     LocationCallback,
     PainTypeCallback,
     SymptomCallback,
+    TriggerCallback,
     MedicationCallback,
     MedicationTimeCallback,
     MedicationReliefCallback,
     ReliefTimeCallback,
     ExportCallback,
     NavCallback,
+)
+from keyboards.calendar_kb import (
+    CalendarCallback,
+    build_calendar_keyboard,
+    get_month_name,
 )
 from keyboards.main_menu import get_main_menu_keyboard
 from keyboards.reminder_kb import (
@@ -81,6 +89,12 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(get_pain_type_keyboard(lang=lang))
             self.assertIsNotNone(get_symptoms_keyboard(set(), lang=lang))
             self.assertIsNotNone(get_symptoms_keyboard({"nausea", "aura"}, lang=lang))
+            self.assertIsNotNone(get_triggers_keyboard(set(), lang=lang))
+            self.assertIsNotNone(get_triggers_keyboard({"stress", "sleep"}, lang=lang))
+            cal_kb, p_cnt, h_cnt = build_calendar_keyboard(2026, 9, {14}, datetime.date(2026, 9, 14), lang=lang)
+            self.assertIsNotNone(cal_kb)
+            self.assertEqual(p_cnt, 1)
+            self.assertGreaterEqual(h_cnt, 10)
             self.assertIsNotNone(get_medication_keyboard(lang=lang))
             self.assertIsNotNone(get_medication_relief_keyboard(lang=lang))
             self.assertIsNotNone(get_confirm_keyboard(lang=lang))
@@ -101,6 +115,12 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
 
         cb_sym = SymptomCallback(action="toggle", value="nausea").pack()
         self.assertIn("nausea", cb_sym)
+
+        cb_trig = TriggerCallback(action="toggle", value="stress").pack()
+        self.assertIn("stress", cb_trig)
+
+        cb_cal = CalendarCallback(action="day", year=2026, month=9, day=14).pack()
+        self.assertIn("14", cb_cal)
 
         cb_med = MedicationCallback(value="triptan").pack()
         self.assertIn("triptan", cb_med)
@@ -315,6 +335,11 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertIn("back", sym_actions)
         self.assertIn("cancel", sym_actions)
 
+        # 5b. Triggers has both back and cancel
+        trig_actions = extract_nav_actions(get_triggers_keyboard())
+        self.assertIn("back", trig_actions)
+        self.assertIn("cancel", trig_actions)
+
         # 6. Medication has both back and cancel
         med_actions = extract_nav_actions(get_medication_keyboard())
         self.assertIn("back", med_actions)
@@ -343,7 +368,9 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             (HeadacheLogSG.location.state, HeadacheLogSG.intensity),
             (HeadacheLogSG.pain_type.state, HeadacheLogSG.location),
             (HeadacheLogSG.symptoms.state, HeadacheLogSG.pain_type),
-            (HeadacheLogSG.medication.state, HeadacheLogSG.symptoms),
+            (HeadacheLogSG.triggers.state, HeadacheLogSG.symptoms),
+            (HeadacheLogSG.custom_trigger.state, HeadacheLogSG.triggers),
+            (HeadacheLogSG.medication.state, HeadacheLogSG.triggers),
             (HeadacheLogSG.confirm.state, HeadacheLogSG.medication),
             (HeadacheLogSG.medication_time.state, HeadacheLogSG.medication),
             (HeadacheLogSG.medication_relief.state, HeadacheLogSG.medication_time),
@@ -1108,6 +1135,153 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             sql_call = mock_conn.fetchrow.call_args[0][0]
             self.assertIn("'completed'", sql_call)
 
+    async def test_triggers_flow_and_summary(self):
+        from handlers.headache import (
+            process_triggers,
+            process_trigger_direct_input,
+            process_custom_trigger_input,
+        )
+
+        # 1. Test toggle trigger callback
+        mock_state = AsyncMock()
+        mock_state.get_data.return_value = {"triggers": ["stress"], "lang": "ru"}
+        mock_cb = AsyncMock()
+        mock_cb.message = AsyncMock()
+
+        cb_data = TriggerCallback(action="toggle", value="sleep")
+        await process_triggers(mock_cb, cb_data, mock_state)
+        self.assertEqual(set(mock_state.update_data.call_args[1]["triggers"]), {"stress", "sleep"})
+
+        # 2. Test none trigger callback
+        cb_none = TriggerCallback(action="none", value="none")
+        await process_triggers(mock_cb, cb_none, mock_state)
+        mock_state.update_data.assert_called_with(triggers=["none"])
+
+        # 3. Test done trigger callback
+        mock_state.get_data.return_value = {"triggers": ["stress", "weather"], "lang": "ru"}
+        cb_done = TriggerCallback(action="done", value="done")
+        await process_triggers(mock_cb, cb_done, mock_state)
+        mock_state.set_state.assert_called_with(HeadacheLogSG.medication)
+
+        # 4. Test direct text trigger input
+        mock_msg = AsyncMock()
+        mock_msg.text = "кондиционер в офисе"
+        mock_msg.from_user.id = 12345
+        mock_state.get_data.return_value = {"triggers": ["stress"], "lang": "ru"}
+        await process_trigger_direct_input(mock_msg, mock_state)
+        mock_state.update_data.assert_called_with(triggers=["stress", "кондиционер в офисе"])
+        mock_state.set_state.assert_called_with(HeadacheLogSG.medication)
+
+        # 5. Test format_summary includes triggers
+        summary_data = {
+            "start_time": "2026-09-14 12:00",
+            "intensity": 6,
+            "location": "left",
+            "pain_type": "throbbing",
+            "symptoms": ["nausea"],
+            "triggers": ["stress", "sleep", "кондиционер в офисе"],
+            "medication": "none",
+        }
+        summary_ru = format_summary(summary_data, "ru")
+        self.assertIn("Стресс", summary_ru)
+        self.assertIn("Недосып", summary_ru)
+        self.assertIn("кондиционер в офисе", summary_ru)
+
+        summary_en = format_summary(summary_data, "en")
+        self.assertIn("Stress", summary_en)
+        self.assertIn("Lack of sleep", summary_en)
+
+    async def test_calendar_history_flow_and_callbacks(self):
+        from handlers.startHandler import (
+            _render_calendar_view,
+            process_calendar_callback,
+            _format_episode_card,
+        )
+
+        # 1. Test build_calendar_keyboard
+        pain_days = {3, 14}
+        today = datetime.date(2026, 9, 14)
+        kb, p_cnt, h_cnt = build_calendar_keyboard(2026, 9, pain_days, today, lang="ru")
+        self.assertEqual(p_cnt, 2)
+        # Days 1..14 minus 2 pain days = 12 healthy days
+        self.assertEqual(h_cnt, 12)
+
+        # Check button texts in the calendar
+        button_texts = [
+            btn.text
+            for row in kb.inline_keyboard
+            for btn in row
+            if btn.text
+        ]
+        self.assertIn("🔴14", button_texts)
+        self.assertIn("🔴3", button_texts)
+        self.assertIn("🟢1", button_texts)
+        self.assertIn("🟢12", button_texts)
+        self.assertIn("15", button_texts)  # Future day
+
+        # 2. Test extract_episode_date
+        ep1 = {"start_time": "2026-09-14 15:30"}
+        self.assertEqual(db_mod.extract_episode_date(ep1), datetime.date(2026, 9, 14))
+
+        ep2 = {"start_time": "invalid", "created_at": datetime.datetime(2026, 9, 5, 10, 0)}
+        self.assertEqual(db_mod.extract_episode_date(ep2), datetime.date(2026, 9, 5))
+
+        # 3. Test _render_calendar_view mocked
+        mock_episodes = [
+            {
+                "id": 1,
+                "start_time": "2026-09-14 14:00",
+                "intensity": 7,
+                "location": "left",
+                "pain_type": "throbbing",
+                "symptoms": ["nausea"],
+                "triggers": ["stress"],
+                "medication": "none",
+                "status": "active"
+            }
+        ]
+        with patch("handlers.startHandler.get_user_reminder", return_value={"timezone": "Europe/Moscow"}), \
+             patch("handlers.startHandler.get_episodes_for_month", return_value=mock_episodes):
+            caption, cal_markup = await _render_calendar_view(123, 2026, 9, "ru")
+            self.assertIn("Календарь приступов", caption)
+            self.assertIn("Сентябрь 2026", caption)
+            self.assertIn("Дней с болью: <b>1</b>", caption)
+
+        # 4. Test calendar callback - day click
+        mock_cb = AsyncMock()
+        mock_cb.from_user.id = 123
+        mock_cb.message = AsyncMock()
+        with patch("handlers.startHandler.get_user_language", return_value="ru"), \
+             patch("handlers.startHandler.get_episodes_for_date", return_value=mock_episodes):
+            await process_calendar_callback(
+                mock_cb,
+                CalendarCallback(action="day", year=2026, month=9, day=14)
+            )
+            mock_cb.answer.assert_called()
+            mock_cb.message.edit_caption.assert_called()
+            call_caption = mock_cb.message.edit_caption.call_args[1]["caption"]
+            self.assertIn("14.09.2026", call_caption)
+            self.assertIn("Приступ #1", call_caption)
+            self.assertIn("Триггеры: Стресс", call_caption)
+
+    async def test_clear_episodes_database(self):
+        mock_pool = MagicMock()
+        mock_conn = AsyncMock()
+        mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
+        mock_conn.execute.return_value = "TRUNCATE 1"
+
+        with patch("db.database._get_pool", return_value=mock_pool):
+            # 1. Truncate all episodes
+            await db_mod.clear_all_episodes(user_id=None)
+            mock_conn.execute.assert_called_with("TRUNCATE TABLE headache_episodes RESTART IDENTITY CASCADE;")
+
+            # 2. Clear user episodes
+            mock_conn.execute.return_value = "DELETE 5"
+            res = await db_mod.clear_all_episodes(user_id=987)
+            mock_conn.execute.assert_called_with("DELETE FROM headache_episodes WHERE user_id = $1;", 987)
+            self.assertEqual(res, 5)
+
 
 if __name__ == "__main__":
     unittest.main()
+

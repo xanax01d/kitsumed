@@ -9,6 +9,7 @@ from locales import (
     get_pain_type_map,
     get_symptoms_map,
     get_medication_map,
+    get_triggers_map,
     SUPPORTED_LANGUAGES,
 )
 
@@ -27,6 +28,10 @@ class PainTypeCallback(CallbackData, prefix="hdp"):
 
 class SymptomCallback(CallbackData, prefix="hds"):
     action: str  # "toggle", "none", "done"
+    value: str
+
+class TriggerCallback(CallbackData, prefix="hdtr", sep="|"):
+    action: str  # "toggle", "none", "custom", "done"
     value: str
 
 class MedicationCallback(CallbackData, prefix="hdm"):
@@ -361,6 +366,74 @@ def get_symptoms_keyboard(selected: Set[str] = None, lang: str = "ru") -> Inline
         InlineKeyboardButton(
             text=f"{done_text}{count_label}",
             callback_data=SymptomCallback(action="done", value="done").pack()
+        )
+    )
+
+    add_navigation_buttons(builder, show_back=True, show_cancel=True, lang=lang)
+    return builder.as_markup()
+
+
+# --- 5b. Triggers Keyboard ---
+TRIGGERS_ORDER = [
+    ("stress", "sleep"),
+    ("weather", "food"),
+    ("alcohol", "caffeine"),
+    ("sensory", "physical"),
+]
+
+def get_triggers_keyboard(selected: Optional[Set[str]] = None, lang: str = "ru") -> InlineKeyboardMarkup:
+    selected = selected or set()
+    builder = InlineKeyboardBuilder()
+    trig_map = get_triggers_map(lang)
+
+    for row in TRIGGERS_ORDER:
+        row_btns = []
+        for key in row:
+            label = trig_map.get(key, key)
+            mark = "✅ " if key in selected else "◻️ "
+            row_btns.append(
+                InlineKeyboardButton(
+                    text=f"{mark}{label}",
+                    callback_data=TriggerCallback(action="toggle", value=key).pack()
+                )
+            )
+        builder.row(*row_btns)
+
+    # Custom trigger option
+    custom_text = get_text("btn_custom_trigger", lang)
+    builder.row(
+        InlineKeyboardButton(
+            text=custom_text,
+            callback_data=TriggerCallback(action="custom", value="custom").pack()
+        )
+    )
+
+    # None option
+    no_trig_mark = "✅ " if "none" in selected else "◻️ "
+    no_trig_text = get_text("btn_no_triggers", lang)
+    builder.row(
+        InlineKeyboardButton(
+            text=f"{no_trig_mark}{no_trig_text}",
+            callback_data=TriggerCallback(action="none", value="none").pack()
+        )
+    )
+
+    # Done / continue
+    real_selected = [s for s in selected if s != "none"]
+    count_label = f" ({len(real_selected)})" if real_selected else ""
+    if lang == "meme":
+        done_text = "➡️ Далее"
+    elif lang == "cyberpunk":
+        done_text = "➡️ Подтвердить"
+    elif lang == "en":
+        done_text = "➡️ Continue"
+    else:
+        done_text = "➡️ Продолжить"
+
+    builder.row(
+        InlineKeyboardButton(
+            text=f"{done_text}{count_label}",
+            callback_data=TriggerCallback(action="done", value="done").pack()
         )
     )
 

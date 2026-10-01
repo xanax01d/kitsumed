@@ -39,6 +39,7 @@ MESSAGES = {
     "history_card_pain": "• Боль: <b>{intensity}/10</b> ({level})\n",
     "history_card_loc": "• Локация: {loc} | {pt}\n",
     "history_card_sym": "• Симптомы: {sym}\n",
+    "history_card_triggers": "• Триггеры: {triggers}\n",
     "history_card_med": "• Препарат: {med}",
 
     # Headache Log Steps
@@ -47,6 +48,10 @@ MESSAGES = {
     "step_3_title": "<b>Локализация боли</b>\nБоль: <b>{intensity}/10</b> ({level})",
     "step_4_title": "<b>Характер боли</b>\nЛокация: <b>{loc_text}</b>",
     "step_5_title": "<b>Сопутствующие симптомы</b>\nХарактер: <b>{pt_text}</b>",
+    "step_triggers_title": "<b>Что спровоцировало приступ?</b>\nВыберите возможные триггеры или введите свой:",
+    "custom_trigger_prompt": "<b>Провоцирующий фактор (триггер)</b>\nВведите, что могло вызвать боль (например: <i>кондиционер, духота, поездка, кофе</i>):",
+    "btn_custom_trigger": "✍️ Свой вариант",
+    "btn_no_triggers": "❌ Без явного триггера",
     "step_6_title": "<b>Принятый препарат</b>\nУкажите название и дозировку или нажмите кнопку ниже:",
     "med_time_question": "<b>Когда вы приняли препарат ({medication}) относительно начала боли?</b>",
     "relief_time_question": "<b>Через сколько времени после приема таблетки боль полностью прошла?</b>",
@@ -67,8 +72,17 @@ MESSAGES = {
     "summary_location": "• Локация: {loc_text}\n",
     "summary_pain_type": "• Характер: {pt_text}\n",
     "summary_symptoms": "• Симптомы: {symptoms_str}\n",
+    "summary_triggers": "• Триггеры: {triggers_str}\n",
     "summary_medication": "• Препарат: {med_text}\n\n",
     "summary_confirm": "Сохранить запись?",
+
+    # Calendar
+    "calendar_title": "<b>Календарь приступов</b> — {month_name} {year}\n\n🔴 Дней с болью: <b>{pain_days}</b>\n🟢 Дней без боли: <b>{healthy_days}</b>\n\n<i>Нажмите на день для просмотра подробностей:</i>",
+    "calendar_btn_today": "📅 Текущий месяц",
+    "calendar_day_healthy": "<b>{date_str}</b> — день без головной боли 🟢\n\nПриступов не зафиксировано.",
+    "calendar_day_episodes_title": "<b>Приступы за {date_str}</b> (всего: {count}):\n\n",
+    "calendar_future_alert": "Этот день еще не наступил.",
+    "calendar_btn_back": "⬅️ Назад к календарю",
 
     # Navigation & Action Buttons
     "btn_cancel": "❌ Отмена",
@@ -190,3 +204,16 @@ MEDICATION_MAP = {
     "analgesic": "Анальгин / Спазмалгон",
     "citramon": "Цитрамон",
 }
+
+TRIGGERS_MAP = {
+    "stress": "Стресс / переутомление",
+    "sleep": "Недосып / сбит режим",
+    "weather": "Погода / перепад давления",
+    "food": "Голод / пропуск еды",
+    "alcohol": "Алкоголь",
+    "caffeine": "Кофеин",
+    "sensory": "Шум / свет / духота",
+    "physical": "Физическая нагрузка",
+    "none": "Без явного триггера",
+}
+

@@ -40,6 +40,7 @@ MESSAGES = {
     "history_card_pain": "• Урон: <b>{intensity}/10</b> ({level})\n",
     "history_card_loc": "• Локация: {loc} | {pt}\n",
     "history_card_sym": "• Допы: {sym}\n",
+    "history_card_triggers": "• Триггеры: {triggers}\n",
     "history_card_med": "• Колеса: {med}",
 
     # Headache Log Steps
@@ -48,6 +49,10 @@ MESSAGES = {
     "step_3_title": "<b>Куда прилетело?</b>\nУрон: <b>{intensity}/10</b> ({level})",
     "step_4_title": "<b>Какой вайб у боли?</b>\nЗона: <b>{loc_text}</b>",
     "step_5_title": "<b>Что еще завезли? (Симптомы)</b>\nВайб: <b>{pt_text}</b>",
+    "step_triggers_title": "<b>Что стриггерило этот кошмар?</b>\nВыбирай виновных или впиши свой эксклюзив:",
+    "custom_trigger_prompt": "<b>Виновник торжества (триггер)</b>\nНапиши, от чего сгорел предохранитель (например: <i>токсичный чат, шаурма, духота</i>):",
+    "btn_custom_trigger": "✍️ Свой кринж-триггер",
+    "btn_no_triggers": "❌ Само насралося (хз почему)",
     "step_6_title": "<b>Закинулся колесами?</b>\nВведи название и дозу или тыкни кнопку ниже:",
     "med_time_question": "<b>Когда закинулся колесами ({medication}) после начала кринжа?</b>",
     "relief_time_question": "<b>Через сколько после колес боль отпустила и наступил чиназес?</b>",
@@ -68,8 +73,17 @@ MESSAGES = {
     "summary_location": "• Локация: {loc_text}\n",
     "summary_pain_type": "• Вайб: {pt_text}\n",
     "summary_symptoms": "• Допы: {symptoms_str}\n",
+    "summary_triggers": "• Триггеры: {triggers_str}\n",
     "summary_medication": "• Колеса: {med_text}\n\n",
     "summary_confirm": "Сохраняем этот кринж в базу?",
+
+    # Calendar
+    "calendar_title": "<b>Календарь страданий</b> — {month_name} {year}\n\n🔴 Дней в аду: <b>{pain_days}</b>\n🟢 Дней на чилле: <b>{healthy_days}</b>\n\n<i>Тыкай в циферки:</i>",
+    "calendar_btn_today": "📅 Этот месяц",
+    "calendar_day_healthy": "<b>{date_str}</b> — чилловый день без боли 🟢\n\nБашка не взрывалась, кайфуем!",
+    "calendar_day_episodes_title": "<b>Записи за {date_str}</b> (завозов: {count}):\n\n",
+    "calendar_future_alert": "Будущее еще не наступило, не беги впереди паровоза.",
+    "calendar_btn_back": "⬅️ Назад в календарь",
 
     # Navigation & Action Buttons
     "btn_cancel": "❌ Отмена суеты",
@@ -191,3 +205,16 @@ MEDICATION_MAP = {
     "analgesic": "Анальгин / Спазмалгон",
     "citramon": "Цитрамончик (бабушкин рецепт)",
 }
+
+TRIGGERS_MAP = {
+    "stress": "Стресс / душный босс",
+    "sleep": "Недосып (зубрил мемы)",
+    "weather": "Погода сделала кульбит",
+    "food": "Забыл поесть (голодный обморок)",
+    "alcohol": "Вчерашний кутёж / пивасик",
+    "caffeine": "Передоз кофеина",
+    "sensory": "Громкий ор / вспышки / кринж",
+    "physical": "Тяжелый люкс / перекачался",
+    "none": "Хз, само началось",
+}
+

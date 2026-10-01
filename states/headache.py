@@ -7,6 +7,8 @@ class HeadacheLogSG(StatesGroup):
     location = State()           # Side / area of head
     pain_type = State()          # Character of pain (throbbing, pressing, etc.)
     symptoms = State()           # Multi-select symptoms (nausea, aura, etc.)
+    triggers = State()           # Headache provoking triggers (stress, sleep, etc.)
+    custom_trigger = State()     # Text input for custom trigger
     medication = State()         # Medication choice
     custom_medication = State()  # Text input for custom medication
     medication_time = State()    # When medication was taken after start of pain

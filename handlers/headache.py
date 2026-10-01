@@ -12,12 +12,13 @@ from aiogram.fsm.context import FSMContext
 from states.headache import HeadacheLogSG
 from keyboards.headache_kb import (
     TimeCallback, IntensityCallback, LocationCallback, PainTypeCallback,
-    SymptomCallback, MedicationCallback, MedicationReliefCallback,
+    SymptomCallback, TriggerCallback, MedicationCallback, MedicationReliefCallback,
     MedicationTimeCallback, ReliefTimeCallback,
     ConfirmCallback, NavCallback,
     get_start_time_keyboard, get_intensity_keyboard, get_location_keyboard,
-    get_pain_type_keyboard, get_symptoms_keyboard, get_medication_keyboard,
-    get_medication_time_keyboard, get_medication_relief_keyboard, get_relief_time_keyboard,
+    get_pain_type_keyboard, get_symptoms_keyboard, get_triggers_keyboard,
+    get_medication_keyboard, get_medication_time_keyboard,
+    get_medication_relief_keyboard, get_relief_time_keyboard,
     get_confirm_keyboard, get_cancel_keyboard,
     LOCATION_MAP, PAIN_TYPE_MAP, ALL_SYMPTOMS, MEDICATION_MAP
 )
@@ -31,6 +32,7 @@ from locales import (
     get_pain_type_map,
     get_symptoms_map,
     get_medication_map,
+    get_triggers_map,
 )
 
 router = Router()
@@ -48,6 +50,7 @@ def get_step_asset(step_name: str, lang: str = "ru") -> Path:
         "location": "steps/location.png",
         "pain_type": "steps/pain_type.png",
         "symptoms": "steps/symptoms.png",
+        "triggers": "steps/symptoms.png",
         "medication": "steps/medication.png",
         "medication_time": "steps/medication.png",
         "relief_time": "steps/saved.png",
@@ -77,6 +80,7 @@ STEP_ORDER = [
     HeadacheLogSG.location,
     HeadacheLogSG.pain_type,
     HeadacheLogSG.symptoms,
+    HeadacheLogSG.triggers,
     HeadacheLogSG.medication,
     HeadacheLogSG.confirm
 ]
@@ -199,6 +203,10 @@ def step_5_text(pt_key: str, lang: str = "ru") -> str:
     return get_text("step_5_title", lang, pt_text=pt_text)
 
 
+def step_triggers_text(lang: str = "ru") -> str:
+    return get_text("step_triggers_title", lang)
+
+
 def step_6_text(lang: str = "ru") -> str:
     return get_text("step_6_title", lang)
 
@@ -281,6 +289,7 @@ def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
     pt_map = get_pain_type_map(lang)
     sym_map = get_symptoms_map(lang)
     med_map = get_medication_map(lang)
+    trig_map = get_triggers_map(lang)
 
     loc_key = data.get("location", "")
     loc_text = loc_map.get(loc_key, loc_key)
@@ -293,6 +302,12 @@ def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
         symptoms_str = "—"
     else:
         symptoms_str = ", ".join(sym_map.get(s, s) for s in symptoms_list)
+
+    triggers_list = data.get("triggers", [])
+    if not triggers_list or "none" in triggers_list:
+        triggers_str = "—"
+    else:
+        triggers_str = ", ".join(trig_map.get(t, t) for t in triggers_list)
 
     med_val = data.get("medication", "none")
     if med_val == "none":
@@ -330,6 +345,7 @@ def format_summary(data: Dict[str, Any], lang: str = "ru") -> str:
         get_text("summary_location", lang, loc_text=loc_text) +
         get_text("summary_pain_type", lang, pt_text=pt_text) +
         get_text("summary_symptoms", lang, symptoms_str=symptoms_str) +
+        get_text("summary_triggers", lang, triggers_str=triggers_str) +
         get_text("summary_medication", lang, med_text=med_text) +
         get_text("summary_confirm", lang)
     )
@@ -396,6 +412,17 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
             get_step_asset("start_time", lang),
             step_1_text(lang),
             get_start_time_keyboard(lang)
+        )
+        return
+
+    if current_state_str == HeadacheLogSG.custom_trigger.state:
+        await state.set_state(HeadacheLogSG.triggers)
+        selected_trigs = set(data.get("triggers", []))
+        await show_or_edit_step(
+            callback,
+            get_step_asset("triggers", lang),
+            step_triggers_text(lang),
+            get_triggers_keyboard(selected_trigs, lang)
         )
         return
 
@@ -520,6 +547,14 @@ async def callback_back(callback: CallbackQuery, state: FSMContext):
             get_step_asset("symptoms", lang),
             step_5_text(pt_key, lang),
             get_symptoms_keyboard(selected_syms, lang)
+        )
+    elif prev_state == HeadacheLogSG.triggers:
+        selected_trigs = set(data.get("triggers", []))
+        await show_or_edit_step(
+            callback,
+            get_step_asset("triggers", lang),
+            step_triggers_text(lang),
+            get_triggers_keyboard(selected_trigs, lang)
         )
     elif prev_state == HeadacheLogSG.medication:
         await show_or_edit_step(
@@ -699,6 +734,55 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
         await callback.message.edit_reply_markup(reply_markup=get_symptoms_keyboard(selected, lang))
 
     elif action == "done":
+        await state.set_state(HeadacheLogSG.triggers)
+        await state.update_data(triggers=[])
+        await show_or_edit_step(
+            callback,
+            get_step_asset("triggers", lang),
+            step_triggers_text(lang),
+            get_triggers_keyboard(set(), lang)
+        )
+
+
+# --- Step 5b: Triggers (Multi-select) ---
+@router.callback_query(HeadacheLogSG.triggers, TriggerCallback.filter())
+async def process_triggers(callback: CallbackQuery, callback_data: TriggerCallback, state: FSMContext):
+    await callback.answer()
+    action = callback_data.action
+    val = callback_data.value
+    data = await state.get_data()
+    lang = data.get("lang") or await get_user_language(callback.from_user.id)
+    selected = set(data.get("triggers", []))
+
+    if action == "toggle":
+        if "none" in selected:
+            selected.remove("none")
+        if val in selected:
+            selected.remove(val)
+        else:
+            selected.add(val)
+        await state.update_data(triggers=list(selected))
+        await callback.message.edit_reply_markup(reply_markup=get_triggers_keyboard(selected, lang))
+
+    elif action == "none":
+        selected = {"none"}
+        await state.update_data(triggers=list(selected))
+        await callback.message.edit_reply_markup(reply_markup=get_triggers_keyboard(selected, lang))
+
+    elif action == "custom":
+        await state.set_state(HeadacheLogSG.custom_trigger)
+        prompt = get_text("custom_trigger_prompt", lang)
+        await show_or_edit_step(
+            callback,
+            get_step_asset("triggers", lang),
+            prompt,
+            get_cancel_keyboard(show_back=True, lang=lang)
+        )
+
+    elif action == "done":
+        if not selected:
+            selected = {"none"}
+        await state.update_data(triggers=list(selected))
         await state.set_state(HeadacheLogSG.medication)
         await show_or_edit_step(
             callback,
@@ -706,6 +790,42 @@ async def process_symptoms(callback: CallbackQuery, callback_data: SymptomCallba
             step_6_text(lang),
             get_medication_keyboard(lang)
         )
+
+
+@router.message(HeadacheLogSG.triggers, F.text)
+async def process_trigger_direct_input(message: Message, state: FSMContext):
+    trigger_text = message.text.strip()
+    data = await state.get_data()
+    lang = data.get("lang") or await get_user_language(message.from_user.id)
+    current_trigs = [t for t in data.get("triggers", []) if t != "none"]
+    if trigger_text not in current_trigs:
+        current_trigs.append(trigger_text)
+    await state.update_data(triggers=current_trigs)
+    await state.set_state(HeadacheLogSG.medication)
+    await show_or_edit_step(
+        message,
+        get_step_asset("medication", lang),
+        step_6_text(lang),
+        get_medication_keyboard(lang)
+    )
+
+
+@router.message(HeadacheLogSG.custom_trigger, F.text)
+async def process_custom_trigger_input(message: Message, state: FSMContext):
+    trigger_text = message.text.strip()
+    data = await state.get_data()
+    lang = data.get("lang") or await get_user_language(message.from_user.id)
+    current_trigs = [t for t in data.get("triggers", []) if t != "none"]
+    if trigger_text not in current_trigs:
+        current_trigs.append(trigger_text)
+    await state.update_data(triggers=current_trigs)
+    await state.set_state(HeadacheLogSG.medication)
+    await show_or_edit_step(
+        message,
+        get_step_asset("medication", lang),
+        step_6_text(lang),
+        get_medication_keyboard(lang)
+    )
 
 
 # --- Step 6: Medication ---
