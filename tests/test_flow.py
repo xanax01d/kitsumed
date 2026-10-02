@@ -1152,6 +1152,18 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         await process_triggers(mock_cb, cb_data, mock_state)
         self.assertEqual(set(mock_state.update_data.call_args[1]["triggers"]), {"stress", "sleep"})
 
+        # 1b. Test mutual exclusion: selecting oversleep removes sleep
+        mock_state.get_data.return_value = {"triggers": ["stress", "sleep"], "lang": "ru"}
+        cb_oversleep = TriggerCallback(action="toggle", value="oversleep")
+        await process_triggers(mock_cb, cb_oversleep, mock_state)
+        self.assertEqual(set(mock_state.update_data.call_args[1]["triggers"]), {"stress", "oversleep"})
+
+        # 1c. Test mutual exclusion: selecting sleep removes oversleep
+        mock_state.get_data.return_value = {"triggers": ["stress", "oversleep"], "lang": "ru"}
+        cb_sleep = TriggerCallback(action="toggle", value="sleep")
+        await process_triggers(mock_cb, cb_sleep, mock_state)
+        self.assertEqual(set(mock_state.update_data.call_args[1]["triggers"]), {"stress", "sleep"})
+
         # 2. Test none trigger callback
         cb_none = TriggerCallback(action="none", value="none")
         await process_triggers(mock_cb, cb_none, mock_state)

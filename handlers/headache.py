@@ -761,6 +761,11 @@ async def process_triggers(callback: CallbackQuery, callback_data: TriggerCallba
             selected.remove(val)
         else:
             selected.add(val)
+            # Mutual exclusion for sleep / oversleep
+            if val == "sleep" and "oversleep" in selected:
+                selected.remove("oversleep")
+            elif val == "oversleep" and "sleep" in selected:
+                selected.remove("sleep")
         await state.update_data(triggers=list(selected))
         await callback.message.edit_reply_markup(reply_markup=get_triggers_keyboard(selected, lang))
 
