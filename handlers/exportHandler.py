@@ -4,10 +4,10 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from aiogram.filters import Command
 
-from db import get_all_episodes, get_user_language
+from db import get_all_episodes, get_user_language, get_user_timezone
 from keyboards.headache_kb import get_export_keyboard, ExportCallback
 from keyboards.main_menu import get_main_menu_keyboard, EXPORT_BUTTONS
-from services import generate_csv, generate_pdf
+from services import generate_csv, generate_pdf, get_tz_now
 from services.media_cache import get_localized_asset, get_photo_source, extract_and_record
 from locales import get_text
 
@@ -75,8 +75,10 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         return
 
     fmt = callback_data.format
-    date_str = datetime.now().strftime("%Y%m%d_%H%M")
-    formatted_now = datetime.now().strftime("%d.%m.%Y %H:%M")
+    user_tz = await get_user_timezone(user.id) if user else "Europe/Moscow"
+    user_now = get_tz_now(user_tz)
+    date_str = user_now.strftime("%Y%m%d_%H%M")
+    formatted_now = user_now.strftime("%d.%m.%Y %H:%M")
     name_parts = []
     if user.full_name and user.full_name.strip():
         name_parts.append(user.full_name.strip())
@@ -96,7 +98,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         )
 
     if fmt in ("pdf", "both"):
-        pdf_bytes = generate_pdf(episodes, user_title=user_name)
+        pdf_bytes = generate_pdf(episodes, user_title=user_name, tz_name=user_tz)
         pdf_filename = f"migrebot_report_{date_str}.pdf"
         pdf_file = BufferedInputFile(pdf_bytes, filename=pdf_filename)
         await callback.message.answer_document(

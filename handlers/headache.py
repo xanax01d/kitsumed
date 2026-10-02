@@ -23,8 +23,9 @@ from keyboards.headache_kb import (
     LOCATION_MAP, PAIN_TYPE_MAP, ALL_SYMPTOMS, MEDICATION_MAP
 )
 from keyboards.main_menu import get_main_menu_keyboard, LOG_BUTTONS, CANCEL_BUTTONS
-from db import create_episode, get_active_episode, upsert_user, get_user_language
+from db import create_episode, get_active_episode, upsert_user, get_user_language, get_user_timezone
 from services.media_cache import get_photo_source, extract_and_record, get_localized_asset, get_input_media
+from services import get_tz_now
 from locales import (
     get_text,
     get_intensity_label,
@@ -247,16 +248,16 @@ def _parse_delay_minutes(delay_val: Optional[str]) -> int:
         return 0
 
 
-def _calculate_end_time_and_duration(start_time_str: str, total_minutes: int, lang: str = "ru") -> tuple[str, str]:
+def _calculate_end_time_and_duration(start_time_str: str, total_minutes: int, lang: str = "ru", tz_name: str = "Europe/Moscow") -> tuple[str, str]:
     try:
         dt_start = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M")
     except Exception:
         try:
-            today = datetime.now().date()
+            today = get_tz_now(tz_name).date()
             t = datetime.strptime(start_time_str, "%H:%M").time()
             dt_start = datetime.combine(today, t)
         except Exception:
-            dt_start = datetime.now() - timedelta(minutes=total_minutes)
+            dt_start = get_tz_now(tz_name) - timedelta(minutes=total_minutes)
 
     dt_end = dt_start + timedelta(minutes=total_minutes)
     end_time_str = dt_end.strftime("%Y-%m-%d %H:%M")
@@ -598,7 +599,8 @@ async def start_headache_log(message: Message, state: FSMContext):
 @router.callback_query(HeadacheLogSG.start_time, TimeCallback.filter())
 async def process_start_time(callback: CallbackQuery, callback_data: TimeCallback, state: FSMContext):
     await callback.answer()
-    now = datetime.now()
+    user_tz = await get_user_timezone(callback.from_user.id)
+    now = get_tz_now(user_tz)
     preset = callback_data.preset
     data = await state.get_data()
     lang = data.get("lang") or await get_user_language(callback.from_user.id)
@@ -952,11 +954,11 @@ async def process_relief_time(callback: CallbackQuery, callback_data: ReliefTime
     relief_delay = callback_data.value
     data = await state.get_data()
     lang = data.get("lang") or await get_user_language(callback.from_user.id)
-
+    user_tz = await get_user_timezone(callback.from_user.id)
     med_take_delay = data.get("med_take_delay", "0m")
     total_minutes = _parse_delay_minutes(med_take_delay) + _parse_delay_minutes(relief_delay)
-    start_time_str = data.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-    end_time_str, duration_str = _calculate_end_time_and_duration(start_time_str, total_minutes, lang)
+    start_time_str = data.get("start_time", get_tz_now(user_tz).strftime("%Y-%m-%d %H:%M"))
+    end_time_str, duration_str = _calculate_end_time_and_duration(start_time_str, total_minutes, lang, user_tz)
 
     await state.update_data(
         relief_delay=relief_delay,

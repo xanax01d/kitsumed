@@ -12,7 +12,9 @@ from db import (
     resolve_episode_pain,
     update_medication_relief,
     get_user_language,
+    get_user_timezone,
 )
+from services import get_tz_now
 from keyboards.headache_kb import (
     FollowUpCallback,
     get_followup_pain_keyboard,
@@ -27,8 +29,8 @@ from locales import get_text
 router = Router()
 
 
-def _calculate_end_time(preset: str) -> str:
-    now = datetime.now()
+def _calculate_end_time(preset: str, tz_name: str = "Europe/Moscow") -> str:
+    now = get_tz_now(tz_name)
     if preset == "now":
         return now.strftime("%Y-%m-%d %H:%M")
     elif preset == "-30m":
@@ -125,8 +127,9 @@ async def process_set_when(callback: CallbackQuery, callback_data: FollowUpCallb
     await callback.answer()
     user_id = callback.from_user.id
     lang = await get_user_language(user_id)
+    user_tz = await get_user_timezone(user_id)
     ep_id = callback_data.episode_id
-    end_time = _calculate_end_time(callback_data.value)
+    end_time = _calculate_end_time(callback_data.value, user_tz)
 
     # Save resolution in database
     await resolve_episode_pain(ep_id, pain_passed=True, end_time=end_time)

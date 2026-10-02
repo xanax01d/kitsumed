@@ -441,6 +441,21 @@ async def get_user_reminder(user_id: int) -> Dict[str, Any]:
         }
 
 
+async def get_user_timezone(user_id: int) -> str:
+    """Retrieves user timezone string, defaulting to Europe/Moscow."""
+    try:
+        pool = _get_pool()
+        async with pool.acquire() as conn:
+            tz = await conn.fetchval("""
+                SELECT timezone FROM users WHERE user_id = $1;
+            """, user_id)
+            if tz:
+                return tz
+    except Exception:
+        pass
+    return "Europe/Moscow"
+
+
 async def set_user_reminder(
     user_id: int,
     reminder_time: Optional[str] = None,

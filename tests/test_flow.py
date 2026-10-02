@@ -172,9 +172,15 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(len(csv_bytes), 50)
         self.assertTrue(csv_bytes.startswith(b"\xef\xbb\xbf"))  # UTF-8 BOM
 
-        pdf_bytes = generate_pdf(episodes, user_title="Test User")
+        pdf_bytes = generate_pdf(episodes, user_title="Test User", tz_name="Europe/Moscow")
         self.assertGreater(len(pdf_bytes), 500)
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
+        # Test timezone-aware get_tz_now
+        from services import get_tz_now
+        msk_now = get_tz_now("Europe/Moscow")
+        utc_now = get_tz_now("UTC")
+        self.assertEqual(int(msk_now.utcoffset().total_seconds() - utc_now.utcoffset().total_seconds()), 3 * 3600)
 
     async def test_postgres_db_lifecycle_mocked(self):
         mock_conn = AsyncMock()
