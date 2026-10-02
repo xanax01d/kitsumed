@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from aiogram import Router, F
@@ -89,7 +90,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
     await callback.answer("Формирую отчет...")
 
     if fmt in ("csv", "both"):
-        csv_bytes = generate_csv(episodes)
+        csv_bytes = await asyncio.to_thread(generate_csv, episodes)
         csv_filename = f"migrebot_diary_{date_str}.csv"
         csv_file = BufferedInputFile(csv_bytes, filename=csv_filename)
         await callback.message.answer_document(
@@ -98,7 +99,7 @@ async def process_export_callback(callback: CallbackQuery, callback_data: Export
         )
 
     if fmt in ("pdf", "both"):
-        pdf_bytes = generate_pdf(episodes, user_title=user_name, tz_name=user_tz)
+        pdf_bytes = await asyncio.to_thread(generate_pdf, episodes, user_title=user_name, tz_name=user_tz)
         pdf_filename = f"migrebot_report_{date_str}.pdf"
         pdf_file = BufferedInputFile(pdf_bytes, filename=pdf_filename)
         await callback.message.answer_document(
