@@ -65,7 +65,7 @@ Fully asynchronous, resilient microservice-like architecture integrating Python,
 ## 🌟 Key Features
 
 ### 1. ⏱ Step-by-Step FSM Questionnaire with Dynamic Card Transitions
-- **Smooth `edit_media` Transitions**: Across questionnaire stages, the bot smoothly updates a dedicated minimalist medical illustration (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) in the chosen language (RU/EN).
+- **Smooth `edit_media` Transitions**: Across questionnaire stages, the bot smoothly updates high-tech visual cards (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `triggers.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) in the chosen language (RU/EN).
 - **Start Time**: Quick presets (*Right now, 30 min ago, 1 hour ago, 2 hours ago*) or manual custom time entry (`HH:MM` or `YYYY-MM-DD HH:MM`).
 - **Pain Scale (1–10)**: Clear intensity rating from mild (1) to unbearable (10).
 - **Localization**: Left side, right side, both sides, forehead and temples, back of head, diffuse pain.
@@ -146,6 +146,65 @@ Interactive flow from initial recording to automated follow-up, persistent stora
   <img src="assets/images/en/flow_diagram.png" alt="Migrebot User Workflow" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
 </div>
 
+<br>
+
+### 🖼 Bot Screen & Step Card Gallery
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>⏱ Step 1: Headache Onset Time</b><br>
+      <img src="assets/images/en/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📊 Step 2: Pain Intensity Scale (1–10)</b><br>
+      <img src="assets/images/en/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🎯 Step 3: Pain Localization</b><br>
+      <img src="assets/images/en/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>⚡️ Step 4: Pain Type & Character</b><br>
+      <img src="assets/images/en/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🩺 Step 5: Accompanying Symptoms & Aura</b><br>
+      <img src="assets/images/en/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🌪 Step 6: Provoking Triggers</b><br>
+      <img src="assets/images/en/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>💊 Step 7: Medication & Dosage</b><br>
+      <img src="assets/images/en/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🛡 Step 8: Summary & Confirmation</b><br>
+      <img src="assets/images/en/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>📅 Episode Calendar & History</b><br>
+      <img src="assets/images/en/history.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📥 Clinical Report Export (PDF & CSV)</b><br>
+      <img src="assets/images/en/export.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+</table>
+</div>
+
 ---
 
 ## ⌨️ Commands & Navigation
@@ -185,7 +244,7 @@ Interactive flow from initial recording to automated follow-up, persistent stora
 migrebot_analog/
 ├── assets/
 │   ├── fonts/             # TrueType fonts (DejaVuSans, VL-Gothic for CJK/Cyrillic)
-│   ├── images/            # Minimalist medical cards & diagrams (28 files)
+│   ├── images/            # High-tech medical illustrations & step cards (30 files)
 │   │   ├── ru/            # Russian assets (hero, diagrams, history, export, steps)
 │   │   └── en/            # English assets (hero, diagrams, history, export, steps)
 │   └── image_cache.json   # Persistent registry of Telegram photo file_ids & MD5 hashes
@@ -315,7 +374,7 @@ python3 -m unittest discover -s tests -v
 | `test_format_episode_card_no_raw_vomiting` | 🌐 Localization | Zero technical code leakage in formatted episode cards across all languages |
 | `test_language_handler_and_switching` | 🌐 Localization | `/language` command, language callback processing, DB storage, and prompt updating |
 | `test_media_cache_functions` | ⚡️ Media Cache | Permanent `file_id` storage & retrieval, fallback to `FSInputFile`, MD5 hash invalidation, and locale isolation |
-| `test_localized_assets` | 🎨 Media Assets | Verification of existence and dimensions (1376×768) of all 28 assets in RU and EN folders |
+| `test_localized_assets` | 🎨 Media Assets | Verification of existence and dimensions (1376×768) of all 30 assets in RU and EN folders |
 | `test_csv_and_pdf_generation` | 📄 Export | Generation of clinical PDF reports (ReportLab Landscape A4) and UTF-8 BOM CSV tables with triggers column |
 | `test_cjk_and_nickname_export` | 📄 Export | Support for Cyrillic, Latin, CJK characters, and usernames via the `VL-Gothic` font stack |
 | `test_redis_fsm_storage_config` | 🗄 Storage | Key namespace isolation for FSM states in Redis (`DefaultKeyBuilder(with_bot_id=True)`) |

@@ -51,7 +51,7 @@ def get_step_asset(step_name: str, lang: str = "ru") -> Path:
         "location": "steps/location.png",
         "pain_type": "steps/pain_type.png",
         "symptoms": "steps/symptoms.png",
-        "triggers": "steps/symptoms.png",
+        "triggers": "steps/triggers.png",
         "medication": "steps/medication.png",
         "medication_time": "steps/medication.png",
         "relief_time": "steps/saved.png",

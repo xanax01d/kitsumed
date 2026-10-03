@@ -929,6 +929,7 @@ class TestHeadacheFlow(unittest.IsolatedAsyncioTestCase):
             "steps/location.png",
             "steps/pain_type.png",
             "steps/symptoms.png",
+            "steps/triggers.png",
             "steps/medication.png",
             "steps/confirm.png",
             "steps/saved.png",
