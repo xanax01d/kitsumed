@@ -1,9 +1,6 @@
-/env
+/target/
 .env
-__pycache__/
-*.pyc
+*.log
+.DS_Store
 *.db
 *.sqlite
-.DS_Store
-/target/
-*.log
