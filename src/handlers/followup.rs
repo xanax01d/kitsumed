@@ -31,10 +31,7 @@ pub async fn handle_status_cmd(
     sessions: &SessionStore,
 ) -> ResponseResult<()> {
     let user_id = msg.from.as_ref().map(|u| u.id.0 as i64).unwrap_or(0);
-    {
-        let mut lock = sessions.write().await;
-        lock.remove(&user_id);
-    }
+    sessions.remove(user_id).await;
     let _ = crate::rich::send_rich_status_menu(bot.token(), msg.chat.id.0, None, user_id, pool).await;
     Ok(())
 }
@@ -115,10 +112,7 @@ pub async fn handle_followup_callback(
         "custom_when" => {
             if parts.len() >= 3 {
                 let ep_id: i32 = parts[2].parse().unwrap_or(0);
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::WaitingFollowupTime(ep_id));
-                }
+                sessions.set(user_id, UserState::WaitingFollowupTime(ep_id)).await;
                 let _ = bot.send_message(chat_id, get_text("fu_when_custom_prompt", &lang)).parse_mode(ParseMode::Html).await;
             }
         }

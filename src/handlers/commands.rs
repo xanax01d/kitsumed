@@ -47,10 +47,7 @@ pub async fn handle_menu_callback(
             start_headache_flow(bot, chat_id, mid, user_id, pool, sessions).await?;
         }
         "status" => {
-            {
-                let mut lock = sessions.write().await;
-                lock.remove(&user_id);
-            }
+            sessions.remove(user_id).await;
             let _ = crate::rich::send_rich_status_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
         }
         "history" | "calendar" => {
@@ -107,10 +104,7 @@ pub async fn handle_message(
 
     // Check cancel command or button
     if text == "/cancel" || is_cancel_btn(text) {
-        {
-            let mut lock = sessions.write().await;
-            lock.remove(&user_id);
-        }
+        sessions.remove(user_id).await;
         let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
         bot.send_message(msg.chat.id, get_text("action_cancelled", &lang))
             .parse_mode(ParseMode::Html)
@@ -120,10 +114,7 @@ pub async fn handle_message(
     }
 
     // Check user waiting state for text inputs
-    let current_state = {
-        let lock = sessions.read().await;
-        lock.get(&user_id).cloned()
-    };
+    let current_state = sessions.get(user_id).await;
 
     if let Some(state) = current_state {
         match state {
@@ -131,10 +122,7 @@ pub async fn handle_message(
                 form.start_time = Some(text.to_string());
                 form.current_step = Some(FlowStep::Intensity);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form)).await;
 
                 let caption = get_text_fmt("step_2_title", &lang, &[("time_str", text)]);
                 let kb = get_intensity_keyboard(&lang);
@@ -159,10 +147,7 @@ pub async fn handle_message(
                 form.triggers.push(text.to_string());
                 form.current_step = Some(FlowStep::Medication);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form)).await;
 
                 let caption = get_text("step_6_title", &lang);
                 let kb = get_medication_keyboard(&lang);
@@ -187,20 +172,14 @@ pub async fn handle_message(
                 form.medication = Some(text.to_string());
                 form.current_step = Some(FlowStep::MedicationTime);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), msg.chat.id.0, None, user_id, &form, &pool).await;
                 return Ok(());
             }
 
             UserState::WaitingFollowupTime(ep_id) => {
-                {
-                    let mut lock = sessions.write().await;
-                    lock.remove(&user_id);
-                }
+                sessions.remove(user_id).await;
 
                 let _ = resolve_episode_pain(&pool, ep_id, true, Some(text)).await;
                 let ep = get_episode_by_id(&pool, ep_id).await.unwrap_or(None);
@@ -230,10 +209,7 @@ pub async fn handle_message(
             UserState::WaitingReminderTime => {
                 let re = Regex::new(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$").unwrap();
                 if re.is_match(text) {
-                    {
-                        let mut lock = sessions.write().await;
-                        lock.remove(&user_id);
-                    }
+                    sessions.remove(user_id).await;
                     let _ = set_user_reminder(&pool, user_id, Some(text), None, None).await;
                     let success_text = get_text_fmt("reminder_custom_time_saved", &lang, &[
                         ("time", text),
@@ -253,10 +229,7 @@ pub async fn handle_message(
 
             UserState::WaitingCustomTimezone => {
                 if let Some(valid_tz) = resolve_timezone(text) {
-                    {
-                        let mut lock = sessions.write().await;
-                        lock.remove(&user_id);
-                    }
+                    sessions.remove(user_id).await;
                     let _ = set_user_reminder(&pool, user_id, None, None, Some(&valid_tz)).await;
                     let success_text = get_text_fmt("tz_custom_saved", &lang, &[
                         ("tz_label", &valid_tz),
