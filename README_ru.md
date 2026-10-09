@@ -2,17 +2,17 @@
 
 <img src="assets/images/ru/hero_banner.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
-# 🧠 Migrebot Analog
-### Персональный Telegram-дневник приступов мигрени и головной боли
+# 🧠 Migrebot Analog (Rust Edition)
+### Высокопроизводительный Telegram-дневник приступов мигрени и головной боли на чистом Rust
 
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![teloxide](https://img.shields.io/badge/teloxide-0.13-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://teloxide.rs/)
 [![tokio](https://img.shields.io/badge/tokio-async-blue?style=for-the-badge&logo=rust&logoColor=white)](https://tokio.rs/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![sqlx](https://img.shields.io/badge/sqlx-0.8-green?style=for-the-badge)](https://github.com/launchbadge/sqlx)
-[![i18n](https://img.shields.io/badge/Languages-5%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#7-🌐-локализация-и-мультиязычность)
-[![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#8-🩺-автоматический-follow-up-и-оценка-препаратов)
-[![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
+[![i18n](https://img.shields.io/badge/Languages-5%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#4-🌐-локализация-и-мультиязычность-5-языков)
+[![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#3-🩺-автоматический-follow-up-и-оценка-препаратов)
+[![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -21,16 +21,16 @@
 
 <p align="center">
   <b>Умный бот для структурированной фиксации симптомов, характера и интенсивности боли,<br>
-  динамической визуализации каждого шага, автоматического контроля купирования приступа и формирования клинических отчетов для невролога.</b>
+  интерактивного интерфейса с кнопками внутри сообщений (Telegram Rich Text), автоматического контроля купирования приступа и выгрузки отчетов.</b>
 </p>
 
 <p align="center">
   <a href="#-основные-возможности">✨ Возможности</a> •
   <a href="#-архитектура-системы">📐 Архитектура</a> •
-  <a href="#-интерфейс-и-сценарии-работы">🎮 Сценарии</a> •
+  <a href="#-команды-и-навигация">⌨️ Навигация</a> •
   <a href="#-стек-технологий">🛠 Стек</a> •
+  <a href="#-структура-проекта">📂 Структура</a> •
   <a href="#-быстрый-старт">⚙️ Быстрый старт</a> •
-  <a href="#-тестирование">🧪 Тестирование</a> •
   <a href="#-развертывание-на-сервере-systemd">🚀 Деплой</a> •
   <a href="#-база-данных">📋 База данных</a>
 </p>
@@ -41,201 +41,83 @@
 
 ## 📐 Архитектура системы
 
-Полностью асинхронная отказоустойчивая архитектура на базе микросервисного взаимодействия Python-сервиса, распределенного Redis FSM, СУБД PostgreSQL и фоновых воркеров:
-
-<div align="center">
-  <img src="assets/images/ru/architecture_diagram.png" alt="Архитектура Migrebot" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
-</div>
-
-<br>
+Полностью асинхронная отказоустойчивая архитектура на базе чистого **Rust** (компилируемый бинарник с нулевым оверхедом), многопоточного рантайма **Tokio**, пула соединений **SQLx** и СУБД **PostgreSQL**:
 
 | Компонент | Технология | Назначение |
 | :--- | :--- | :--- |
-| **Telegram Client** | Telegram API | Пользовательский интерфейс: инлайн-кнопки, интерактивные чекбоксы, Reply-меню, динамическая смена карточек шагов через `edit_media` |
-| **Core Engine** | `aiogram 3.x` (Python) | Асинхронный роутинг сообщений, обработка коллбэков, мультиязычные фильтры и навигация FSM |
-| **Session Cache** | `Redis` (порт `6532`) | Изолированное хранение состояний диалога `DefaultKeyBuilder(with_bot_id=True)` |
-| **Primary Database** | `PostgreSQL 14+` (`asyncpg`) | Постоянное хранение профилей, языковых настроек, истории приступов (JSONB) и статусов купирования боли |
-| **Follow-up Scheduler** | `asyncio` Background Task | Фоновый планировщик контроля стихания боли через 2 часа после начала приступа и сбора оценки эффективности медикаментов |
-| **Reminder Scheduler** | `asyncio` Background Task | Фоновый планировщик ежедневных чек-инов с учетом индивидуальных часовых поясов пользователей |
-| **Reporting Engine** | `ReportLab` + TTF Fonts | Генерация медицинских таблиц PDF (A4 Landscape) и UTF-8 BOM CSV |
+| **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | Интерактивные inline-кнопки прямо внутри текста сообщений (`<tg-button-row>`, `<tg-button>`), спойлеры и сворачиваемые блоки (`<blockquote expandable>`), встроенные медиа |
+| **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | Высокопроизводительный асинхронный роутинг сообщений и коллбэков, потокобезопасная FSM-сессия (`Arc<RwLock<SessionStore>>`) |
+| **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Пул асинхронных соединений `sqlx::PgPool`, строгая типизация, миграции схемы, история приступов (JSONB) и профили пользователей |
+| **Follow-up Scheduler** | Tokio Background Task | Фоновый воркер контроля стихания боли через 2 часа после начала приступа и сбора оценки эффективности медикаментов |
+| **Reminder Scheduler** | Tokio Background Task | Фоновый планировщик ежедневных чек-инов с учетом индивидуальных часовых поясов пользователей (Chrono + Chrono-Tz) |
+| **Localization Engine** | Compile-time embedded JSON | Молниеносная локализация на 5 языков через `include_str!` и `LazyLock<HashMap>` без дискового I/O в рантайме |
 
 ---
 
 ## 🌟 Основные возможности
 
-### 1. ⏱ Пошаговый FSM-опросник с динамической сменой карточек
-- **Интерактивные переходы (`edit_media`)**: На каждом из этапов опросника в сообщении мгновенно и плавно сменяются высокотехнологичные визуальные карточки (`start_time.png` ➔ `pain_scale.png` ➔ `location.png` ➔ `pain_type.png` ➔ `symptoms.png` ➔ `triggers.png` ➔ `medication.png` ➔ `confirm.png` ➔ `saved.png`) в выбранной локали (RU/EN).
-- **Время начала**: Быстрые пресеты (*Прямо сейчас, 30 минут назад, 1 час, 2 часа назад*) или ввод точного времени вручную (`ЧЧ:ММ` или `ГГГГ-ММ-ДД ЧЧ:ММ`).
-- **Шкала боли (1–10)**: Интуитивная градация от едва ощутимой (1) до невыносимой (10).
-- **Локализация**: Слева, справа, с обеих сторон, лоб и виски, затылок, диффузная боль (вся голова).
-- **Характер боли**: Пульсирующая, давящая/сжимающая, распирающая, колющая/прострелы, тупая/ноющая.
-- **Мультиселект симптомов**: Интерактивные inline-чекбоксы с сохранением выбора в реальном времени (тошнота, рвота, светобоязнь, звукобоязнь, зрительная аура, головокружение, запахи).
-- **Сбор триггеров (провоцирующих факторов)**: Интерактивный мультивыбор частых триггеров головной боли:
-  - *Стресс / переутомление*
-  - *Недосып*
-  - *Много сна / пересып* (избыток сна)
-  - *Погода / перепад давления*
-  - *Голод / пропуск еды*
-  - *Алкоголь*
-  - *Кофеин*
-  - *Шум / свет / духота*
-  - *Физическая нагрузка*
-  - *Без явного триггера*
-  - **Свой вариант**: кнопка `✍️ Свой вариант` или отправка любого текстового сообщения боту с сохранением в карточке приступа.
-- **Медикаменты и оценка эффективности**: Выбор препарата, учет задержки приема, интерактивный вопрос о стихании боли и автоматический расчет купирования приступа.
+### 1. ⏱ Пошаговый опросник с Rich Text интерфейсом
+- **Кнопки внутри текста (Telegram TG-13)**: Кнопки навигации, шкалы боли и выбора симптомов встроены прямо в тело сообщения через теги `<tg-button-row>` и `<tg-button>`.
+- **Время начала**: Быстрые пресеты (*Прямо сейчас, 30 минут назад, 1 час, 2 часа назад*) или точное время.
+- **Шкала боли (1–10)**: Интуитивная градация от едва ощутимой (1) до невыносимой (10 🔥).
+- **Локализация цефалгии**: Слева, справа, с обеих сторон, лоб/виски, затылок, диффузная боль.
+- **Характер боли**: Пульсирующая, давящая, колющая, тупая.
+- **Мультиселект симптомов**: Интерактивные кнопки с динамическим переключением ✅ в реальном времени (тошнота, рвота, светобоязнь, звукобоязнь, аура, головокружение).
+- **Сбор триггеров**: Мультивыбор ключевых триггеров (стресс, недосып, погода, усталость, алкоголь, пропуск еды).
+- **Медикаменты и дозировка**: Выбор конкретного препарата, указание задержки приема и оценка купирования.
 
-### 2. ⏹ Автоматический хронометраж и завершение приступа
-- При стихании боли кнопка **«⏹ Завершить приступ»** (или команда `/finish`) фиксирует время окончания и рассчитывает суммарную продолжительность (например: `2 ч 13 мин`).
+### 2. 🩺 Автоматический follow-up и оценка препаратов
+- **Контроль через 2 часа**: Фоновый таймер Tokio автоматически находит открытые приступы и отправляет запрос: *«Прошла ли головная боль?»*.
+- **Фиксация времени стихания**: Быстрые кнопки ответа (*только что, 30 минут назад, 1 час назад, 2 часа назад*).
+- **Оценка эффективности**: Фиксация клинического действия лекарств:
+  - `🟢 Помогло` (`helped`)
+  - `🟡 Частично` (`partially`)
+  - `🔴 Не помогло` (`not_helped`)
 
-### 3. 🩺 Автоматический follow-up и оценка препаратов
-- **Контроль через 2 часа**: Фоновый сервис автоматически находит открытые приступы и через 2 часа отправляет деликатное напоминание: *«Прошла ли головная боль?»*.
-- **Фиксация времени стихания**: Кнопки быстрого ответа (`✅ Да, отпустило`, `❌ Еще болит`) с возможностью указать, когда именно прошла боль (*только что, 15 минут назад, 30 минут назад, 1 час назад*).
-- **Оценка эффективности лекарств**: Если пользователь принимал медикаменты, бот собирает клиническую оценку действия препарата:
-  - `💊 Помогло отлично` (`helped`)
-  - `⚠️ Частично` (`partial`)
-  - `❌ Не помогло` (`not_helped`)
-- Все данные сохраняются в БД и отображаются в последующих выгрузках для врача.
+### 3. 🌐 Локализация и мультиязычность (5 языков)
+- 🇷🇺 **Русский (`ru`)**: Классическая академическая медицинская терминология.
+- 🇧🇾 **Беларуская (`be`)**: Аўтэнтычная беларуская мова з нацыянальнай атрыбутыкай.
+- 🇬🇧 **English (`en`)**: Международная терминология (ICHD-3).
+- 🎭 **Мемный сленг (`meme`)**: Вирусный рунетовский сленг.
+- 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Погружение в атмосферу Найт-Сити.
 
-### 4. 🌐 Локализация и мультиязычность (4 языка)
-- Быстрое переключение через команду `/language` или кнопку меню `🌐 Язык` с сохранением предпочтения в базе данных:
-  - 🇷🇺 **Русский (`ru`)**: Классическая академическая медицинская терминология.
-  - 🇬🇧 **English (`en`)**: Международная терминология (ICHD-3).
-  - 🎭 **Мемный сленг (`meme`)**: Вирусный рунетовский сленг («сожрет дедлайн», «кринж», «фиаско», «артиллерия»).
-  - 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Погружение в атмосферу Найт-Сити («биомонитор», «нейрочип», «Kiroshi», «Травма Тим», «Черный лед», «нейроблокаторы»).
-- Полная локализация клавиатур, шаблонов сообщений, карточек истории и подсказок без утечек технических кодов.
+### 4. 📅 Интерактивный календарь приступов (`/history` / `/calendar`)
+- Месячная сетка с индикацией дней боли (🔴) и бессимптомных дней (🟢).
+- Навигация по месяцам вперед/назад и подробные карточки дней.
 
-### 5. 📥 Клинический экспорт для врача-невролога
-- Бот отправляет специализированную инфографику экспорта (`export.png`).
-- 📄 **PDF-отчет (Landscape A4)**: Профессиональная медицинская таблица со сводными метриками пациента (средняя сила приступа, количество эпизодов, динамика купирования, колонка триггеров). Поддерживает кириллицу, латиницу и CJK (японские иероглифы/катакану) благодаря шрифту `VL-Gothic`.
-- 📊 **Таблица CSV (Excel)**: Экспорт с кодировкой UTF-8 BOM и разделителем `;` — открывается в Excel и Google Spreadsheets без искажений символов.
-
-### 6. 📅 Интерактивный календарь приступов (`📊 Мои приступы` / `/history`)
-- **Наглядная сетка месяца**: Отображение полноценного календаря в Telegram с цветовой индикацией состояния здоровья на каждый день:
-  - 🔴 `{число}` — день, в который был зафиксирован приступ головной боли;
-  - 🟢 `{число}` — дни без головной боли (бессимптомные дни от начала месяца до сегодняшнего дня);
-  - `{число}` — будущие календарные дни (защита от ложных нажатий с подсказкой «Этот день еще не наступил»).
-- **Удобная навигация**: Перелистывание месяцев вперед/назад (`◀️` / `▶️`) и кнопка быстрого возврата к текущему месяцу (`[ 📅 Месяц Год ]`).
-- **Детальная карточка дня**: Клик по дню открывает подробный отчет о приступе (время начала и конца, интенсивность, локализация, симптомы, триггеры, лекарства, динамика купирования) либо подтверждение отличного самочувствия (*«В этот день голова не болела 🎉»*), с мгновенным возвратом к календарю по кнопке `◀️ Назад к календарю`.
-
-### 7. ⏰ Ежедневные персонализированные чек-ины
-- **Регулярный чек-ин**: Каждый день в выбранное пользователем время бот отправляет интерактивный запрос: *«Болела ли голова сегодня?»*.
-- **Быстрые действия**:
-  - `🤕 Да, болела` — мгновенный переход к опросника с первой карточкой `start_time.png`.
-  - `👌 Нет, всё отлично` — сохранение бессимптомного дня в истории.
-  - `⚙️ Настроить время` — изменение параметров опроса.
-- **Выбор часового пояса (11 часовых зон РФ + мир)**:
-  - Поддержка всех часовых поясов: от Калининграда (UTC+2) до Камчатки (UTC+12), а также европейских и американских зон.
-  - Ручной ввод смещения (`UTC+5`, `+4`, `-5`) или IANA-идентификатора (`Asia/Almaty`, `Europe/Minsk`).
-  - Отображение текущего местного времени пользователя прямо в интерфейсе.
-- **Гибкая настройка расписания**: Быстрые пресеты (`09:00`, `14:00`, `19:00`, `21:00`, `22:00`, `23:00`) или ввод любого произвольного времени (`ЧЧ:ММ`), а также возможность временного отключения.
-
-### 8. ⚡️ Высокая производительность и кэширование медиа
-- **Кэширование `file_id` Telegram CDN**: Все баннеры и визуальные карточки шагов предварительно кэшируются в Telegram. Вместо повторной загрузки 150 КБ файла через `multipart/form-data` бот передает короткий `file_id` (~70 байт в JSON), ускоряя переключение шагов в 15–45 раз.
-- **Автоматическая инвалидация по MD5-хэшу**: При изменении файла на диске кэш автоматически определяет несовпадение хэша, сбрасывает устаревший `file_id` и перезагружает обновленное изображение.
-- **Раздельные пространства ключей по языкам**: Исключены коллизии между RU и EN версиями изображений.
-- **Мгновенный отклик кнопок**: Вызов `await callback.answer()` срабатывает в начале обработки запроса, мгновенно снимая спиннер загрузки с кнопки (< 40 мс).
-- **Пул соединений Aiohttp**: Сконфигурирован `AiohttpSession(limit=100)` с DNS-кэшированием (`ttl_dns_cache=3600`) и постоянными Keep-Alive TLS-соединениями.
-- **Снижение сетевой задержки**: Время полной обработки апдейтов шагов опросника составляет **~50 мс**.
-
----
-
-## 🎮 Интерфейс и сценарии работы
-
-Наглядный процесс прохождения пользователя по шагам фиксации приступа боли, автоматического follow-up, сохранения в базу данных и выгрузки медицинских заключений:
-
-<div align="center">
-  <img src="assets/images/ru/flow_diagram.png" alt="Сценарий работы Migrebot" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
-</div>
-
-<br>
-
-### 🖼 Визуальная галерея экранов и карточек опросника
-
-<div align="center">
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <b>⏱ Шаг 1: Время начала приступа</b><br>
-      <img src="assets/images/ru/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>📊 Шаг 2: Шкала интенсивности боли (1–10)</b><br>
-      <img src="assets/images/ru/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🎯 Шаг 3: Локализация цефалгии</b><br>
-      <img src="assets/images/ru/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>⚡️ Шаг 4: Характер боли</b><br>
-      <img src="assets/images/ru/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🩺 Шаг 5: Сопутствующие симптомы и аура</b><br>
-      <img src="assets/images/ru/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🌪 Шаг 6: Провоцирующие триггеры</b><br>
-      <img src="assets/images/ru/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>💊 Шаг 7: Препараты и дозировка</b><br>
-      <img src="assets/images/ru/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🛡 Шаг 8: Сводка и подтверждение</b><br>
-      <img src="assets/images/ru/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>📅 Календарь и аналитика приступов</b><br>
-      <img src="assets/images/ru/history.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>📥 Клинический отчет для врача (PDF & CSV)</b><br>
-      <img src="assets/images/ru/export.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-</table>
-</div>
+### 5. ⏰ Ежедневные персонализированные чек-ины
+- Регулярный опрос в установленное пользователем время (*«Болела ли голова сегодня?»*).
+- Полная поддержка часовых поясов (IANA и смещения UTC).
 
 ---
 
 ## ⌨️ Команды и навигация
 
-| Команда | Кнопка меню | Назначение |
-| :--- | :--- | :--- |
-| `/start` | — | Персонализированное приветствие с именем/никнеймом и регистрация в БД |
-| `/log`, `/headache` | `🤕 Записать приступ` | Запуск пошагового FSM-диалога записи приступа с карточками |
-| `/finish` | `⏹ Завершить приступ` | Закрытие активного приступа с фиксацией длительности |
-| `/status` | — | Проверка статуса активного приступа и оценка эффективности медикаментов |
-| `/export` | `📥 Экспорт отчета` | Меню выгрузки медицинского отчета (PDF / CSV / Оба) |
-| `/history` | `📊 Мои приступы` | Интерактивный календарь приступов (🔴 дни боли / 🟢 здоровые дни) с навигацией по месяцам |
-| `/reminder`, `/settings` | `⏰ Напоминания` | Настройка времени ежедневного чек-ина и часового пояса |
-| `/language` | `🌐 Язык` | Переключение языка интерфейса (RU, EN, Meme, Cyberpunk) |
-| `/help` | `ℹ️ Справка` | Справочное руководство по ведению дневника и шкале боли |
-| `/cancel` | `❌ Отмена` | Прерывание текущего опроса и возврат в главное меню |
+| Команда | Назначение |
+| :--- | :--- |
+| `/start` | Приветствие, регистрация в БД и открытие главного Rich-меню |
+| `/menu` | Главное интерактивное меню с кнопками |
+| `/log`, `/headache` | Запуск пошагового опросника фиксации приступа боли |
+| `/status` | Проверка активного приступа и статуса купирования |
+| `/calendar`, `/history` | Интерактивный календарь приступов по дням |
+| `/reminder`, `/settings` | Меню настройки ежедневного чек-ина и часового пояса |
+| `/language` | Выбор языка интерфейса (RU, BE, EN, Meme, Cyberpunk) |
+| `/help` | Справочная информация по шкале боли и ведению дневника |
+| `/cancel` | Прерывание текущего сценария и возврат в главное меню |
 
 ---
 
 ## 🛠 Стек технологий
 
-- **Ядро**: Python 3.10+ / 3.13 (асинхронный цикл событий `asyncio`)
-- **Telegram Bot Framework**: `aiogram 3.31`
-- **FSM State Engine**: `redis.asyncio` + `RedisStorage`
-- **База данных**: `PostgreSQL 14+` + драйвер `asyncpg 0.31`
-- **Фоновые сервисы**: Асинхронные планировщики `reminder_service` и `followup_service`
-- **Документооборот**: `ReportLab 4.4` + шрифтовой стек `DejaVuSans` & `VL-Gothic`
-- **Рендеринг ассетов**: `Pillow 11` (Lanczos 2x суперсэмплинг, 1376×768)
-- **Тестирование**: `unittest` (`IsolatedAsyncioTestCase` + изоляция моками `AsyncMock`)
-- **Менеджер сервисов**: `systemd` (Linux daemon с `PYTHONUNBUFFERED=1`)
+- **Ядро**: Rust 1.85+ (Edition 2021)
+- **Фреймворк Telegram**: `teloxide 0.13`
+- **Асинхронный рантайм**: `tokio 1.x` (многопоточный планировщик)
+- **База данных**: `PostgreSQL 14+` + пул соединений `sqlx 0.8` (асинхронный Postgres-драйвер)
+- **Время и таймзоны**: `chrono` + `chrono-tz`
+- **Сериализация**: `serde`, `serde_json`
+- **Локализация**: compile-time `include_str!` с быстрой адресацией в памяти
+- **Форматирование UI**: Telegram Rich Text (HTML-модель с кастомными тегами `<tg-button-row>`, `<tg-button>`, `<blockquote expandable>`)
+- **Менеджер процессов**: `systemd`
 
 ---
 
@@ -244,186 +126,120 @@
 ```text
 migrebot_analog/
 ├── assets/
-│   ├── fonts/             # TrueType шрифты (DejaVuSans, VL-Gothic для CJK/кириллицы)
-│   ├── images/            # Высокотехнологичные медицинские схемы и карточки (30 шт.)
-│   │   ├── ru/            # Локализованные ассеты на русском (hero, diagrams, history, export, steps)
-│   │   └── en/            # Локализованные ассеты на английском (hero, diagrams, history, export, steps)
-│   └── image_cache.json   # Постоянный реестр Telegram file_id с MD5-хэшами файлов
-├── db/
-│   ├── __init__.py        # Экспорт методов базы данных
-│   └── database.py        # Асинхронный пул PostgreSQL (asyncpg), миграции, календарные выборки и CRUD
-├── handlers/
-│   ├── __init__.py        # Регистрация маршрутизаторов
-│   ├── startHandler.py    # Команды /start, /help, интерактивный календарь истории (history.png)
-│   ├── headache.py        # FSM-опросник с динамической сменой карточек (edit_media) и триггерами
-│   ├── followupHandler.py # Интерактивный контроль стихания боли и действия препаратов
-│   ├── languageHandler.py # Переключение языка интерфейса (/language)
-│   ├── reminderHandler.py # Настройка и обработка ежедневных опросов и таймзон
-│   └── exportHandler.py   # Генерация и отправка клинических отчетов (export.png)
-├── keyboards/
-│   ├── __init__.py
-│   ├── main_menu.py       # Постоянная клавиатура быстрого доступа (Reply)
-│   ├── reminder_kb.py     # Инлайн-кнопки настроек чек-ина и часовых поясов
-│   ├── calendar_kb.py     # Интерактивный календарь с сеткой месяца и индикаторами дней
-│   └── headache_kb.py     # Инлайн-клавиатуры опросника, триггеры, навигация, follow-up
-├── locales/
-│   ├── __init__.py        # Диспетчер локализаций и резолвер словарей
-│   ├── ru.py              # Русский язык (клинический)
-│   ├── en.py              # English (medical)
-│   ├── meme.py            # Мемный сленг Рунета
-│   └── cyberpunk.py       # Киберпанк 2077 (Найт-Сити)
-├── services/
-│   ├── __init__.py
-│   ├── media_cache.py     # Кэширование Telegram file_id, edit_media и MD5-валидация
-│   ├── followup_service.py # Фоновый планировщик проверки стихания боли через 2 часа
-│   ├── reminder_service.py # Фоновый планировщик ежедневных опросов с учетом таймзон
-│   └── export_service.py  # Сборка медицинского PDF и таблицы CSV
-├── states/
-│   ├── __init__.py
-│   ├── reminder.py        # FSM-состояния настроек напоминаний (ReminderSG)
-│   └── headache.py        # FSM-состояния опросника (HeadacheLogSG)
-├── tests/
-│   └── test_flow.py       # Набор юнит-тестов (29 тестов: FSM, БД, i18n, follow-up, календарь, триггеры)
-├── .env                   # Конфигурация подключения (токен бота, Redis, Postgres)
-├── .gitignore             # Игнорируемые файлы окружения
-├── requirements.txt       # Зависимости Python
-├── main.py                # Точка входа приложения
-├── README.md              # Документация проекта (Русский)
-├── README_ru.md           # Документация проекта (Русский)
-└── README_en.md           # Documentation (English)
+│   └── images/            # Локализованные баннеры персонажей и визуальные схемы
+│       ├── ru/            # Русский баннер
+│       ├── be/            # Беларускі банер (лісічка ў вышыванцы з вянком)
+│       ├── en/            # English banner
+│       ├── meme/          # Мемный баннер
+│       └── cyberpunk/     # Cyberpunk баннер
+├── locales/               # Чистые JSON-словари локализации
+│   ├── ru.json
+│   ├── be.json
+│   ├── en.json
+│   ├── meme.json
+│   └── cyberpunk.json
+├── src/                   # Исходный код на чистом Rust
+│   ├── db.rs              # SQLx-запросы к PostgreSQL и инициализация таблиц
+│   ├── handlers/          # Обработчики команд, коллбэков и сценариев
+│   │   ├── calendar.rs    # Календарная сетка и история
+│   │   ├── commands.rs    # Системные команды (/start, /menu, /help, /cancel)
+│   │   ├── export.rs      # Экспорт данных
+│   │   ├── followup.rs    # Контроль стихания боли и оценка лекарств
+│   │   ├── headache.rs    # Пошаговый FSM-опросник приступа
+│   │   ├── language.rs    # Смена языка
+│   │   ├── mod.rs
+│   │   └── reminder.rs    # Настройки чек-ина и часовых поясов
+│   ├── keyboards.rs       # Генераторы инлайн-клавиатур
+│   ├── locales/
+│   │   └── mod.rs         # Встраивание JSON в бинарник и функции get_text / get_text_fmt
+│   ├── main.rs            # Точка входа, инициализация пула БД и диспетчера Teloxide
+│   ├── models.rs          # Доменные структуры данных
+│   ├── rich.rs            # Генератор Rich-сообщений TG-13 с встроенными кнопками
+│   ├── services/
+│   │   ├── export.rs      # Формирование выгрузок
+│   │   ├── mod.rs
+│   │   └── schedulers.rs  # Фоновые Tokio-воркеры для чек-инов и follow-up
+│   └── session.rs         # Потокобезопасная in-memory FSM-сессия
+├── Cargo.toml             # Манифест зависимостей Rust
+├── Cargo.lock             # Зафиксированные версии библиотек
+├── Dockerfile             # Multi-stage Dockerfile для легковесного контейнера
+├── docker-compose.yml     # Compose-конфигурация для сервиса и БД
+└── README.md              # Документация проекта
 ```
 
 ---
 
 ## ⚙️ Быстрый старт
 
-### 1. Клонирование и установка зависимостей
+### 1. Клонирование репозитория
 ```bash
 git clone https://github.com/xanax01d/migrebot_analog.git
 cd migrebot_analog
-
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
 ```
 
 ### 2. Конфигурация (`.env`)
 Создайте файл `.env` в корне проекта:
 
 ```dotenv
-# Telegram Bot Token (получить у @BotFather)
-TOKEN="your_telegram_bot_token"
-
-# Настройки Redis (FSM)
-RedisIP="127.0.0.1"
-RedisPort=6532
-RedisPassword="your_redis_password"
-
-# Настройки PostgreSQL
-POSTGRES_HOST=127.0.0.1
-POSTGRES_PORT=5432
-POSTGRES_USER=migrebot
-POSTGRES_PASSWORD=your_pg_password
-POSTGRES_DB=migrebot
-
-# Сетевые параметры
-POSTGRES_SSL=disable
-POSTGRES_TIMEOUT=10.0
-POSTGRES_COMMAND_TIMEOUT=15.0
+TELOXIDE_TOKEN="your_telegram_bot_token"
+DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+RUST_LOG="info"
 ```
 
-### 3. Запуск бота
+### 3. Сборка и запуск
 ```bash
-python3 main.py
+# Проверка компиляции
+cargo check
+
+# Запуск в dev-режиме
+cargo run
+
+# Сборка оптимизированного релизного бинарника
+cargo build --release
+./target/release/migrebot
 ```
-
----
-
-## 🧪 Тестирование
-
-Проект покрыт полным набором асинхронных юнит-тестов (`unittest.IsolatedAsyncioTestCase` с изоляцией моками `AsyncMock`), проверяющих целостность бизнес-логики, FSM-переходов, навигации, базы данных, мультиязычности, генерации отчетов и графических ассетов:
-
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-### Структура тест-сьюта (29 тестов):
-
-| Тест | Категория | Проверяемая функциональность |
-| :--- | :--- | :--- |
-| `test_nav_callbacks_packing` | 🧭 Навигация | Корректная упаковка callback-данных `hdn:back` («Назад») и `hdn:cancel` («Отмена») |
-| `test_navigation_buttons_presence_in_keyboards` | 🧭 Навигация | Наличие кнопок «Назад» и «Отмена» во всех клавиатурах опросника (включая шаг триггеров) |
-| `test_navigation_back_fsm_transitions` | 🧭 Навигация | Пошаговый возврат назад по состояниям FSM (`confirm` ➔ `medication` ➔ `triggers` ➔ `symptoms` ➔ `pain_type` ➔ `location` ➔ `intensity` ➔ `start_time`) |
-| `test_cancel_flow_clears_state` | 🧭 Навигация | Гарантированный сброс FSM-состояния (`state.clear()`) при нажатии на кнопку «Отмена» и отправке команды `/cancel` |
-| `test_callback_packing` | 🔘 Клавиатуры | Корректность префиксов и сериализации коллбэков всех шагов (время, интенсивность, локация, характер боли, симптомы, триггеры, медикаменты, экспорт) |
-| `test_keyboards_structure` | 🔘 Клавиатуры | Валидация сетки кнопок, текстов и коллбэк-данных всех инлайн-клавиатур во всех 4 поддерживаемых языках |
-| `test_triggers_flow_and_summary` | ⚡️ Триггеры | Мультивыбор триггеров (стресс, сон, пересып), очистка, свой ввод текстом, исключение "none", включение в summary и локализации |
-| `test_calendar_history_flow_and_callbacks` | 📅 Календарь | Построение интерактивной сетки месяца, индикаторы 🔴/🟢, навигация `◀️`/`▶️`, карточка дня боли и здорового дня |
-| `test_database_calendar_methods` | 🗄 База данных | Выборки за календарный месяц (`get_episodes_for_month`), за дату (`get_episodes_for_date`) и очистка таблицы |
-| `test_reminder_keyboards_and_callbacks` | ⏰ Напоминания | Формирование клавиатур настроек, чек-ина, таймзон и сериализация `rem\|...`, `rem_p\|...` |
-| `test_timezone_resolution_and_formatting` | ⏰ Часовые пояса | Парсинг и валидация часовых поясов (IANA, пресеты городов РФ, смещения UTC±X), форматирование времени |
-| `test_reminder_custom_time_validation` | ⏰ Напоминания | Валидация регулярным выражением произвольного ввода времени (`ЧЧ:ММ`, от 00:00 до 23:59) |
-| `test_reminder_db_methods_mocked` | ⏰ Напоминания | Выборка пользователей, обновление времени/статуса/пояса и фиксация даты отправки опроса |
-| `test_reminder_prompt_callbacks` | ⏰ Напоминания | Обработка реакций на чек-ин («Да, болела» ➔ старт FSM с карточкой `start_time.png`, «Нет, всё отлично» ➔ благодарность) |
-| `test_reminder_scheduler_tick` | ⏰ Напоминания | Изолированное выполнение тика фонового планировщика с учетом часового пояса пользователя |
-| `test_medication_relief_flow_branching` | 💊 Медикаменты | Интерактивное ветвление: опрос облегчения («Помогло?») при указании препарата и мгновенный переход к подтверждению, если лекарства не принимались |
-| `test_medication_time_and_relief_calculation` | 💊 Медикаменты | Расчет времени купирования боли, задержки приема, длительности приступа и закрытие приступа в статусе `completed` |
-| `test_followup_flow_and_medication_relief` | 🩺 Follow-up | Полный цикл: опрос стихания боли, выбор времени купирования, сбор оценки действия лекарств (`helped`, `partial`, `not_helped`) |
-| `test_followup_scheduler_worker` | 🩺 Follow-up | Работа фонового планировщика контроля приступов через 2 часа и отметка отправки `followup_sent` |
-| `test_i18n_locales_and_mappings` | 🌐 Локализация | Полнота словарей во всех 4 локалях (RU, EN, Meme, Cyberpunk): симптомы, триггеры, локализации, интенсивность, fallback |
-| `test_format_episode_card_no_raw_vomiting` | 🌐 Локализация | Отсутствие утечек сырых кодов в карточках приступов во всех языках |
-| `test_language_handler_and_switching` | 🌐 Локализация | Вызов `/language`, выбор языка, сохранение в БД и корректное переключение интерфейса |
-| `test_media_cache_functions` | ⚡️ Кэш медиа | Сохранение/получение `file_id`, прозрачный fallback на `FSInputFile`, инвалидация по MD5-хэшу и изоляция локалей |
-| `test_localized_assets` | 🎨 Медиа-ассеты | Проверка наличия и точных габаритов (1376×768) всех 30 ассетов в RU и EN директориях |
-| `test_csv_and_pdf_generation` | 📄 Экспорт | Сборка медицинского PDF-отчета (ReportLab Landscape A4) и CSV таблицы с колонкой триггеров без ошибок |
-| `test_cjk_and_nickname_export` | 📄 Экспорт | Поддержка кириллицы, латиницы, CJK-иероглифов и никнеймов шрифтовым стеком `VL-Gothic` |
-| `test_redis_fsm_storage_config` | 🗄 Хранилища | Изоляция ключей состояний FSM в Redis (`DefaultKeyBuilder(with_bot_id=True)`) |
-| `test_postgres_dsn_generation` | 🗄 База данных | Формирование строки DSN подключения к PostgreSQL с параметрами безопасности и таймаутов |
-| `test_postgres_db_lifecycle_mocked` | 🗄 База данных | Жизненный цикл CRUD: создание профиля пользователя, открытие приступа, выборка истории и закрытие приступа |
 
 ---
 
 ## 🚀 Развертывание на сервере (Systemd)
 
-1. Клонируйте проект в каталог `/opt/migrebot`:
+1. Установите релизный бинарник в `/opt/migrebot`:
    ```bash
-   mkdir -p /opt/migrebot
    cd /opt/migrebot
-   python3 -m venv venv
-   ./venv/bin/pip install -r requirements.txt
+   cargo build --release
    ```
 
-2. Создайте конфигурацию службы `/etc/systemd/system/migrebot.service`:
+2. Создайте файл службы `/etc/systemd/system/migrebot.service`:
    ```ini
    [Unit]
-   Description=Migrebot Telegram Bot
-   After=network.target redis-server.service postgresql.service
-   Wants=redis-server.service postgresql.service
+   Description=Migrebot Rust Telegram Bot
+   After=network.target postgresql.service
+   Wants=postgresql.service
 
    [Service]
    Type=simple
    User=root
    WorkingDirectory=/opt/migrebot
-   Environment=PYTHONUNBUFFERED=1
-   ExecStart=/opt/migrebot/venv/bin/python3 main.py
+   ExecStart=/opt/migrebot/target/release/migrebot
+   EnvironmentFile=/opt/migrebot/.env
    Restart=always
    RestartSec=5
+   StandardOutput=journal
+   StandardError=journal
 
    [Install]
    WantedBy=multi-user.target
    ```
 
-3. Запустите и добавьте в автозагрузку:
+3. Запустите сервис:
    ```bash
    systemctl daemon-reload
    systemctl enable migrebot.service
-   systemctl start migrebot.service
+   systemctl restart migrebot.service
    ```
 
-4. Мониторинг работы:
+4. Просмотр логов:
    ```bash
-   systemctl status migrebot.service
    journalctl -u migrebot.service -f
    ```
 
@@ -431,54 +247,42 @@ python3 -m unittest discover -s tests -v
 
 ## 📋 База данных
 
-Схема реляционной структуры PostgreSQL с внешними ключами, JSONB-полями и индексами:
-
-<div align="center">
-  <img src="assets/images/ru/db_diagram.png" alt="Схема базы данных Migrebot" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
-</div>
-
-<br>
-
-Таблицы и индексы создаются автоматически при старте бота через пул `asyncpg`:
+Схема таблиц PostgreSQL автоматически инициализируется при запуске бота:
 
 ### `users`
 | Колонка | Тип | Описание |
 | :--- | :--- | :--- |
-| `user_id` | `BIGINT PRIMARY KEY` | Уникальный идентификатор пользователя Telegram |
+| `user_id` | `BIGINT PRIMARY KEY` | ID пользователя Telegram |
 | `username` | `VARCHAR(255)` | Никнейм (@username) |
-| `first_name` | `VARCHAR(255)` | Имя профиля Telegram |
-| `language` | `VARCHAR(16) DEFAULT 'ru'` | Язык интерфейса (`ru`, `en`, `meme`, `cyberpunk`) |
-| `reminder_time` | `VARCHAR(8)` | Время ежедневного опроса (по умолчанию `21:00`) |
-| `reminder_enabled` | `BOOLEAN` | Флаг активности напоминаний (`true`/`false`) |
-| `timezone` | `VARCHAR(64)` | Часовой пояс пользователя (`Europe/Moscow`) |
-| `last_reminded_date` | `VARCHAR(16)` | Дата последней отправки опроса (`YYYY-MM-DD`) |
-| `created_at` | `TIMESTAMPTZ` | Время первой авторизации |
+| `first_name` | `VARCHAR(255)` | Имя профиля |
+| `language` | `VARCHAR(16) DEFAULT 'ru'` | Выбранный язык (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
+| `reminder_time` | `VARCHAR(8)` | Время ежедневного опроса (`21:00`) |
+| `reminder_enabled` | `BOOLEAN` | Включен ли опрос |
+| `timezone` | `VARCHAR(64)` | Часовой пояс пользователя (`Europe/Minsk`, `Europe/Moscow` и т.д.) |
+| `last_reminded_date` | `VARCHAR(16)` | Дата последней отправки чек-ина |
+| `created_at` | `TIMESTAMPTZ` | Дата регистрации |
 
 ### `headache_episodes`
 | Колонка | Тип | Описание |
 | :--- | :--- | :--- |
-| `id` | `BIGSERIAL PRIMARY KEY` | Порядковый номер приступа |
-| `user_id` | `BIGINT REFERENCES users` | Владелец записи |
-| `start_time` | `VARCHAR(64)` | Время начала боли |
-| `end_time` | `VARCHAR(64)` | Время окончания боли (null для активных) |
-| `intensity` | `SMALLINT` | Интенсивность боли по шкале от 1 до 10 |
-| `location` | `VARCHAR(64)` | Локализация боли |
-| `pain_type` | `VARCHAR(64)` | Характер болевых ощущений |
-| `symptoms` | `JSONB` | Список отмеченных симптомов в формате JSON |
-| `triggers` | `JSONB` | Список отмеченных и персональных триггеров приступа |
-| `medication` | `VARCHAR(255)` | Принятый лекарственный препарат |
-| `status` | `VARCHAR(32)` | Статус: `active` или `completed` |
-| `medication_relief` | `VARCHAR(32)` | Оценка действия препарата (`helped`, `partial`, `not_helped`) |
-| `pain_passed` | `BOOLEAN` | Подтверждение стихания боли по итогам follow-up |
-| `followup_sent` | `BOOLEAN DEFAULT false` | Флаг отправки автоматического запроса через 2 часа |
-| `created_at` | `TIMESTAMPTZ` | Системное время создания записи |
-
-#### Индексы:
-- `idx_headache_episodes_user_status` на `(user_id, status)` — мгновенный поиск активного приступа конкретного пользователя.
-- `idx_headache_episodes_followup` на `(status, followup_sent, created_at)` — оптимизация фонового опроса незавершенных эпизодов.
+| `id` | `SERIAL PRIMARY KEY` | Номер приступа |
+| `user_id` | `BIGINT REFERENCES users` | ID пользователя |
+| `start_time` | `VARCHAR(64)` | Время начала |
+| `end_time` | `VARCHAR(64)` | Время окончания |
+| `intensity` | `SMALLINT` | Сила боли (1-10) |
+| `location` | `VARCHAR(64)` | Локализация |
+| `pain_type` | `VARCHAR(64)` | Характер боли |
+| `symptoms` | `JSONB` | Массив сопутствующих симптомов |
+| `triggers` | `JSONB` | Массив провоцирующих факторов |
+| `medication` | `VARCHAR(255)` | Принятый препарат |
+| `status` | `VARCHAR(32)` | `active` или `completed` |
+| `medication_relief` | `VARCHAR(32)` | Оценка действия препарата (`helped`, `partially`, `not_helped`) |
+| `pain_resolved` | `BOOLEAN` | Стихание боли по результатам follow-up |
+| `followup_sent` | `BOOLEAN DEFAULT false` | Отметка отправки двухчасового контроля |
+| `created_at` | `TIMESTAMPTZ` | Время фиксации записи |
 
 ---
 
 <div align="center">
-  <sub>Разработано для заботы о здоровье и эффективного диалога с врачом-неврологом.</sub>
+  <sub>Pure Rust • Высокая производительность • Интерактивный Rich UI</sub>
 </div>
