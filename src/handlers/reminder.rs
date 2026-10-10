@@ -118,10 +118,7 @@ pub async fn handle_reminder_callback(
         }
         "time_custom" => {
             let _ = bot.answer_callback_query(&q.id).await;
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::WaitingReminderTime);
-            }
+            sessions.set(user_id, UserState::WaitingReminderTime).await;
             if let Some(msg) = q.regular_message() {
                 bot.send_message(msg.chat.id, get_text("reminder_custom_time_prompt", &lang))
                     .parse_mode(ParseMode::Html)
@@ -136,10 +133,7 @@ pub async fn handle_reminder_callback(
         }
         "tz_custom" => {
             let _ = bot.answer_callback_query(&q.id).await;
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::WaitingCustomTimezone);
-            }
+            sessions.set(user_id, UserState::WaitingCustomTimezone).await;
             if let Some(msg) = q.regular_message() {
                 bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang))
                     .parse_mode(ParseMode::Html)
@@ -172,10 +166,7 @@ pub async fn handle_timezone_callback(
 
     if tz_val == "custom" {
         bot.answer_callback_query(&q.id).await?;
-        {
-            let mut lock = sessions.write().await;
-            lock.insert(user_id, UserState::WaitingCustomTimezone);
-        }
+        sessions.set(user_id, UserState::WaitingCustomTimezone).await;
         if let Some(msg) = q.regular_message() {
             bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang)).parse_mode(ParseMode::Html).await?;
         }

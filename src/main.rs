@@ -96,7 +96,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bot = Bot::new(token);
     let _ = bot.delete_webhook().drop_pending_updates(true).await;
 
-    let sessions = create_session_store();
+    let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| {
+        let host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = env::var("REDIS_PORT").unwrap_or_else(|_| "6379".to_string());
+        format!("redis://{host}:{port}")
+    });
+
+    let sessions = create_session_store(Some(&redis_url)).await;
 
     // Spawn background schedulers
     tokio::spawn(run_followup_scheduler(bot.clone(), pool.clone()));

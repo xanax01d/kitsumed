@@ -39,10 +39,7 @@ pub async fn start_headache_flow(
     let mut form = HeadacheForm::default();
     form.current_step = Some(FlowStep::StartTime);
 
-    {
-        let mut lock = sessions.write().await;
-        lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-    }
+    sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
     let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id.0, message_id, user_id, &form, pool).await;
     Ok(())
@@ -137,12 +134,9 @@ pub async fn handle_headache_callback(
         None => user_id,
     };
 
-    let mut form = {
-        let lock = sessions.read().await;
-        match lock.get(&user_id) {
-            Some(UserState::LoggingHeadache(f)) => f.clone(),
-            _ => HeadacheForm::default(),
-        }
+    let mut form = match sessions.get(user_id).await {
+        Some(UserState::LoggingHeadache(f)) => f,
+        _ => HeadacheForm::default(),
     };
 
     match prefix {
@@ -159,10 +153,7 @@ pub async fn handle_headache_callback(
             form.start_time = Some(time_str);
             form.current_step = Some(FlowStep::Intensity);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -174,10 +165,7 @@ pub async fn handle_headache_callback(
             form.intensity = Some(intensity);
             form.current_step = Some(FlowStep::Location);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -188,10 +176,7 @@ pub async fn handle_headache_callback(
             form.location = Some(loc.to_string());
             form.current_step = Some(FlowStep::PainType);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -202,10 +187,7 @@ pub async fn handle_headache_callback(
             form.pain_type = Some(pt.to_string());
             form.current_step = Some(FlowStep::Symptoms);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -221,29 +203,20 @@ pub async fn handle_headache_callback(
                     form.symptoms.push(sym.to_string());
                 }
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             } else if sub == "none" {
                 form.symptoms = vec!["none".to_string()];
                 form.current_step = Some(FlowStep::Triggers);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             } else if sub == "done" {
                 form.current_step = Some(FlowStep::Triggers);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             }
@@ -260,29 +233,20 @@ pub async fn handle_headache_callback(
                     form.triggers.push(trig.to_string());
                 }
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             } else if sub == "none" {
                 form.triggers = vec!["none".to_string()];
                 form.current_step = Some(FlowStep::Medication);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             } else if sub == "done" {
                 form.current_step = Some(FlowStep::Medication);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             }
@@ -292,10 +256,7 @@ pub async fn handle_headache_callback(
             let med = data.strip_prefix("hdm:").unwrap_or("none");
 
             if med == "custom" {
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::WaitingCustomMedication(form.clone()));
-                }
+                sessions.set(user_id, UserState::WaitingCustomMedication(form.clone())).await;
                 let lang = crate::db::get_user_language(pool, user_id).await;
                 let norm = crate::locales::normalize_lang(&lang);
                 let prompt = match norm {
@@ -317,10 +278,7 @@ pub async fn handle_headache_callback(
                 form.current_step = Some(FlowStep::MedicationTime);
             }
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -330,10 +288,7 @@ pub async fn handle_headache_callback(
             form.med_take_delay = Some(delay.to_string());
             form.current_step = Some(FlowStep::MedicationRelief);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -348,10 +303,7 @@ pub async fn handle_headache_callback(
                 form.current_step = Some(FlowStep::Confirm);
             }
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -361,10 +313,7 @@ pub async fn handle_headache_callback(
             form.relief_delay = Some(r_time.to_string());
             form.current_step = Some(FlowStep::Confirm);
 
-            {
-                let mut lock = sessions.write().await;
-                lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-            }
+            sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
             let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
         }
@@ -398,17 +347,11 @@ pub async fn handle_headache_callback(
 
                 let ep_id = create_episode(pool, &new_ep).await.unwrap_or(0);
 
-                {
-                    let mut lock = sessions.write().await;
-                    lock.remove(&user_id);
-                }
+                sessions.remove(user_id).await;
 
                 let _ = crate::rich::send_rich_headache_saved(bot.token(), chat_id, mid, ep_id, &form, user_id, pool).await;
             } else {
-                {
-                    let mut lock = sessions.write().await;
-                    lock.remove(&user_id);
-                }
+                sessions.remove(user_id).await;
                 let _ = crate::rich::send_rich_headache_cancelled(bot.token(), chat_id, mid, user_id, pool).await;
             }
         }
@@ -416,10 +359,7 @@ pub async fn handle_headache_callback(
         "hdn" => {
             let act = data.strip_prefix("hdn:").unwrap_or("cancel");
             if act == "cancel" {
-                {
-                    let mut lock = sessions.write().await;
-                    lock.remove(&user_id);
-                }
+                sessions.remove(user_id).await;
                 let _ = crate::rich::send_rich_headache_cancelled(bot.token(), chat_id, mid, user_id, pool).await;
             } else if act == "back" {
                 let current = form.current_step.clone().unwrap_or(FlowStep::StartTime);
@@ -447,10 +387,7 @@ pub async fn handle_headache_callback(
                 };
 
                 form.current_step = Some(prev_step);
-                {
-                    let mut lock = sessions.write().await;
-                    lock.insert(user_id, UserState::LoggingHeadache(form.clone()));
-                }
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
 
                 let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
             }
