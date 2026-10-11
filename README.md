@@ -9,6 +9,7 @@
 [![teloxide](https://img.shields.io/badge/teloxide-0.13-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://teloxide.rs/)
 [![tokio](https://img.shields.io/badge/tokio-async-blue?style=for-the-badge&logo=rust&logoColor=white)](https://tokio.rs/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-FSM%20Sessions-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![sqlx](https://img.shields.io/badge/sqlx-0.8-green?style=for-the-badge)](https://github.com/launchbadge/sqlx)
 [![i18n](https://img.shields.io/badge/Languages-5%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#4-🌐-локализация-и-мультиязычность-5-языков)
 [![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#3-🩺-автоматический-follow-up-и-оценка-препаратов)
@@ -16,7 +17,7 @@
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  🇷🇺 <b>Русский</b> &nbsp;•&nbsp; <a href="README_en.md"><b>🇬🇧 English</b></a>
+  🇷🇺 <b>Русский</b> &nbsp;•&nbsp; <a href="README_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; <a href="README_en.md"><b>🇬🇧 English</b></a>
 </p>
 
 <p align="center">
@@ -27,6 +28,7 @@
 <p align="center">
   <a href="#-основные-возможности">✨ Возможности</a> •
   <a href="#-архитектура-системы">📐 Архитектура</a> •
+  <a href="#-галерея-персонажей">🌸 Персонажи</a> •
   <a href="#-команды-и-навигация">⌨️ Навигация</a> •
   <a href="#-стек-технологий">🛠 Стек</a> •
   <a href="#-структура-проекта">📂 Структура</a> •
@@ -41,16 +43,33 @@
 
 ## 📐 Архитектура системы
 
-Полностью асинхронная отказоустойчивая архитектура на базе чистого **Rust** (компилируемый бинарник с нулевым оверхедом), многопоточного рантайма **Tokio**, пула соединений **SQLx** и СУБД **PostgreSQL**:
+Полностью асинхронная отказоустойчивая архитектура на базе чистого **Rust** (компилируемый бинарник с нулевым оверхедом), многопоточного рантайма **Tokio**, пула соединений **SQLx**, распределенного **Redis** для FSM-сессий и СУБД **PostgreSQL**:
 
 | Компонент | Технология | Назначение |
 | :--- | :--- | :--- |
 | **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | Интерактивные inline-кнопки прямо внутри текста сообщений (`<tg-button-row>`, `<tg-button>`), спойлеры и сворачиваемые блоки (`<blockquote expandable>`), встроенные медиа |
-| **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | Высокопроизводительный асинхронный роутинг сообщений и коллбэков, потокобезопасная FSM-сессия (`Arc<RwLock<SessionStore>>`) |
+| **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | Высокопроизводительный асинхронный роутинг сообщений и коллбэков, надежная обработка потоков апдейтов |
+| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Персистентное хранение незавершенных опросов и состояний FSM по ключу `migrebot:session:{user_id}` с TTL 7200 сек (2 часа) |
 | **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Пул асинхронных соединений `sqlx::PgPool`, строгая типизация, миграции схемы, история приступов (JSONB) и профили пользователей |
 | **Follow-up Scheduler** | Tokio Background Task | Фоновый воркер контроля стихания боли через 2 часа после начала приступа и сбора оценки эффективности медикаментов |
 | **Reminder Scheduler** | Tokio Background Task | Фоновый планировщик ежедневных чек-инов с учетом индивидуальных часовых поясов пользователей (Chrono + Chrono-Tz) |
 | **Localization Engine** | Compile-time embedded JSON | Молниеносная локализация на 5 языков через `include_str!` и `LazyLock<HashMap>` без дискового I/O в рантайме |
+
+---
+
+## 🌸 Галерея персонажей (5 аниме-стилей локализаций)
+
+Каждая локализация сопровождается уникальным художественным аниме-баннером:
+
+| 🇧🇾 Беларуская (`be`) | 🇷🇺 Русский (`ru`) | 🇬🇧 English (`en`) |
+| :---: | :---: | :---: |
+| <img src="assets/images/be/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/ru/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/en/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
+| **Лисичка в вышиванке с васильками** | **Клиническая классика** | **ICHD-3 Medical English** |
+
+| 🎭 Мемный (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
+| :---: | :---: |
+| <img src="assets/images/meme/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/cyberpunk/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
+| **Вайбовая мемная атмосфера** | **Найт-Сити биомониторинг** |
 
 ---
 
