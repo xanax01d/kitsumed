@@ -9,6 +9,7 @@
 [![teloxide](https://img.shields.io/badge/teloxide-0.13-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://teloxide.rs/)
 [![tokio](https://img.shields.io/badge/tokio-async-blue?style=for-the-badge&logo=rust&logoColor=white)](https://tokio.rs/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-FSM%20Sessions-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![sqlx](https://img.shields.io/badge/sqlx-0.8-green?style=for-the-badge)](https://github.com/launchbadge/sqlx)
 [![i18n](https://img.shields.io/badge/Languages-5%20Locales-9cf?style=for-the-badge&logo=google-translate&logoColor=white)](#3-🌐-multilingual-support-5-locales)
 [![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#2-🩺-automated-follow-up--medication-efficacy-tracking)
@@ -16,7 +17,7 @@
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
+  <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; <a href="README_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
 </p>
 
 <p align="center">
@@ -27,6 +28,7 @@
 <p align="center">
   <a href="#-key-features">✨ Features</a> •
   <a href="#-system-architecture">📐 Architecture</a> •
+  <a href="#-character-gallery">🌸 Characters</a> •
   <a href="#-commands--navigation">⌨️ Navigation</a> •
   <a href="#-technology-stack">🛠 Tech Stack</a> •
   <a href="#-project-structure">📂 Structure</a> •
@@ -41,16 +43,33 @@
 
 ## 📐 System Architecture
 
-Fully asynchronous, resilient architecture built entirely in **Rust** (single compiled binary, zero-cost abstractions), multi-threaded **Tokio** runtime, **SQLx** connection pool, and **PostgreSQL**:
+Fully asynchronous, resilient architecture built entirely in **Rust** (single compiled binary, zero-cost abstractions), multi-threaded **Tokio** runtime, **SQLx** connection pool, distributed **Redis** for FSM sessions, and **PostgreSQL**:
 
 | Component | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | In-message interactive buttons (`<tg-button-row>`, `<tg-button>`), collapsible blockquotes (`<blockquote expandable>`), and hero banners |
-| **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | High-throughput asynchronous update routing, thread-safe in-memory session store (`Arc<RwLock<SessionStore>>`) |
+| **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | High-throughput asynchronous update routing, robust event stream processing |
+| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Persistent storage for in-flight surveys and FSM states at `migrebot:session:{user_id}` with 7200s (2h) TTL |
 | **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Asynchronous connection pool `sqlx::PgPool`, compile-time query verification, automatic schema migrations, and JSONB fields |
 | **Follow-up Scheduler** | Tokio Background Task | Automated background timer checking pain resolution 2 hours after episode onset and recording medication efficacy |
 | **Reminder Scheduler** | Tokio Background Task | Daily wellness check-in scheduler with per-user timezone resolution (Chrono + Chrono-Tz) |
 | **Localization Engine** | Compile-time embedded JSON | Zero-latency multilingual dictionaries via `include_str!` and `LazyLock<HashMap>` without disk I/O |
+
+---
+
+## 🌸 Character Gallery (5 Anime Locales)
+
+Each locale is accompanied by a unique anime art hero banner:
+
+| 🇧🇾 Беларуская (`be`) | 🇷🇺 Русский (`ru`) | 🇬🇧 English (`en`) |
+| :---: | :---: | :---: |
+| <img src="assets/images/be/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/ru/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/en/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
+| **Kitsune in Belarusian Vyshyvanka** | **Clinical Academic Anime** | **ICHD-3 Medical English** |
+
+| 🎭 Meme (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
+| :---: | :---: |
+| <img src="assets/images/meme/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/cyberpunk/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
+| **Vibe Meme Atmosphere** | **Night City Biomonitoring** |
 
 ---
 
