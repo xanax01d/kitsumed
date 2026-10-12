@@ -69,7 +69,7 @@ Each locale is accompanied by a unique anime art hero banner:
 | 🎭 Meme (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
 | :---: | :---: |
 | <img src="assets/images/meme/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/cyberpunk/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
-| **Vibe Meme Atmosphere** | **Night City Biomonitoring** |
+| **Vibe Meme Atmosphere** | **Neon Netrunner & Chrome** |
 
 ---
 
@@ -98,7 +98,7 @@ Each locale is accompanied by a unique anime art hero banner:
 - 🇧🇾 **Belarusian (`be`)**: Authentic Belarusian with national attributes.
 - 🇬🇧 **English (`en`)**: International standard terminology (ICHD-3).
 - 🎭 **Meme (`meme`)**: Internet slang.
-- 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Immersive Night City theme.
+- 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Neon netrunner aesthetic, neuro-glitches, Trauma Team protocols, and chrome resilience.
 
 ### 4. 📅 Interactive Monthly Calendar (`/history` / `/calendar`)
 - Visual month grid marking pain days (🔴) and symptom-free days (🟢).
