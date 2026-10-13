@@ -85,6 +85,51 @@
 - **Сбор триггеров**: Мультивыбор ключевых триггеров (стресс, недосып, погода, усталость, алкоголь, пропуск еды).
 - **Медикаменты и дозировка**: Выбор конкретного препарата, указание задержки приема и оценка купирования.
 
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>⏱ Шаг 1: Время начала приступа</b><br>
+      <img src="assets/images/ru/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📊 Шаг 2: Шкала интенсивности боли (1–10)</b><br>
+      <img src="assets/images/ru/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🎯 Шаг 3: Локализация цефалгии</b><br>
+      <img src="assets/images/ru/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>⚡️ Шаг 4: Характер боли</b><br>
+      <img src="assets/images/ru/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🩺 Шаг 5: Сопутствующие симптомы и аура</b><br>
+      <img src="assets/images/ru/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🌪 Шаг 6: Провоцирующие триггеры</b><br>
+      <img src="assets/images/ru/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>💊 Шаг 7: Препараты и дозировка</b><br>
+      <img src="assets/images/ru/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🛡 Шаг 8: Сводка и подтверждение</b><br>
+      <img src="assets/images/ru/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+</table>
+</div>
+
 ### 2. 🩺 Автоматический follow-up и оценка препаратов
 - **Контроль через 2 часа**: Фоновый таймер Tokio автоматически находит открытые приступы и отправляет запрос: *«Прошла ли головная боль?»*.
 - **Фиксация времени стихания**: Быстрые кнопки ответа (*только что, 30 минут назад, 1 час назад, 2 часа назад*).
@@ -102,11 +147,22 @@
 
 ### 4. 📅 Интерактивный календарь приступов (`/history` / `/calendar`)
 - Месячная сетка с индикацией дней боли (🔴) и бессимптомных дней (🟢).
-- Навигация по месяцам вперед/назад и подробные карточки дней.
+- Навигация по месяцам вперед/назад и подробные карточки дней с полной клинической информацией.
+
+<div align="center">
+  <img src="assets/images/ru/history.png" alt="Интерактивный календарь и история" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
 
 ### 5. ⏰ Ежедневные персонализированные чек-ины
 - Регулярный опрос в установленное пользователем время (*«Болела ли голова сегодня?»*).
 - Полная поддержка часовых поясов (IANA и смещения UTC).
+
+### 6. 📊 Клинический экспорт отчёта для невролога (`/export`)
+- Формирование структурированных выгрузок истории эпизодов, триггеров и эффективности медикаментов.
+
+<div align="center">
+  <img src="assets/images/ru/export.png" alt="Клинический экспорт отчета" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
 
 ---
 
@@ -132,6 +188,7 @@
 - **Фреймворк Telegram**: `teloxide 0.13`
 - **Асинхронный рантайм**: `tokio 1.x` (многопоточный планировщик)
 - **База данных**: `PostgreSQL 14+` + пул соединений `sqlx 0.8` (асинхронный Postgres-драйвер)
+- **Кэш сессий и FSM**: `Redis 7+` (`redis 0.27` с `tokio-comp`) — персистентное асинхронное хранение состояний опросов по ключу `migrebot:session:{user_id}` с TTL 7200 сек и fallback на in-memory
 - **Время и таймзоны**: `chrono` + `chrono-tz`
 - **Сериализация**: `serde`, `serde_json`
 - **Локализация**: compile-time `include_str!` с быстрой адресацией в памяти
@@ -146,9 +203,9 @@
 migrebot_analog/
 ├── assets/
 │   └── images/            # Локализованные баннеры персонажей и визуальные схемы
-│       ├── ru/            # Русский баннер
+│       ├── ru/            # Русский баннер, шаги опросника и скриншоты UI
 │       ├── be/            # Беларускі банер (лісічка ў вышыванцы з вянком)
-│       ├── en/            # English banner
+│       ├── en/            # English banner, questionnaire steps & UI screens
 │       ├── meme/          # Мемный баннер
 │       └── cyberpunk/     # Cyberpunk баннер
 ├── locales/               # Чистые JSON-словари локализации
@@ -171,18 +228,18 @@ migrebot_analog/
 │   ├── keyboards.rs       # Генераторы инлайн-клавиатур
 │   ├── locales/
 │   │   └── mod.rs         # Встраивание JSON в бинарник и функции get_text / get_text_fmt
-│   ├── main.rs            # Точка входа, инициализация пула БД и диспетчера Teloxide
+│   ├── main.rs            # Точка входа, инициализация пула БД, Redis и диспетчера Teloxide
 │   ├── models.rs          # Доменные структуры данных
 │   ├── rich.rs            # Генератор Rich-сообщений TG-13 с встроенными кнопками
 │   ├── services/
 │   │   ├── export.rs      # Формирование выгрузок
 │   │   ├── mod.rs
 │   │   └── schedulers.rs  # Фоновые Tokio-воркеры для чек-инов и follow-up
-│   └── session.rs         # Потокобезопасная in-memory FSM-сессия
+│   └── session.rs         # Персистентное хранилище FSM-сессий (Redis + In-memory fallback)
 ├── Cargo.toml             # Манифест зависимостей Rust
 ├── Cargo.lock             # Зафиксированные версии библиотек
 ├── Dockerfile             # Multi-stage Dockerfile для легковесного контейнера
-├── docker-compose.yml     # Compose-конфигурация для сервиса и БД
+├── docker-compose.yml     # Compose-конфигурация для сервиса, PostgreSQL и Redis
 └── README.md              # Документация проекта
 ```
 
@@ -200,8 +257,26 @@ cd migrebot_analog
 Создайте файл `.env` в корне проекта:
 
 ```dotenv
+# Telegram Bot Token
 TELOXIDE_TOKEN="your_telegram_bot_token"
+
+# База данных PostgreSQL
 DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+# Либо раздельные параметры подключения к PostgreSQL:
+# POSTGRES_HOST=127.0.0.1
+# POSTGRES_PORT=5432
+# POSTGRES_USER=migrebot
+# POSTGRES_PASSWORD=your_password
+# POSTGRES_DB=migrebot
+
+# Кэш сессий Redis FSM
+REDIS_URL="redis://127.0.0.1:6379"
+# Либо раздельные параметры подключения к Redis:
+# REDIS_HOST=127.0.0.1
+# REDIS_PORT=6379
+# REDIS_PASSWORD=""
+
+# Логирование
 RUST_LOG="info"
 ```
 
@@ -218,6 +293,11 @@ cargo build --release
 ./target/release/migrebot
 ```
 
+### 4. Запуск через Docker Compose (PostgreSQL + Redis + Bot)
+```bash
+docker-compose up -d
+```
+
 ---
 
 ## 🚀 Развертывание на сервере (Systemd)
@@ -232,8 +312,8 @@ cargo build --release
    ```ini
    [Unit]
    Description=Migrebot Rust Telegram Bot
-   After=network.target postgresql.service
-   Wants=postgresql.service
+   After=network.target postgresql.service redis.service
+   Wants=postgresql.service redis.service
 
    [Service]
    Type=simple
