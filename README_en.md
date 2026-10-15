@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/images/en/hero_banner.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/readme/en_kitsune.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
 # 🧠 Migrebot Analog (Rust Edition)
 ### High-Performance Telegram Headache & Migraine Diary Bot written in pure Rust
@@ -57,19 +57,19 @@ Fully asynchronous, resilient architecture built entirely in **Rust** (single co
 
 ---
 
-## 🌸 Character Gallery (5 Anime Locales)
+## 🌸 Kitsune Gallery (Anime Mascots for 5 Locales)
 
-Each locale is accompanied by a unique anime art hero banner:
+Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 
-| 🇧🇾 Беларуская (`be`) | 🇷🇺 Русский (`ru`) | 🇬🇧 English (`en`) |
+| 🇧🇾 Belarusian (`be`) | 🇷🇺 Russian (`ru`) | 🇬🇧 English (`en`) |
 | :---: | :---: | :---: |
-| <img src="assets/images/be/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/ru/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/en/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
-| **Kitsune in Belarusian Vyshyvanka** | **Clinical Academic Anime** | **ICHD-3 Medical English** |
+| <img src="assets/images/readme/be_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/ru_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/en_kitsune.png" width="100%" style="border-radius: 8px;" /> |
+| **Kitsune in Vyshyvanka** | **Neurologist Kitsune Doctor** | **British Scholar Kitsune** |
 
 | 🎭 Meme (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
 | :---: | :---: |
-| <img src="assets/images/meme/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/cyberpunk/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
-| **Vibe Meme Atmosphere** | **Neon Netrunner & Chrome** |
+| <img src="assets/images/readme/meme_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/cyberpunk_kitsune.png" width="100%" style="border-radius: 8px;" /> |
+| **Cozy Chill Fox Girl** | **Cyber-Kitsune Netrunner** |
 
 ---
 
