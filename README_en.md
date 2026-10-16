@@ -85,6 +85,51 @@ Each locale is accompanied by a unique anime art hero banner:
 - **Triggers**: Multi-select of common factors (stress, lack of sleep, weather changes, fatigue, alcohol, skipped meals).
 - **Medications & Relief**: Specific medication tracking, intake delay calculation, and efficacy recording.
 
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>⏱ Step 1: Onset Time</b><br>
+      <img src="assets/images/en/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📊 Step 2: Pain Intensity (1–10)</b><br>
+      <img src="assets/images/en/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🎯 Step 3: Pain Location</b><br>
+      <img src="assets/images/en/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>⚡️ Step 4: Pain Type & Character</b><br>
+      <img src="assets/images/en/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🩺 Step 5: Accompanying Symptoms & Aura</b><br>
+      <img src="assets/images/en/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🌪 Step 6: Trigger Factors</b><br>
+      <img src="assets/images/en/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>💊 Step 7: Medication & Dosage</b><br>
+      <img src="assets/images/en/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🛡 Step 8: Summary & Confirmation</b><br>
+      <img src="assets/images/en/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+</table>
+</div>
+
 ### 2. 🩺 Automated Follow-up & Medication Efficacy
 - **2-Hour Check**: Automatically prompts the user: *"Has your headache resolved?"*.
 - **Resolution Timing**: Quick responses (*just now, 30 min ago, 1 hour ago, 2 hours ago*).
@@ -102,11 +147,22 @@ Each locale is accompanied by a unique anime art hero banner:
 
 ### 4. 📅 Interactive Monthly Calendar (`/history` / `/calendar`)
 - Visual month grid marking pain days (🔴) and symptom-free days (🟢).
-- Month-by-month navigation and detailed daily cards.
+- Month-by-month navigation and detailed daily episode cards.
+
+<div align="center">
+  <img src="assets/images/en/history.png" alt="Interactive Calendar & History" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
 
 ### 5. ⏰ Personalized Daily Check-ins
 - Scheduled daily check-ins (*"Did you experience any headache today?"*).
 - Full timezone support across all standard IANA identifiers and UTC offsets.
+
+### 6. 📊 Clinical Reports for Neurologists (`/export`)
+- Structured data exports detailing episode frequency, severity, triggers, and acute treatment response.
+
+<div align="center">
+  <img src="assets/images/en/export.png" alt="Clinical Report Export" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
 
 ---
 
@@ -132,6 +188,7 @@ Each locale is accompanied by a unique anime art hero banner:
 - **Telegram Bot Framework**: `teloxide 0.13`
 - **Async Runtime**: `tokio 1.x`
 - **Database**: `PostgreSQL 14+` with `sqlx 0.8`
+- **Session Cache & FSM**: Redis 7+ (`redis 0.27` with `tokio-comp`) — persistent asynchronous survey state storage at `migrebot:session:{user_id}` with 7200s TTL and memory fallback
 - **Time & Timezones**: `chrono`, `chrono-tz`
 - **Serialization**: `serde`, `serde_json`
 - **UI Format**: Telegram Rich Text (HTML model with `<tg-button-row>`, `<tg-button>`, `<blockquote expandable>`)
@@ -145,11 +202,11 @@ Each locale is accompanied by a unique anime art hero banner:
 migrebot_analog/
 ├── assets/
 │   └── images/            # Localized banners and graphic cards
-│       ├── ru/
-│       ├── be/
-│       ├── en/
-│       ├── meme/
-│       └── cyberpunk/
+│       ├── ru/            # Russian banner, steps & UI screens
+│       ├── be/            # Belarusian banner (kitsune in vyshyvanka)
+│       ├── en/            # English banner, steps & UI screens
+│       ├── meme/          # Meme banner
+│       └── cyberpunk/     # Cyberpunk banner
 ├── locales/               # Standalone JSON translation dictionaries
 │   ├── ru.json
 │   ├── be.json
@@ -169,18 +226,18 @@ migrebot_analog/
 │   │   └── reminder.rs
 │   ├── keyboards.rs       # Inline button helpers
 │   ├── locales/           # Embedded JSON translation lookup
-│   ├── main.rs            # Entry point & dispatcher
+│   ├── main.rs            # Entry point, DB pool, Redis connection & dispatcher
 │   ├── models.rs          # Domain structs
 │   ├── rich.rs            # Rich Text TG-13 generator with in-message buttons
 │   ├── services/
 │   │   ├── export.rs
 │   │   ├── mod.rs
 │   │   └── schedulers.rs  # Background Tokio workers
-│   └── session.rs         # In-memory FSM state store
+│   └── session.rs         # Persistent FSM session store (Redis + In-memory fallback)
 ├── Cargo.toml             # Rust dependency manifest
 ├── Cargo.lock
 ├── Dockerfile             # Multi-stage lightweight Docker image
-├── docker-compose.yml
+├── docker-compose.yml     # Compose config for bot, PostgreSQL, and Redis
 └── README.md
 ```
 
@@ -198,8 +255,26 @@ cd migrebot_analog
 Create a `.env` file in the project root:
 
 ```dotenv
+# Telegram Bot Token
 TELOXIDE_TOKEN="your_telegram_bot_token"
+
+# Primary Database (PostgreSQL)
 DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+# Or separate PostgreSQL parameters:
+# POSTGRES_HOST=127.0.0.1
+# POSTGRES_PORT=5432
+# POSTGRES_USER=migrebot
+# POSTGRES_PASSWORD=your_password
+# POSTGRES_DB=migrebot
+
+# FSM Session Cache (Redis)
+REDIS_URL="redis://127.0.0.1:6379"
+# Or separate Redis parameters:
+# REDIS_HOST=127.0.0.1
+# REDIS_PORT=6379
+# REDIS_PASSWORD=""
+
+# Logging
 RUST_LOG="info"
 ```
 
@@ -216,6 +291,11 @@ cargo build --release
 ./target/release/migrebot
 ```
 
+### 4. Run with Docker Compose (PostgreSQL + Redis + Bot)
+```bash
+docker-compose up -d
+```
+
 ---
 
 ## 🚀 Server Deployment (Systemd)
@@ -230,8 +310,8 @@ cargo build --release
    ```ini
    [Unit]
    Description=Migrebot Rust Telegram Bot
-   After=network.target postgresql.service
-   Wants=postgresql.service
+   After=network.target postgresql.service redis.service
+   Wants=postgresql.service redis.service
 
    [Service]
    Type=simple

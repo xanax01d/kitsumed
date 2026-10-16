@@ -85,6 +85,51 @@
 - **Збор трыгераў**: Мультывыбар ключавых правакацыйных фактараў (стрэс, недасыпанне, надвор'е, стомленасць, алкаголь, пропуск ежы).
 - **Медыкаменты і дазіроўка**: Выбар канкрэтнага прэпарата, указанне затрымкі прыёму і ацэнка купіравання.
 
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>⏱ Крок 1: Час пачатку прыступу</b><br>
+      <img src="assets/images/ru/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>📊 Крок 2: Шкала інтэнсіўнасці болю (1–10)</b><br>
+      <img src="assets/images/ru/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🎯 Крок 3: Лакалізацыя цэфалагіі</b><br>
+      <img src="assets/images/ru/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>⚡️ Крок 4: Характар болю</b><br>
+      <img src="assets/images/ru/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>🩺 Крок 5: Сімптомы і аўра</b><br>
+      <img src="assets/images/ru/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🌪 Крок 6: Правакацыйныя трыгеры</b><br>
+      <img src="assets/images/ru/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>💊 Крок 7: Медыкаменты і дазіроўка</b><br>
+      <img src="assets/images/ru/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+    <td align="center" width="50%">
+      <b>🛡 Крок 8: Пацверджанне запісу</b><br>
+      <img src="assets/images/ru/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+    </td>
+  </tr>
+</table>
+</div>
+
 ### 2. 🩺 Аўтаматычны follow-up і ацэнка прэпаратаў
 - **Кантроль праз 2 гадзіны**: Фанавы таймер Tokio аўтаматычна знаходзіць адкрытыя прыступы і дасылае запыт: *«Ці прайшоў галаўны боль?»*.
 - **Фіксацыя часу сціхання**: Хуткія кнопкі адказу (*толькі што, 30 хвілін таму, 1 гадзіну таму, 2 гадзіны таму*).
@@ -104,9 +149,20 @@
 - Месячная сетка з індыкацыяй дзён болю (🔴) і бессімптомых дзён (🟢).
 - Зручная навігацыя па месяцах наперад/назад і падрабязныя карткі дзён.
 
+<div align="center">
+  <img src="assets/images/ru/history.png" alt="Інтэрактыўны каляндар" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
+
 ### 5. ⏰ Штодзённыя персаналізаваныя чэк-іны
 - Рэгулярнае апытанне ва ўсталяваны карыстальнікам час (*«Ці балела галава сёння?»*).
 - Поўная падтрымка часавых паясоў (Мінск, Варшава, Вільня, Кіеў, Масква і сусветныя зоны).
+
+### 6. 📊 Клінічны экспарт справаздачы для лекара (`/export`)
+- Структураваныя выгрузкі гісторыі эпізодаў, трыгераў і эфектыўнасці медыкаментаў.
+
+<div align="center">
+  <img src="assets/images/ru/export.png" alt="Клінічны экспарт" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
+</div>
 
 ---
 
@@ -200,9 +256,26 @@ cd migrebot_analog
 Стварыце файл `.env` у корані праекта:
 
 ```dotenv
+# Токен бота Telegram
 TELOXIDE_TOKEN="your_telegram_bot_token"
+
+# База даных PostgreSQL
 DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+# Альбо асобныя параметры:
+# POSTGRES_HOST=127.0.0.1
+# POSTGRES_PORT=5432
+# POSTGRES_USER=migrebot
+# POSTGRES_PASSWORD=your_password
+# POSTGRES_DB=migrebot
+
+# Кэш FSM-сесій Redis
 REDIS_URL="redis://127.0.0.1:6379"
+# Альбо асобныя параметры падключэння:
+# REDIS_HOST=127.0.0.1
+# REDIS_PORT=6379
+# REDIS_PASSWORD=""
+
+# Лагіраванне
 RUST_LOG="info"
 ```
 
@@ -217,6 +290,11 @@ cargo run
 # Зборка аптымізаванага рэлізнага бінарніка
 cargo build --release
 ./target/release/migrebot
+```
+
+### 4. Запуск праз Docker Compose (PostgreSQL + Redis + Bot)
+```bash
+docker-compose up -d
 ```
 
 ---

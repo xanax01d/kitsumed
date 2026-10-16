@@ -97,9 +97,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = bot.delete_webhook().drop_pending_updates(true).await;
 
     let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| {
-        let host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-        let port = env::var("REDIS_PORT").unwrap_or_else(|_| "6379".to_string());
-        format!("redis://{host}:{port}")
+        let host = env::var("REDIS_HOST")
+            .or_else(|_| env::var("RedisIP"))
+            .unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = env::var("REDIS_PORT")
+            .or_else(|_| env::var("RedisPort"))
+            .unwrap_or_else(|_| "6379".to_string());
+        let pass = env::var("REDIS_PASSWORD")
+            .or_else(|_| env::var("RedisPassword"))
+            .ok()
+            .filter(|p| !p.is_empty());
+        match pass {
+            Some(p) => format!("redis://:{p}@{host}:{port}"),
+            None => format!("redis://{host}:{port}"),
+        }
     });
 
     let sessions = create_session_store(Some(&redis_url)).await;
