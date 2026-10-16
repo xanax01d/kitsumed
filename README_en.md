@@ -69,7 +69,7 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 | 🎭 Meme (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
 | :---: | :---: |
 | <img src="assets/images/readme/meme_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/cyberpunk_kitsune.png" width="100%" style="border-radius: 8px;" /> |
-| **Cozy Chill Fox Girl** | **Cyber-Kitsune Netrunner** |
+| **Vibe Meme Atmosphere** | **Neon Netrunner & Chrome** |
 
 ---
 
