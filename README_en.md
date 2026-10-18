@@ -85,51 +85,6 @@ Each locale is accompanied by a unique anime art hero banner:
 - **Triggers**: Multi-select of common factors (stress, lack of sleep, weather changes, fatigue, alcohol, skipped meals).
 - **Medications & Relief**: Specific medication tracking, intake delay calculation, and efficacy recording.
 
-<div align="center">
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <b>⏱ Step 1: Onset Time</b><br>
-      <img src="assets/images/en/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>📊 Step 2: Pain Intensity (1–10)</b><br>
-      <img src="assets/images/en/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🎯 Step 3: Pain Location</b><br>
-      <img src="assets/images/en/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>⚡️ Step 4: Pain Type & Character</b><br>
-      <img src="assets/images/en/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🩺 Step 5: Accompanying Symptoms & Aura</b><br>
-      <img src="assets/images/en/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🌪 Step 6: Trigger Factors</b><br>
-      <img src="assets/images/en/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>💊 Step 7: Medication & Dosage</b><br>
-      <img src="assets/images/en/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🛡 Step 8: Summary & Confirmation</b><br>
-      <img src="assets/images/en/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-</table>
-</div>
-
 ### 2. 🩺 Automated Follow-up & Medication Efficacy
 - **2-Hour Check**: Automatically prompts the user: *"Has your headache resolved?"*.
 - **Resolution Timing**: Quick responses (*just now, 30 min ago, 1 hour ago, 2 hours ago*).
@@ -149,20 +104,12 @@ Each locale is accompanied by a unique anime art hero banner:
 - Visual month grid marking pain days (🔴) and symptom-free days (🟢).
 - Month-by-month navigation and detailed daily episode cards.
 
-<div align="center">
-  <img src="assets/images/en/history.png" alt="Interactive Calendar & History" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
-</div>
-
 ### 5. ⏰ Personalized Daily Check-ins
 - Scheduled daily check-ins (*"Did you experience any headache today?"*).
 - Full timezone support across all standard IANA identifiers and UTC offsets.
 
 ### 6. 📊 Clinical Reports for Neurologists (`/export`)
 - Structured data exports detailing episode frequency, severity, triggers, and acute treatment response.
-
-<div align="center">
-  <img src="assets/images/en/export.png" alt="Clinical Report Export" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
-</div>
 
 ---
 

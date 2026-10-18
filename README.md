@@ -85,51 +85,6 @@
 - **Сбор триггеров**: Мультивыбор ключевых триггеров (стресс, недосып, погода, усталость, алкоголь, пропуск еды).
 - **Медикаменты и дозировка**: Выбор конкретного препарата, указание задержки приема и оценка купирования.
 
-<div align="center">
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <b>⏱ Шаг 1: Время начала приступа</b><br>
-      <img src="assets/images/ru/steps/start_time.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>📊 Шаг 2: Шкала интенсивности боли (1–10)</b><br>
-      <img src="assets/images/ru/steps/pain_scale.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🎯 Шаг 3: Локализация цефалгии</b><br>
-      <img src="assets/images/ru/steps/location.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>⚡️ Шаг 4: Характер боли</b><br>
-      <img src="assets/images/ru/steps/pain_type.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>🩺 Шаг 5: Сопутствующие симптомы и аура</b><br>
-      <img src="assets/images/ru/steps/symptoms.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🌪 Шаг 6: Провоцирующие триггеры</b><br>
-      <img src="assets/images/ru/steps/triggers.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <b>💊 Шаг 7: Препараты и дозировка</b><br>
-      <img src="assets/images/ru/steps/medication.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-    <td align="center" width="50%">
-      <b>🛡 Шаг 8: Сводка и подтверждение</b><br>
-      <img src="assets/images/ru/steps/confirm.png" width="100%" style="border-radius: 8px; margin-top: 6px;" />
-    </td>
-  </tr>
-</table>
-</div>
-
 ### 2. 🩺 Автоматический follow-up и оценка препаратов
 - **Контроль через 2 часа**: Фоновый таймер Tokio автоматически находит открытые приступы и отправляет запрос: *«Прошла ли головная боль?»*.
 - **Фиксация времени стихания**: Быстрые кнопки ответа (*только что, 30 минут назад, 1 час назад, 2 часа назад*).
@@ -149,20 +104,12 @@
 - Месячная сетка с индикацией дней боли (🔴) и бессимптомных дней (🟢).
 - Навигация по месяцам вперед/назад и подробные карточки дней с полной клинической информацией.
 
-<div align="center">
-  <img src="assets/images/ru/history.png" alt="Интерактивный календарь и история" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
-</div>
-
 ### 5. ⏰ Ежедневные персонализированные чек-ины
 - Регулярный опрос в установленное пользователем время (*«Болела ли голова сегодня?»*).
 - Полная поддержка часовых поясов (IANA и смещения UTC).
 
 ### 6. 📊 Клинический экспорт отчёта для невролога (`/export`)
 - Формирование структурированных выгрузок истории эпизодов, триггеров и эффективности медикаментов.
-
-<div align="center">
-  <img src="assets/images/ru/export.png" alt="Клинический экспорт отчета" width="85%" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-top: 8px;" />
-</div>
 
 ---
 
