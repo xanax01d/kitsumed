@@ -204,7 +204,7 @@ pub async fn send_rich_main_menu(
     let btn_help = get_text("btn_help", norm);
 
     let html = format!(
-        "<b>Migrebot</b>\n\n\
+        "<b>KitsuMed 🦊</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         {greeting}\n\n\
         <blockquote expandable><b>📋 {sec_label}</b>\n\

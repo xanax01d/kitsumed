@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/images/readme/ru_kitsune.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/readme/ru_kitsune.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
-# 🧠 Migrebot Analog (Rust Edition)
+# 🦊 KitsuMed (Rust Edition)
 ### Высокопроизводительный Telegram-дневник приступов мигрени и головной боли на чистом Rust
 
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
@@ -49,7 +49,7 @@
 | :--- | :--- | :--- |
 | **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | Интерактивные inline-кнопки прямо внутри текста сообщений (`<tg-button-row>`, `<tg-button>`), спойлеры и сворачиваемые блоки (`<blockquote expandable>`), встроенные медиа |
 | **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | Высокопроизводительный асинхронный роутинг сообщений и коллбэков, надежная обработка потоков апдейтов |
-| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Персистентное хранение незавершенных опросов и состояний FSM по ключу `migrebot:session:{user_id}` с TTL 7200 сек (2 часа) |
+| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Персистентное хранение незавершенных опросов и состояний FSM по ключу `kitsumed:session:{user_id}` с TTL 7200 сек (2 часа) |
 | **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Пул асинхронных соединений `sqlx::PgPool`, строгая типизация, миграции схемы, история приступов (JSONB) и профили пользователей |
 | **Follow-up Scheduler** | Tokio Background Task | Фоновый воркер контроля стихания боли через 2 часа после начала приступа и сбора оценки эффективности медикаментов |
 | **Reminder Scheduler** | Tokio Background Task | Фоновый планировщик ежедневных чек-инов с учетом индивидуальных часовых поясов пользователей (Chrono + Chrono-Tz) |
@@ -135,7 +135,7 @@
 - **Фреймворк Telegram**: `teloxide 0.13`
 - **Асинхронный рантайм**: `tokio 1.x` (многопоточный планировщик)
 - **База данных**: `PostgreSQL 14+` + пул соединений `sqlx 0.8` (асинхронный Postgres-драйвер)
-- **Кэш сессий и FSM**: `Redis 7+` (`redis 0.27` с `tokio-comp`) — персистентное асинхронное хранение состояний опросов по ключу `migrebot:session:{user_id}` с TTL 7200 сек и fallback на in-memory
+- **Кэш сессий и FSM**: `Redis 7+` (`redis 0.27` с `tokio-comp`) — персистентное асинхронное хранение состояний опросов по ключу `kitsumed:session:{user_id}` с TTL 7200 сек и fallback на in-memory
 - **Время и таймзоны**: `chrono` + `chrono-tz`
 - **Сериализация**: `serde`, `serde_json`
 - **Локализация**: compile-time `include_str!` с быстрой адресацией в памяти

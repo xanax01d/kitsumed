@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/images/readme/en_kitsune.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/readme/en_kitsune.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
-# 🧠 Migrebot Analog (Rust Edition)
+# 🦊 KitsuMed (Rust Edition)
 ### High-Performance Telegram Headache & Migraine Diary Bot written in pure Rust
 
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
@@ -49,7 +49,7 @@ Fully asynchronous, resilient architecture built entirely in **Rust** (single co
 | :--- | :--- | :--- |
 | **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | In-message interactive buttons (`<tg-button-row>`, `<tg-button>`), collapsible blockquotes (`<blockquote expandable>`), and hero banners |
 | **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | High-throughput asynchronous update routing, robust event stream processing |
-| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Persistent storage for in-flight surveys and FSM states at `migrebot:session:{user_id}` with 7200s (2h) TTL |
+| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Persistent storage for in-flight surveys and FSM states at `kitsumed:session:{user_id}` with 7200s (2h) TTL |
 | **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Asynchronous connection pool `sqlx::PgPool`, compile-time query verification, automatic schema migrations, and JSONB fields |
 | **Follow-up Scheduler** | Tokio Background Task | Automated background timer checking pain resolution 2 hours after episode onset and recording medication efficacy |
 | **Reminder Scheduler** | Tokio Background Task | Daily wellness check-in scheduler with per-user timezone resolution (Chrono + Chrono-Tz) |
@@ -135,7 +135,7 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 - **Telegram Bot Framework**: `teloxide 0.13`
 - **Async Runtime**: `tokio 1.x`
 - **Database**: `PostgreSQL 14+` with `sqlx 0.8`
-- **Session Cache & FSM**: Redis 7+ (`redis 0.27` with `tokio-comp`) — persistent asynchronous survey state storage at `migrebot:session:{user_id}` with 7200s TTL and memory fallback
+- **Session Cache & FSM**: Redis 7+ (`redis 0.27` with `tokio-comp`) — persistent asynchronous survey state storage at `kitsumed:session:{user_id}` with 7200s TTL and memory fallback
 - **Time & Timezones**: `chrono`, `chrono-tz`
 - **Serialization**: `serde`, `serde_json`
 - **UI Format**: Telegram Rich Text (HTML model with `<tg-button-row>`, `<tg-button>`, `<blockquote expandable>`)
