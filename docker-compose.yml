@@ -14,9 +14,9 @@ services:
       - TELOXIDE_TOKEN=${TOKEN}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=migrebot
-      - POSTGRES_PASSWORD=migrebot_secure_pass
-      - POSTGRES_DB=migrebot
+      - POSTGRES_USER=kitsumed
+      - POSTGRES_PASSWORD=kitsumed_secure_pass
+      - POSTGRES_DB=kitsumed
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - RUST_LOG=info
@@ -27,13 +27,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: migrebot
-      POSTGRES_PASSWORD: migrebot_secure_pass
-      POSTGRES_DB: migrebot
+      POSTGRES_USER: kitsumed
+      POSTGRES_PASSWORD: kitsumed_secure_pass
+      POSTGRES_DB: kitsumed
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U migrebot -d migrebot"]
+      test: ["CMD-SHELL", "pg_isready -U kitsumed -d kitsumed"]
       interval: 5s
       timeout: 5s
       retries: 5

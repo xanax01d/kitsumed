@@ -70,9 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
         let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
-        let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "migrebot".to_string());
-        let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "migrebot_secure_pass".to_string());
-        let db = env::var("POSTGRES_DB").unwrap_or_else(|_| "migrebot".to_string());
+        let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "kitsumed".to_string());
+        let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "kitsumed_secure_pass".to_string());
+        let db = env::var("POSTGRES_DB").unwrap_or_else(|_| "kitsumed".to_string());
 
         if password.is_empty() {
             format!("postgresql://{user}@{host}:{port}/{db}")

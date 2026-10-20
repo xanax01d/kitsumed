@@ -71,12 +71,6 @@ impl SessionStore {
                     return Some(state);
                 }
             }
-            let old_key = format!("migrebot:session:{}", user_id);
-            if let Ok(Some(json)) = redis::cmd("GET").arg(&old_key).query_async::<Option<String>>(&mut *conn).await {
-                if let Ok(state) = serde_json::from_str::<UserState>(&json) {
-                    return Some(state);
-                }
-            }
         }
         let lock = self.inner.memory.read().await;
         lock.get(&user_id).cloned()
@@ -99,8 +93,6 @@ impl SessionStore {
             let mut conn = r_mutex.lock().await;
             let key = format!("kitsumed:session:{}", user_id);
             let _ = redis::cmd("DEL").arg(&key).query_async::<()>(&mut *conn).await;
-            let old_key = format!("migrebot:session:{}", user_id);
-            let _ = redis::cmd("DEL").arg(&old_key).query_async::<()>(&mut *conn).await;
         }
         let mut lock = self.inner.memory.write().await;
         lock.remove(&user_id);

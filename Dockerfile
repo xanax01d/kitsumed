@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Migrebot Rust
+# Multi-stage Dockerfile for KitsuMed Rust
 FROM rust:1.85-bookworm AS builder
 
 WORKDIR /app
@@ -22,10 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/migrebot /app/migrebot
+COPY --from=builder /app/target/release/kitsumed /app/kitsumed
 COPY --from=builder /app/locales /app/locales
 COPY --from=builder /app/assets /app/assets
 
 ENV RUST_LOG=info
 
-CMD ["/app/migrebot"]
+CMD ["/app/kitsumed"]

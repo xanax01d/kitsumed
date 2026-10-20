@@ -207,13 +207,13 @@ cd migrebot_analog
 TELOXIDE_TOKEN="your_telegram_bot_token"
 
 # База даных PostgreSQL
-DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+DATABASE_URL="postgres://kitsumed:your_password@127.0.0.1:5432/kitsumed"
 # Альбо асобныя параметры:
 # POSTGRES_HOST=127.0.0.1
 # POSTGRES_PORT=5432
-# POSTGRES_USER=migrebot
+# POSTGRES_USER=kitsumed
 # POSTGRES_PASSWORD=your_password
-# POSTGRES_DB=migrebot
+# POSTGRES_DB=kitsumed
 
 # Кэш FSM-сесій Redis
 REDIS_URL="redis://127.0.0.1:6379"
@@ -236,7 +236,7 @@ cargo run
 
 # Зборка аптымізаванага рэлізнага бінарніка
 cargo build --release
-./target/release/migrebot
+./target/release/kitsumed
 ```
 
 ### 4. Запуск праз Docker Compose (PostgreSQL + Redis + Bot)
@@ -248,25 +248,25 @@ docker-compose up -d
 
 ## 🚀 Разгортванне на серверы (Systemd)
 
-1. Збярыце рэлізны бінарнік у `/opt/migrebot`:
+1. Збярыце рэлізны бінарнік у `/opt/kitsumed`:
    ```bash
-   cd /opt/migrebot
+   cd /opt/kitsumed
    cargo build --release
    ```
 
-2. Стварыце канфігурацыю службы `/etc/systemd/system/migrebot.service`:
+2. Стварыце канфігурацыю службы `/etc/systemd/system/kitsumed.service`:
    ```ini
    [Unit]
-   Description=Migrebot Rust Telegram Bot
+   Description=KitsuMed Rust Telegram Bot
    After=network.target postgresql.service redis-server.service
    Wants=postgresql.service redis-server.service
 
    [Service]
    Type=simple
    User=root
-   WorkingDirectory=/opt/migrebot
-   ExecStart=/opt/migrebot/target/release/migrebot
-   EnvironmentFile=/opt/migrebot/.env
+   WorkingDirectory=/opt/kitsumed
+   ExecStart=/opt/kitsumed/target/release/kitsumed
+   EnvironmentFile=/opt/kitsumed/.env
    Restart=always
    RestartSec=5
    StandardOutput=journal
@@ -279,8 +279,8 @@ docker-compose up -d
 3. Перазапусціце сэрвіс:
    ```bash
    systemctl daemon-reload
-   systemctl enable migrebot.service
-   systemctl restart migrebot.service
+   systemctl enable kitsumed.service
+   systemctl restart kitsumed.service
    ```
 
 ---
