@@ -146,7 +146,7 @@
 ## 📂 Структура праекта
 
 ```text
-migrebot_analog/
+kitsumed/
 ├── assets/
 │   └── images/            # Анімэ-банеры персанажаў для кожнай лакалі
 │       ├── be/            # Беларускі банер (лісічка ў вышыванцы з васількамі)
@@ -195,8 +195,8 @@ migrebot_analog/
 
 ### 1. Кланаванне рэпазіторыя
 ```bash
-git clone https://github.com/xanax01d/migrebot_analog.git
-cd migrebot_analog
+git clone https://github.com/xanax01d/kitsumed.git
+cd kitsumed
 ```
 
 ### 2. Канфігурацыя (`.env`)

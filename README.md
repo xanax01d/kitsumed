@@ -147,7 +147,7 @@
 ## 📂 Структура проекта
 
 ```text
-migrebot_analog/
+kitsumed/
 ├── assets/
 │   └── images/            # Локализованные баннеры персонажей и визуальные схемы
 │       ├── ru/            # Русский баннер, шаги опросника и скриншоты UI
@@ -196,8 +196,8 @@ migrebot_analog/
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/xanax01d/migrebot_analog.git
-cd migrebot_analog
+git clone https://github.com/xanax01d/kitsumed.git
+cd kitsumed
 ```
 
 ### 2. Конфигурация (`.env`)
