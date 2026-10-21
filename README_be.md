@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/images/be/hero_banner.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/readme/be_kitsune.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
 # 🧠 Migrebot Analog (Rust Edition)
 ### Высокапрадукцыйны Telegram-дзённік прыступаў мігрэні і галаўнога болю на чыстым Rust
@@ -57,19 +57,19 @@
 
 ---
 
-## 🌸 Галерэя персанажаў (5 анімэ-стыляў лакалізацый)
+## 🌸 Галерэя лісічак (Анімэ-маскоты 5 лакалізацый)
 
-Кожная лакалізацыя суправаджаецца унікальным мастацкім анімэ-банерам:
+Кожная лакалізацыя суправаджаецца унікальнай ілюстрацыяй маскота-лісічкі:
 
 | 🇧🇾 Беларуская (`be`) | 🇷🇺 Русский (`ru`) | 🇬🇧 English (`en`) |
 | :---: | :---: | :---: |
-| <img src="assets/images/be/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/ru/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/en/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
-| **Лісічка ў вышыванцы з васількамі** | **Клінічная класіка** | **ICHD-3 Medical English** |
+| <img src="assets/images/readme/be_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/ru_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/en_kitsune.png" width="100%" style="border-radius: 8px;" /> |
+| **Лісічка ў вышыванцы з васількамі** | **Лісічка-неўролаг у клініцы** | **British Scholar Kitsune** |
 
 | 🎭 Мемны (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
 | :---: | :---: |
-| <img src="assets/images/meme/hero_banner.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/cyberpunk/hero_banner.png" width="100%" style="border-radius: 8px;" /> |
-| **Вайбовая мемная атмасфера** | **Неонавы нэтранэр & Хром** |
+| <img src="assets/images/readme/meme_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/cyberpunk_kitsune.png" width="100%" style="border-radius: 8px;" /> |
+| **Утульная чыл-лісічка ў худзі** | **Кібер-кіцунэ нэтранэр** |
 
 ---
 
