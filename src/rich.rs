@@ -23,6 +23,49 @@ pub fn html_escape(input: &str) -> String {
         .replace('>', "&gt;")
 }
 
+pub fn format_rich_html(html: &str) -> String {
+    let mut out = String::with_capacity(html.len() + 128);
+    let mut rest = html;
+
+    while let Some(start_idx) = rest.find("<blockquote") {
+        out.push_str(&rest[..start_idx]);
+        let after_start = &rest[start_idx..];
+        if let Some(tag_close) = after_start.find('>') {
+            let bq_tag = &after_start[..=tag_close];
+            out.push_str(bq_tag);
+            let bq_content_start = &after_start[tag_close + 1..];
+            if let Some(end_idx) = bq_content_start.find("</blockquote>") {
+                let bq_content = &bq_content_start[..end_idx];
+                let mut formatted_bq = String::new();
+                for (i, line) in bq_content.lines().enumerate() {
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        if !formatted_bq.is_empty() {
+                            formatted_bq.push_str("<br>");
+                        }
+                    } else {
+                        if i > 0 && !formatted_bq.is_empty() && !formatted_bq.ends_with("<br>") {
+                            formatted_bq.push_str("<br>");
+                        }
+                        formatted_bq.push_str(trimmed);
+                    }
+                }
+                out.push_str(&formatted_bq);
+                out.push_str("</blockquote>");
+                rest = &bq_content_start[end_idx + 13..];
+            } else {
+                out.push_str(after_start);
+                return out;
+            }
+        } else {
+            out.push_str(after_start);
+            return out;
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 pub async fn send_or_edit_rich_raw(
     token: &str,
     chat_id: i64,
@@ -30,6 +73,8 @@ pub async fn send_or_edit_rich_raw(
     html: &str,
     img_path: Option<&str>,
 ) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
+    let formatted_html = format_rich_html(html);
+    let html = formatted_html.as_str();
     let client = reqwest::Client::new();
     let has_image = img_path.map(|p| Path::new(p).exists()).unwrap_or(false);
 
