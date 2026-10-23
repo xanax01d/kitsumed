@@ -69,7 +69,7 @@
 | 🎭 Мемны (`meme`) | 🦾 Cyberpunk 2077 (`cyberpunk`) |
 | :---: | :---: |
 | <img src="assets/images/readme/meme_kitsune.png" width="100%" style="border-radius: 8px;" /> | <img src="assets/images/readme/cyberpunk_kitsune.png" width="100%" style="border-radius: 8px;" /> |
-| **Утульная чыл-лісічка ў худзі** | **Кібер-кіцунэ нэтранэр** |
+| **Вайбовая мемная атмасфера** | **Неонавы нэтранэр & Хром** |
 
 ---
 
