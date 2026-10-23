@@ -1,28 +1,7 @@
 use std::collections::HashSet;
 use chrono::{Datelike, NaiveDate};
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 use crate::locales::{get_text, normalize_lang};
-
-pub fn get_main_menu(lang: &str) -> KeyboardMarkup {
-    let code = normalize_lang(lang);
-    let row1 = vec![
-        KeyboardButton::new(get_text("btn_log", code)),
-        KeyboardButton::new(get_text("btn_status", code)),
-    ];
-    let row2 = vec![
-        KeyboardButton::new(get_text("btn_history", code)),
-        KeyboardButton::new(get_text("btn_export", code)),
-    ];
-    let row3 = vec![
-        KeyboardButton::new(get_text("btn_reminder", code)),
-        KeyboardButton::new(get_text("btn_language", code)),
-        KeyboardButton::new(get_text("btn_help", code)),
-    ];
-
-    KeyboardMarkup::new(vec![row1, row2, row3])
-        .resize_keyboard()
-        .input_field_placeholder("KitsuMed...")
-}
 
 pub fn is_log_btn(text: &str) -> bool {
     let t = text.trim();

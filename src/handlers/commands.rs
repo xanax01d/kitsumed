@@ -200,7 +200,7 @@ pub async fn handle_message(
                     let caption = get_text_fmt("fu_pain_resolved_recorded", &lang, &[("end_time", text)]);
                     bot.send_message(msg.chat.id, caption)
                         .parse_mode(ParseMode::Html)
-                        .reply_markup(get_main_menu(&lang))
+                        .reply_markup(KeyboardRemove::default())
                         .await?;
                 }
                 return Ok(());
@@ -217,7 +217,7 @@ pub async fn handle_message(
                     ]);
                     bot.send_message(msg.chat.id, success_text)
                         .parse_mode(ParseMode::Html)
-                        .reply_markup(get_main_menu(&lang))
+                        .reply_markup(KeyboardRemove::default())
                         .await?;
                 } else {
                     bot.send_message(msg.chat.id, get_text("reminder_custom_time_invalid", &lang))
@@ -237,7 +237,7 @@ pub async fn handle_message(
                     ]);
                     bot.send_message(msg.chat.id, success_text)
                         .parse_mode(ParseMode::Html)
-                        .reply_markup(get_main_menu(&lang))
+                        .reply_markup(KeyboardRemove::default())
                         .await?;
                 } else {
                     bot.send_message(msg.chat.id, get_text("tz_custom_invalid", &lang))

@@ -170,6 +170,7 @@ pub async fn send_or_edit_rich_raw(
         let form = reqwest::multipart::Form::new()
             .text("chat_id", chat_id.to_string())
             .text("rich_message", rich_message.to_string())
+            .text("reply_markup", serde_json::json!({"remove_keyboard": true}).to_string())
             .part("hero", part);
 
         let res = client.post(&send_url).multipart(form).send().await?;
@@ -186,6 +187,9 @@ pub async fn send_or_edit_rich_raw(
             "chat_id": chat_id,
             "rich_message": {
                 "html": html
+            },
+            "reply_markup": {
+                "remove_keyboard": true
             }
         });
 
