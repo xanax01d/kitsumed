@@ -10,6 +10,7 @@ use crate::db::{get_episodes_for_date, get_episodes_for_month, get_user_language
 use crate::keyboards::{build_calendar_keyboard, get_month_name};
 use crate::locales::{get_intensity_label, get_location_name, get_medication_name, get_pain_type_name, get_symptom_name, get_text, get_text_fmt, get_trigger_name};
 use crate::models::HeadacheEpisode;
+use crate::session::SessionStore;
 
 pub async fn render_calendar(
     pool: &PgPool,
@@ -135,13 +136,25 @@ async fn update_calendar_view(
     }
 }
 
-pub async fn handle_calendar_cmd(bot: &Bot, msg: &Message, pool: &PgPool) -> ResponseResult<()> {
+pub async fn handle_calendar_cmd(
+    bot: &Bot,
+    msg: &Message,
+    pool: &PgPool,
+    sessions: &SessionStore,
+    mid: Option<i32>,
+) -> ResponseResult<()> {
     let user_id = msg.from.as_ref().map(|u| u.id.0 as i64).unwrap_or(0);
     let tz_str = get_user_timezone(pool, user_id).await;
     let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
     let today = Utc::now().with_timezone(&tz).date_naive();
 
-    let _ = crate::rich::send_rich_calendar_menu(bot.token(), msg.chat.id.0, None, user_id, today.year(), today.month(), None, pool).await;
+    let target_mid = match mid {
+        Some(m) => Some(m),
+        None => sessions.get_last_mid(user_id).await,
+    };
+    if let Ok(new_mid) = crate::rich::send_rich_calendar_menu(bot.token(), msg.chat.id.0, target_mid, user_id, today.year(), today.month(), None, pool).await {
+        sessions.set_last_mid(user_id, new_mid).await;
+    }
     Ok(())
 }
 

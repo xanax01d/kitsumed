@@ -29,6 +29,10 @@ async fn handle_callback_query(
     pool: sqlx::PgPool,
     sessions: SessionStore,
 ) -> ResponseResult<()> {
+    if let Some(msg) = q.regular_message() {
+        sessions.set_last_mid(q.from.id.0 as i64, msg.id.0 as i32).await;
+    }
+
     let data = q.data.as_deref().unwrap_or("");
 
     if let Some(code) = data.strip_prefix("lang:") {

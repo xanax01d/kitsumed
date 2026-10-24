@@ -31,26 +31,22 @@ pub fn format_rich_html(html: &str) -> String {
         out.push_str(&rest[..start_idx]);
         let after_start = &rest[start_idx..];
         if let Some(tag_close) = after_start.find('>') {
-            let bq_tag = &after_start[..=tag_close];
-            out.push_str(bq_tag);
+            out.push_str("<blockquote>");
             let bq_content_start = &after_start[tag_close + 1..];
             if let Some(end_idx) = bq_content_start.find("</blockquote>") {
                 let bq_content = &bq_content_start[..end_idx];
-                let mut formatted_bq = String::new();
-                for (i, line) in bq_content.lines().enumerate() {
+                for line in bq_content.lines() {
                     let trimmed = line.trim();
-                    if trimmed.is_empty() {
-                        if !formatted_bq.is_empty() {
-                            formatted_bq.push_str("<br>");
+                    if !trimmed.is_empty() {
+                        if trimmed.starts_with("<p>") && trimmed.ends_with("</p>") {
+                            out.push_str(trimmed);
+                        } else {
+                            out.push_str("<p>");
+                            out.push_str(trimmed);
+                            out.push_str("</p>");
                         }
-                    } else {
-                        if i > 0 && !formatted_bq.is_empty() && !formatted_bq.ends_with("<br>") {
-                            formatted_bq.push_str("<br>");
-                        }
-                        formatted_bq.push_str(trimmed);
                     }
                 }
-                out.push_str(&formatted_bq);
                 out.push_str("</blockquote>");
                 rest = &bq_content_start[end_idx + 13..];
             } else {
@@ -109,7 +105,17 @@ pub async fn send_or_edit_rich_raw(
                         .part("hero", part);
                     if let Ok(res) = client.post(&edit_url).multipart(form).send().await {
                         if let Ok(json) = res.json::<serde_json::Value>().await {
-                            json.get("ok").and_then(|v| v.as_bool()) == Some(true)
+                            let is_ok = json.get("ok").and_then(|v| v.as_bool()) == Some(true);
+                            let is_unmodified = json.get("description")
+                                .and_then(|d| d.as_str())
+                                .map(|s| s.contains("message is not modified"))
+                                .unwrap_or(false);
+                            if is_ok || is_unmodified {
+                                true
+                            } else {
+                                log::warn!("editMessageText multipart returned error for mid={mid}: {:?}", json);
+                                false
+                            }
                         } else { false }
                     } else { false }
                 } else { false }
@@ -124,7 +130,17 @@ pub async fn send_or_edit_rich_raw(
             });
             if let Ok(res) = client.post(&edit_url).json(&payload).send().await {
                 if let Ok(json) = res.json::<serde_json::Value>().await {
-                    json.get("ok").and_then(|v| v.as_bool()) == Some(true)
+                    let is_ok = json.get("ok").and_then(|v| v.as_bool()) == Some(true);
+                    let is_unmodified = json.get("description")
+                        .and_then(|d| d.as_str())
+                        .map(|s| s.contains("message is not modified"))
+                        .unwrap_or(false);
+                    if is_ok || is_unmodified {
+                        true
+                    } else {
+                        log::warn!("editMessageText json returned error for mid={mid}: {:?}", json);
+                        false
+                    }
                 } else { false }
             } else { false }
         };
@@ -256,7 +272,7 @@ pub async fn send_rich_main_menu(
         "<b>KitsuMed 🦊</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         {greeting}\n\n\
-        <blockquote expandable><b>📋 {sec_label}</b>\n\
+        <blockquote><b>📋 {sec_label}</b>\n\
         • {lang_label}: <b>{lang_display}</b>\n\
         • {tz_label}: <code>{tz_str}</code>\n\
         • {rem_label}: <b>{}</b> ({status_label})</blockquote>\n\n\
@@ -314,7 +330,7 @@ pub async fn send_rich_status_menu(
         let btn_no = get_text("status_btn_not_passed", norm);
 
         let block = format!(
-            "<blockquote expandable><b>{sec_title}</b>\n\
+            "<blockquote><b>{sec_title}</b>\n\
             • {lbl_start} <b>{start}</b>\n\
             • {lbl_intensity} <b>{intensity_str}/10</b> ({level})\n\
             • {lbl_loc} <b>{loc}</b>\n\
@@ -340,7 +356,7 @@ pub async fn send_rich_status_menu(
 
         let block = format!(
             "{no_active_txt}\n\n\
-            <blockquote expandable><b>{info_title}</b>\n\
+            <blockquote><b>{info_title}</b>\n\
             {info_body}</blockquote>"
         );
         let btns = format!(
@@ -415,7 +431,7 @@ pub async fn send_rich_calendar_menu(
         if day_eps.is_empty() {
             let empty_text = get_text("calendar_empty_day", norm);
             selected_info = format!(
-                "<blockquote expandable><b>📋 {day:02}.{month:02}.{year}</b>\n\
+                "<blockquote><b>📋 {day:02}.{month:02}.{year}</b>\n\
                 {empty_text}</blockquote>\n\n"
             );
         } else {
@@ -434,7 +450,7 @@ pub async fn send_rich_calendar_menu(
                 ],
             );
             selected_info = format!(
-                "<blockquote expandable><b>{title_eps}</b>\n\
+                "<blockquote><b>{title_eps}</b>\n\
                 {joined}</blockquote>\n\n"
             );
         }
@@ -524,7 +540,7 @@ pub async fn send_rich_calendar_menu(
     let html = format!(
         "<b>{cal_title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
-        <blockquote expandable><b>{stat_header}</b>\n\
+        <blockquote><b>{stat_header}</b>\n\
         • {lbl_pain} <b>{pain_count}</b> 🔴\n\
         • {lbl_healthy} <b>{healthy_count}</b> 🟢</blockquote>\n\n\
         {selected_info}\
@@ -559,7 +575,7 @@ pub async fn send_rich_export_menu(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         {desc}\n\n\
-        <blockquote expandable>{desc_block}</blockquote>\n\n\
+        <blockquote>{desc_block}</blockquote>\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"primary\" data=\"hde:csv\">{btn_csv}</tg-button>\n\
           <tg-button type=\"callback_data\" style=\"primary\" data=\"hde:pdf\">{btn_pdf}</tg-button>\n\
@@ -621,7 +637,7 @@ pub async fn send_rich_reminder_menu(
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
-        <blockquote expandable><b>{sec_title}</b>\n\
+        <blockquote><b>{sec_title}</b>\n\
         • {lbl_status} <b>{status_text}</b>\n\
         • {lbl_time} <b>{}</b>\n\
         • {lbl_tz} <b>{tz_str}</b> ({local_time})</blockquote>\n\n\
@@ -778,7 +794,7 @@ pub async fn send_rich_language_menu(
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
-        <blockquote expandable>{block}</blockquote>\n\n\
+        <blockquote>{block}</blockquote>\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"lang:ru\">🇷🇺 Русский</tg-button>\n\
           <tg-button type=\"callback_data\" data=\"lang:be\">🇧🇾 Беларуская</tg-button>\n\
@@ -818,7 +834,7 @@ pub async fn send_rich_help_menu(
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
-        <blockquote expandable><b>{block_title}</b>\n\
+        <blockquote><b>{block_title}</b>\n\
         {help_items}</blockquote>\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"success\" data=\"menu:log\">{btn_log}</tg-button>\n\
@@ -1459,7 +1475,7 @@ pub async fn render_rich_headache_step(
             format!(
                 "<b>{title}</b>\n\n\
                 <img src=\"tg://photo?id=hero\">\n\n\
-                <blockquote expandable><b>{block_title}</b>\n\
+                <blockquote><b>{block_title}</b>\n\
                 • {lbl_status} {status_line}\n\
                 • {lbl_start} <code>{start_time}</code>\n\
                 • {lbl_pain} <b>{intensity}/10</b> ({level})\n\
