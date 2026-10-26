@@ -11,6 +11,60 @@ use crate::locales::*;
 use crate::models::NewEpisode;
 use crate::session::{FlowStep, HeadacheForm, SessionStore, UserState};
 
+pub fn parse_delay_to_minutes(delay: Option<&str>) -> i64 {
+    match delay {
+        Some("0m") | Some("now") | Some("0") => 0,
+        Some("15m") => 15,
+        Some("30m") => 30,
+        Some("1h") | Some("60m") => 60,
+        Some("2h") | Some("120m") => 120,
+        Some("3h") | Some("180m") => 180,
+        Some("4h") | Some("240m") => 240,
+        Some(s) => {
+            if let Some(num) = s.strip_suffix('m').and_then(|v| v.parse::<i64>().ok()) {
+                num
+            } else if let Some(num) = s.strip_suffix('h').and_then(|v| v.parse::<i64>().ok()) {
+                num * 60
+            } else {
+                s.parse::<i64>().unwrap_or(0)
+            }
+        }
+        None => 0,
+    }
+}
+
+pub fn calculate_headache_end_time(
+    start_time_str: Option<&str>,
+    med_take_delay: Option<&str>,
+    relief_delay: Option<&str>,
+    tz: &Tz,
+) -> String {
+    let now = Utc::now().with_timezone(tz);
+    let med_mins = parse_delay_to_minutes(med_take_delay);
+    let relief_mins = parse_delay_to_minutes(relief_delay);
+    let total_mins = med_mins + relief_mins;
+
+    if let Some(st) = start_time_str {
+        if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(st, "%Y-%m-%d %H:%M") {
+            let calc = dt + Duration::minutes(total_mins);
+            return calc.format("%Y-%m-%d %H:%M").to_string();
+        }
+        if let Ok(t) = chrono::NaiveTime::parse_from_str(st, "%H:%M") {
+            let today = now.date_naive();
+            let dt = today.and_time(t);
+            let calc = dt + Duration::minutes(total_mins);
+            return calc.format("%Y-%m-%d %H:%M").to_string();
+        }
+    }
+
+    if total_mins > 0 {
+        let calc = now + Duration::minutes(total_mins);
+        calc.format("%Y-%m-%d %H:%M").to_string()
+    } else {
+        now.format("%Y-%m-%d %H:%M").to_string()
+    }
+}
+
 pub fn get_step_image_path(step: &str, lang: &str) -> String {
     let norm = normalize_lang(lang);
     let filename = match step {
@@ -325,8 +379,16 @@ pub async fn handle_headache_callback(
                 let is_completed = form.medication_relief.as_deref() == Some("helped");
                 let status = if is_completed { "completed" } else { "active" };
 
-                let now_str = Utc::now().with_timezone(&tz).format("%Y-%m-%d %H:%M").to_string();
-                let end_time = if is_completed { Some(now_str) } else { None };
+                let end_time = if is_completed {
+                    Some(calculate_headache_end_time(
+                        form.start_time.as_deref(),
+                        form.med_take_delay.as_deref(),
+                        form.relief_delay.as_deref(),
+                        &tz,
+                    ))
+                } else {
+                    None
+                };
 
                 let new_ep = NewEpisode {
                     user_id,

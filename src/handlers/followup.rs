@@ -15,10 +15,11 @@ pub fn calculate_end_time(preset: &str, tz_name: &str) -> String {
     let now = Utc::now().with_timezone(&tz);
 
     let target = match preset {
-        "now" => now,
-        "-30m" => now - Duration::minutes(30),
-        "-1h" => now - Duration::hours(1),
-        "-2h" => now - Duration::hours(2),
+        "now" | "0" | "0m" => now,
+        "-30m" | "30m" => now - Duration::minutes(30),
+        "-1h" | "1h" | "-60m" | "60m" => now - Duration::hours(1),
+        "-2h" | "2h" | "-120m" | "120m" => now - Duration::hours(2),
+        "-4h" | "4h" | "-240m" | "240m" => now - Duration::hours(4),
         _ => now,
     };
     target.format("%Y-%m-%d %H:%M").to_string()
