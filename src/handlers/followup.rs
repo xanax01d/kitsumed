@@ -120,8 +120,15 @@ pub async fn handle_followup_callback(
         "custom_when" => {
             if parts.len() >= 3 {
                 let ep_id: i32 = parts[2].parse().unwrap_or(0);
-                sessions.set(user_id, UserState::WaitingFollowupTime(ep_id)).await;
-                let _ = bot.send_message(chat_id, get_text("fu_when_custom_prompt", &lang)).parse_mode(ParseMode::Html).await;
+                let pmid = if let Ok(sent) = bot.send_message(chat_id, get_text("fu_when_custom_prompt", &lang))
+                    .parse_mode(ParseMode::Html)
+                    .reply_markup(teloxide::types::KeyboardRemove::new())
+                    .await {
+                    Some(sent.id.0 as i32)
+                } else {
+                    None
+                };
+                sessions.set(user_id, UserState::WaitingFollowupTime(ep_id, pmid)).await;
             }
         }
         "med_relief" => {

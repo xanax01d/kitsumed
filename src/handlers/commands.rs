@@ -1,7 +1,10 @@
+use std::str::FromStr;
+use chrono::{Datelike, Duration, Utc};
+use chrono_tz::Tz;
 use regex::Regex;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::{CallbackQuery, ChatId, InputFile, KeyboardRemove, ParseMode};
+use teloxide::types::{CallbackQuery, ChatId, InputFile, KeyboardRemove, MessageId, ParseMode};
 
 use crate::db::{get_episode_by_id, get_user_language, resolve_episode_pain, set_user_reminder, upsert_user};
 use crate::handlers::calendar::handle_calendar_cmd;
@@ -14,6 +17,48 @@ use crate::keyboards::*;
 use crate::locales::{get_text, get_text_fmt};
 use crate::session::{FlowStep, SessionStore, UserState};
 
+pub fn parse_custom_datetime_input(text: &str, tz_name: &str) -> String {
+    let tz = Tz::from_str(tz_name).unwrap_or(chrono_tz::Europe::Moscow);
+    let now = Utc::now().with_timezone(&tz);
+    let t = text.trim();
+
+    if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%d %H:%M") {
+        return dt.format("%Y-%m-%d %H:%M").to_string();
+    }
+    if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(t, "%d.%m.%Y %H:%M") {
+        return dt.format("%Y-%m-%d %H:%M").to_string();
+    }
+    let curr_year = now.year();
+    let with_year = format!("{curr_year}.{t}");
+    if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(&with_year, "%Y.%d.%m %H:%M") {
+        return dt.format("%Y-%m-%d %H:%M").to_string();
+    }
+    let lower = t.to_lowercase();
+    if lower.contains("вчера") || lower.contains("учора") || lower.contains("yesterday") {
+        let yesterday = now.date_naive() - Duration::days(1);
+        let re = Regex::new(r"([0-1]?[0-9]|2[0-3]):([0-5][0-9])").unwrap();
+        if let Some(caps) = re.captures(t) {
+            let h: u32 = caps[1].parse().unwrap_or(12);
+            let m: u32 = caps[2].parse().unwrap_or(0);
+            if let Some(dt) = yesterday.and_hms_opt(h, m, 0) {
+                return dt.format("%Y-%m-%d %H:%M").to_string();
+            }
+        }
+        return format!("{} 12:00", yesterday.format("%Y-%m-%d"));
+    }
+    if let Ok(time) = chrono::NaiveTime::parse_from_str(t, "%H:%M") {
+        let dt = now.date_naive().and_time(time);
+        return dt.format("%Y-%m-%d %H:%M").to_string();
+    }
+    let re_h_ago = Regex::new(r"(\d+)\s*(?:ч|час|часа|часов|h|hour|hours|гадз|гадзіны)?\s*(?:назад|ago|таму)").unwrap();
+    if let Some(caps) = re_h_ago.captures(&lower) {
+        let h: i64 = caps[1].parse().unwrap_or(1);
+        let dt = now - Duration::hours(h);
+        return dt.format("%Y-%m-%d %H:%M").to_string();
+    }
+    now.format("%Y-%m-%d %H:%M").to_string()
+}
+
 pub async fn send_main_menu(
     bot: &Bot,
     chat_id: ChatId,
@@ -23,11 +68,7 @@ pub async fn send_main_menu(
     pool: &PgPool,
     sessions: &SessionStore,
 ) -> ResponseResult<()> {
-    let target_mid = match mid {
-        Some(m) => Some(m),
-        None => sessions.get_last_mid(user_id).await,
-    };
-    if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, target_mid, user_id, first_name, pool).await {
+    if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await {
         sessions.set_last_mid(user_id, new_mid).await;
     }
     Ok(())
@@ -142,9 +183,13 @@ pub async fn handle_message(
 
     if let Some(state) = current_state {
         match state {
-            UserState::WaitingCustomStartTime(mut form) => {
+            UserState::WaitingCustomStartTime(mut form, pmid) => {
                 let _ = bot.delete_message(msg.chat.id, msg.id).await;
-                form.start_time = Some(text.to_string());
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
+                let tz_str = crate::db::get_user_timezone(&pool, user_id).await;
+                form.start_time = Some(parse_custom_datetime_input(text, &tz_str));
                 form.current_step = Some(FlowStep::Intensity);
 
                 sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
@@ -155,8 +200,12 @@ pub async fn handle_message(
                 return Ok(());
             }
 
-            UserState::WaitingCustomTrigger(mut form) => {
+            UserState::WaitingCustomTrigger(mut form, pmid) => {
                 let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
+                form.triggers.retain(|x| x != "none");
                 form.triggers.push(text.to_string());
                 form.current_step = Some(FlowStep::Medication);
 
@@ -168,8 +217,11 @@ pub async fn handle_message(
                 return Ok(());
             }
 
-            UserState::WaitingCustomMedication(mut form) => {
+            UserState::WaitingCustomMedication(mut form, pmid) => {
                 let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
                 form.medication = Some(text.to_string());
                 form.current_step = Some(FlowStep::MedicationTime);
 
@@ -181,71 +233,74 @@ pub async fn handle_message(
                 return Ok(());
             }
 
-            UserState::WaitingFollowupTime(ep_id) => {
+            UserState::WaitingFollowupTime(ep_id, pmid) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
                 sessions.remove(user_id).await;
 
-                let _ = resolve_episode_pain(&pool, ep_id, true, Some(text)).await;
+                let tz_str = crate::db::get_user_timezone(&pool, user_id).await;
+                let end_time = parse_custom_datetime_input(text, &tz_str);
+                let _ = resolve_episode_pain(&pool, ep_id, true, Some(&end_time)).await;
                 let ep = get_episode_by_id(&pool, ep_id).await.unwrap_or(None);
                 let has_meds = ep.as_ref().map(|e| {
                     let m = e.medication.as_deref().unwrap_or("none");
                     m != "none" && !m.is_empty()
                 }).unwrap_or(false);
 
+                let last_mid = sessions.get_last_mid(user_id).await;
                 if has_meds {
                     let med_name = ep.as_ref().and_then(|e| e.medication.clone()).unwrap_or_default();
-                    let caption = get_text_fmt("fu_med_question", &lang, &[("medication", &med_name)]);
-                    let kb = get_followup_medication_keyboard(ep_id, &lang);
-                    bot.send_message(msg.chat.id, caption)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(kb)
-                        .await?;
+                    let _ = crate::rich::send_rich_followup_med(bot.token(), msg.chat.id.0, last_mid, ep_id, &med_name, user_id, &pool).await;
                 } else {
-                    let caption = get_text_fmt("fu_pain_resolved_recorded", &lang, &[("end_time", text)]);
-                    bot.send_message(msg.chat.id, caption)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(KeyboardRemove::default())
-                        .await?;
+                    let caption = get_text_fmt("fu_pain_resolved_recorded", &lang, &[("end_time", &end_time)]);
+                    let _ = crate::rich::send_rich_followup_result(bot.token(), msg.chat.id.0, last_mid, &caption, user_id, &pool).await;
                 }
                 return Ok(());
             }
 
-            UserState::WaitingReminderTime => {
+            UserState::WaitingReminderTime(pmid) => {
                 let re = Regex::new(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$").unwrap();
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
                 if re.is_match(text) {
                     sessions.remove(user_id).await;
                     let _ = set_user_reminder(&pool, user_id, Some(text), None, None).await;
-                    let success_text = get_text_fmt("reminder_custom_time_saved", &lang, &[
-                        ("time", text),
-                        ("tz_label", "Europe/Moscow"),
-                    ]);
-                    bot.send_message(msg.chat.id, success_text)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(KeyboardRemove::default())
-                        .await?;
+                    let last_mid = sessions.get_last_mid(user_id).await;
+                    if let Ok(new_mid) = crate::rich::send_rich_reminder_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+                        sessions.set_last_mid(user_id, new_mid).await;
+                    }
                 } else {
-                    bot.send_message(msg.chat.id, get_text("reminder_custom_time_invalid", &lang))
+                    let err = bot.send_message(msg.chat.id, get_text("reminder_custom_time_invalid", &lang))
                         .parse_mode(ParseMode::Html)
                         .await?;
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    let _ = bot.delete_message(msg.chat.id, err.id).await;
                 }
                 return Ok(());
             }
 
-            UserState::WaitingCustomTimezone => {
+            UserState::WaitingCustomTimezone(pmid) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
                 if let Some(valid_tz) = resolve_timezone(text) {
                     sessions.remove(user_id).await;
                     let _ = set_user_reminder(&pool, user_id, None, None, Some(&valid_tz)).await;
-                    let success_text = get_text_fmt("tz_custom_saved", &lang, &[
-                        ("tz_label", &valid_tz),
-                        ("local_time", "OK"),
-                    ]);
-                    bot.send_message(msg.chat.id, success_text)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(KeyboardRemove::default())
-                        .await?;
+                    let last_mid = sessions.get_last_mid(user_id).await;
+                    if let Ok(new_mid) = crate::rich::send_rich_reminder_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+                        sessions.set_last_mid(user_id, new_mid).await;
+                    }
                 } else {
-                    bot.send_message(msg.chat.id, get_text("tz_custom_invalid", &lang))
+                    let err = bot.send_message(msg.chat.id, get_text("tz_custom_invalid", &lang))
                         .parse_mode(ParseMode::Html)
                         .await?;
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    let _ = bot.delete_message(msg.chat.id, err.id).await;
                 }
                 return Ok(());
             }
@@ -312,7 +367,7 @@ pub async fn handle_message(
             }
             _ => {
                 let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
-                send_main_menu(&bot, msg.chat.id, last_mid, user_id, first_name, &pool, &sessions).await?;
+                send_main_menu(&bot, msg.chat.id, None, user_id, first_name, &pool, &sessions).await?;
                 return Ok(());
             }
         }

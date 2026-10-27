@@ -167,6 +167,7 @@ pub async fn handle_calendar_callback(
     q: &CallbackQuery,
     data: &str,
     pool: &PgPool,
+    sessions: &SessionStore,
 ) -> ResponseResult<()> {
     let user_id = q.from.id.0 as i64;
     let _ = bot.answer_callback_query(&q.id).await;
@@ -204,6 +205,21 @@ pub async fn handle_calendar_callback(
                 let m: u32 = parts[3].parse().unwrap_or(1);
                 let d: u32 = parts[4].parse().unwrap_or(1);
                 let _ = crate::rich::send_rich_calendar_menu(bot.token(), chat_id.0, mid, user_id, y, m, Some(d), pool).await;
+            }
+        }
+        "add" => {
+            if parts.len() >= 5 {
+                let y: i32 = parts[2].parse().unwrap_or(2026);
+                let m: u32 = parts[3].parse().unwrap_or(1);
+                let d: u32 = parts[4].parse().unwrap_or(1);
+                let date_str = format!("{y}-{m:02}-{d:02} 12:00");
+                let mut form = crate::session::HeadacheForm::default();
+                form.start_time = Some(date_str);
+                form.current_step = Some(crate::session::FlowStep::Intensity);
+                sessions.set(user_id, crate::session::UserState::LoggingHeadache(form.clone())).await;
+                if let Ok(new_mid) = crate::rich::render_rich_headache_step(bot.token(), chat_id.0, mid, user_id, &form, pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
             }
         }
         _ => {}
