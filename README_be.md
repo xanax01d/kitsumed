@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/images/readme/be_kitsune.png" alt="Migrebot Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/readme/be_kitsune.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
 
-# 🧠 Migrebot Analog (Rust Edition)
+# 🦊 KitsuMed (Rust Edition)
 ### Высокапрадукцыйны Telegram-дзённік прыступаў мігрэні і галаўнога болю на чыстым Rust
 
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
@@ -49,7 +49,7 @@
 | :--- | :--- | :--- |
 | **Telegram Client & Rich UI** | Telegram Bot API 8+ (Rich Messages TG-13) | Інтэрактыўныя кнопкі ўнутры тэксту паведамленняў (`<tg-button-row>`, `<tg-button>`), спайлеры і згортвальныя блокі (`<blockquote expandable>`), убудаваныя медыя |
 | **Core Engine** | `teloxide 0.13` + `tokio` (Rust) | Высокапрадукцыйны асінхронны роўтынг паведамленняў і колбэкаў, надзейная апрацоўка патокаў апдэйтаў |
-| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Персістэнтнае захаванне незавершаных апытанняў і станаў FSM па ключу `migrebot:session:{user_id}` з TTL 7200 сек (2 гадзіны) |
+| **Session Cache (Redis)** | `redis 0.27` (`tokio-comp`) | Персістэнтнае захаванне незавершаных апытанняў і станаў FSM па ключу `kitsumed:session:{user_id}` з TTL 7200 сек (2 гадзіны) |
 | **Primary Database** | `PostgreSQL 14+` (`sqlx 0.8`) | Пул асінхронных злучэнняў `sqlx::PgPool`, строгая тыпізацыя, міграцыі схемы, гісторыя прыступаў (JSONB) і профілі карыстальнікаў |
 | **Follow-up Scheduler** | Tokio Background Task | Фанавы варкер кантролю сціхання болю праз 2 гадзіны пасля пачатку прыступу і збору клінічнай ацэнкі эфектыўнасці лекаў |
 | **Reminder Scheduler** | Tokio Background Task | Фанавы планіроўшчык штодзённых чэк-інаў з улікам індывідуальных часавых паясоў (Chrono + Chrono-Tz) |

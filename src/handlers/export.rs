@@ -43,7 +43,7 @@ pub async fn handle_export_callback(
     let formatted_now = now.format("%d.%m.%Y %H:%M").to_string();
 
     let csv_bytes = generate_csv(&episodes, &lang);
-    let filename = format!("migrebot_diary_{date_str}.csv");
+    let filename = format!("kitsumed_diary_{date_str}.csv");
     let doc = InputFile::memory(csv_bytes).file_name(filename);
 
     let caption = get_text_fmt(

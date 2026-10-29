@@ -21,7 +21,7 @@ pub fn get_main_menu(lang: &str) -> KeyboardMarkup {
 
     KeyboardMarkup::new(vec![row1, row2, row3])
         .resize_keyboard()
-        .input_field_placeholder("Migrebot...")
+        .input_field_placeholder("KitsuMed...")
 }
 
 pub fn is_log_btn(text: &str) -> bool {

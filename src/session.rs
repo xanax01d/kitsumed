@@ -65,8 +65,14 @@ impl SessionStore {
     pub async fn get(&self, user_id: i64) -> Option<UserState> {
         if let Some(ref r_mutex) = self.inner.redis {
             let mut conn = r_mutex.lock().await;
-            let key = format!("migrebot:session:{}", user_id);
+            let key = format!("kitsumed:session:{}", user_id);
             if let Ok(Some(json)) = redis::cmd("GET").arg(&key).query_async::<Option<String>>(&mut *conn).await {
+                if let Ok(state) = serde_json::from_str::<UserState>(&json) {
+                    return Some(state);
+                }
+            }
+            let old_key = format!("migrebot:session:{}", user_id);
+            if let Ok(Some(json)) = redis::cmd("GET").arg(&old_key).query_async::<Option<String>>(&mut *conn).await {
                 if let Ok(state) = serde_json::from_str::<UserState>(&json) {
                     return Some(state);
                 }
@@ -80,7 +86,7 @@ impl SessionStore {
         if let Some(ref r_mutex) = self.inner.redis {
             if let Ok(json) = serde_json::to_string(&state) {
                 let mut conn = r_mutex.lock().await;
-                let key = format!("migrebot:session:{}", user_id);
+                let key = format!("kitsumed:session:{}", user_id);
                 let _ = redis::cmd("SETEX").arg(&key).arg(7200).arg(&json).query_async::<()>(&mut *conn).await;
             }
         }
@@ -91,8 +97,10 @@ impl SessionStore {
     pub async fn remove(&self, user_id: i64) {
         if let Some(ref r_mutex) = self.inner.redis {
             let mut conn = r_mutex.lock().await;
-            let key = format!("migrebot:session:{}", user_id);
+            let key = format!("kitsumed:session:{}", user_id);
             let _ = redis::cmd("DEL").arg(&key).query_async::<()>(&mut *conn).await;
+            let old_key = format!("migrebot:session:{}", user_id);
+            let _ = redis::cmd("DEL").arg(&old_key).query_async::<()>(&mut *conn).await;
         }
         let mut lock = self.inner.memory.write().await;
         lock.remove(&user_id);

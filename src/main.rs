@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    log::info!("Starting Migrebot Rust...");
+    log::info!("Starting KitsuMed Rust...");
 
     let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
         let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -142,6 +142,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .dispatch()
         .await;
 
-    log::info!("Migrebot Rust stopped.");
+    log::info!("KitsuMed Rust stopped.");
     Ok(())
 }
