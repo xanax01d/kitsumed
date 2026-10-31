@@ -208,13 +208,13 @@ cd migrebot_analog
 TELOXIDE_TOKEN="your_telegram_bot_token"
 
 # База данных PostgreSQL
-DATABASE_URL="postgres://migrebot:your_password@127.0.0.1:5432/migrebot"
+DATABASE_URL="postgres://kitsumed:your_password@127.0.0.1:5432/kitsumed"
 # Либо раздельные параметры подключения к PostgreSQL:
 # POSTGRES_HOST=127.0.0.1
 # POSTGRES_PORT=5432
-# POSTGRES_USER=migrebot
+# POSTGRES_USER=kitsumed
 # POSTGRES_PASSWORD=your_password
-# POSTGRES_DB=migrebot
+# POSTGRES_DB=kitsumed
 
 # Кэш сессий Redis FSM
 REDIS_URL="redis://127.0.0.1:6379"
@@ -237,7 +237,7 @@ cargo run
 
 # Сборка оптимизированного релизного бинарника
 cargo build --release
-./target/release/migrebot
+./target/release/kitsumed
 ```
 
 ### 4. Запуск через Docker Compose (PostgreSQL + Redis + Bot)
@@ -249,25 +249,25 @@ docker-compose up -d
 
 ## 🚀 Развертывание на сервере (Systemd)
 
-1. Установите релизный бинарник в `/opt/migrebot`:
+1. Установите релизный бинарник в `/opt/kitsumed`:
    ```bash
-   cd /opt/migrebot
+   cd /opt/kitsumed
    cargo build --release
    ```
 
-2. Создайте файл службы `/etc/systemd/system/migrebot.service`:
+2. Создайте файл службы `/etc/systemd/system/kitsumed.service`:
    ```ini
    [Unit]
-   Description=Migrebot Rust Telegram Bot
+   Description=KitsuMed Rust Telegram Bot
    After=network.target postgresql.service redis.service
    Wants=postgresql.service redis.service
 
    [Service]
    Type=simple
    User=root
-   WorkingDirectory=/opt/migrebot
-   ExecStart=/opt/migrebot/target/release/migrebot
-   EnvironmentFile=/opt/migrebot/.env
+   WorkingDirectory=/opt/kitsumed
+   ExecStart=/opt/kitsumed/target/release/kitsumed
+   EnvironmentFile=/opt/kitsumed/.env
    Restart=always
    RestartSec=5
    StandardOutput=journal
@@ -280,13 +280,13 @@ docker-compose up -d
 3. Запустите сервис:
    ```bash
    systemctl daemon-reload
-   systemctl enable migrebot.service
-   systemctl restart migrebot.service
+   systemctl enable kitsumed.service
+   systemctl restart kitsumed.service
    ```
 
 4. Просмотр логов:
    ```bash
-   journalctl -u migrebot.service -f
+   journalctl -u kitsumed.service -f
    ```
 
 ---
