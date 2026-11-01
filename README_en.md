@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="assets/images/readme/en_kitsune.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/en/hero_banner.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+
+<img src="assets/images/avatar.jpg" alt="KitsuMed Logo" width="110" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-top: -65px; border: 4px solid #fff; position: relative;" />
 
 # 🦊 KitsuMed (Rust Edition)
 ### High-Performance Telegram Headache & Migraine Diary Bot written in pure Rust
@@ -43,6 +45,10 @@
 
 ## 📐 System Architecture
 
+<p align="center">
+  <img src="assets/images/cyberpunk/hero_banner.png" alt="KitsuMed Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
+
 Fully asynchronous, resilient architecture built entirely in **Rust** (single compiled binary, zero-cost abstractions), multi-threaded **Tokio** runtime, **SQLx** connection pool, distributed **Redis** for FSM sessions, and **PostgreSQL**:
 
 | Component | Technology | Purpose |
@@ -74,6 +80,10 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 ---
 
 ## 🌟 Key Features
+
+<p align="center">
+  <img src="assets/images/en/hero_banner.png" alt="KitsuMed Key Features" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 ### 1. ⏱ Structured Questionnaire with Rich UI
 - **Buttons inside text (TG-13)**: Navigation, pain sliders, and checkboxes are embedded directly within the message bubble.
@@ -114,6 +124,10 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 ---
 
 ## ⌨️ Commands & Navigation
+
+<p align="center">
+  <img src="assets/images/en/hero_banner.png" alt="Commands and Navigation" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 | Command | Action |
 | :--- | :--- |
@@ -191,6 +205,10 @@ kitsumed/
 ---
 
 ## ⚙️ Quick Start
+
+<p align="center">
+  <img src="assets/images/meme/hero_banner.png" alt="Quick Start and Deployment" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 ### 1. Clone Repository
 ```bash
