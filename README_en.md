@@ -146,7 +146,7 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 ## 📂 Project Structure
 
 ```text
-migrebot_analog/
+kitsumed/
 ├── assets/
 │   └── images/            # Localized banners and graphic cards
 │       ├── ru/            # Russian banner, steps & UI screens
@@ -194,8 +194,8 @@ migrebot_analog/
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/xanax01d/migrebot_analog.git
-cd migrebot_analog
+git clone https://github.com/xanax01d/kitsumed.git
+cd kitsumed
 ```
 
 ### 2. Configuration (`.env`)
