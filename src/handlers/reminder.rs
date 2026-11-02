@@ -7,7 +7,7 @@ use teloxide::prelude::*;
 use teloxide::types::{CallbackQuery, ParseMode};
 
 use crate::db::{get_user_language, get_user_reminder, set_user_reminder, upsert_user};
-use crate::keyboards::{get_main_menu, get_reminder_settings_keyboard, get_timezone_keyboard};
+use crate::keyboards::{get_reminder_settings_keyboard, get_timezone_keyboard};
 use crate::locales::{get_text, get_text_fmt};
 use crate::session::{SessionStore, UserState};
 
