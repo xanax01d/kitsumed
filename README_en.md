@@ -45,10 +45,6 @@
 
 ## 📐 System Architecture
 
-<p align="center">
-  <img src="assets/images/cyberpunk/hero_banner.png" alt="KitsuMed Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
-
 Fully asynchronous, resilient architecture built entirely in **Rust** (single compiled binary, zero-cost abstractions), multi-threaded **Tokio** runtime, **SQLx** connection pool, distributed **Redis** for FSM sessions, and **PostgreSQL**:
 
 | Component | Technology | Purpose |
@@ -205,10 +201,6 @@ kitsumed/
 ---
 
 ## ⚙️ Quick Start
-
-<p align="center">
-  <img src="assets/images/meme/hero_banner.png" alt="Quick Start and Deployment" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 ### 1. Clone Repository
 ```bash

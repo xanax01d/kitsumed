@@ -45,10 +45,6 @@
 
 ## 📐 Архитектура системы
 
-<p align="center">
-  <img src="assets/images/cyberpunk/hero_banner.png" alt="Архитектура KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
-
 Полностью асинхронная отказоустойчивая архитектура на базе чистого **Rust** (компилируемый бинарник с нулевым оверхедом), многопоточного рантайма **Tokio**, пула соединений **SQLx**, распределенного **Redis** для FSM-сессий и СУБД **PostgreSQL**:
 
 | Компонент | Технология | Назначение |
@@ -86,6 +82,10 @@
 </p>
 
 ### 1. ⏱ Пошаговый опросник с Rich Text интерфейсом
+
+<p align="center">
+  <img src="assets/images/readme/sections/ru/survey.jpg" alt="Пошаговый опросник KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - **Кнопки внутри текста (Telegram TG-13)**: Кнопки навигации, шкалы боли и выбора симптомов встроены прямо в тело сообщения через теги `<tg-button-row>` и `<tg-button>`.
 - **Время начала**: Быстрые пресеты (*Прямо сейчас, 30 минут назад, 1 час, 2 часа назад*) или точное время.
 - **Шкала боли (1–10)**: Интуитивная градация от едва ощутимой (1) до невыносимой (10 🔥).
@@ -124,10 +124,6 @@
 ---
 
 ## ⌨️ Команды и навигация
-
-<p align="center">
-  <img src="assets/images/en/hero_banner.png" alt="Команды и навигация KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 | Команда | Назначение |
 | :--- | :--- |
@@ -207,10 +203,6 @@ kitsumed/
 ---
 
 ## ⚙️ Быстрый старт
-
-<p align="center">
-  <img src="assets/images/meme/hero_banner.png" alt="Быстрый старт и развертывание" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 ### 1. Клонирование репозитория
 ```bash
@@ -310,10 +302,6 @@ docker-compose up -d
 ---
 
 ## 📋 База данных
-
-<p align="center">
-  <img src="assets/images/be/hero_banner.png" alt="База данных и схема хранения" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 Схема таблиц PostgreSQL автоматически инициализируется при запуске бота:
 
