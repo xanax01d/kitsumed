@@ -8,10 +8,23 @@ use teloxide::types::{CallbackQuery, InputFile, ParseMode};
 use crate::db::{get_all_episodes, get_user_language, get_user_timezone};
 use crate::locales::{get_text, get_text_fmt};
 use crate::services::export::generate_csv;
+use crate::session::SessionStore;
 
-pub async fn handle_export_cmd(bot: &Bot, msg: &Message, pool: &PgPool) -> ResponseResult<()> {
+pub async fn handle_export_cmd(
+    bot: &Bot,
+    msg: &Message,
+    pool: &PgPool,
+    sessions: &SessionStore,
+    mid: Option<i32>,
+) -> ResponseResult<()> {
     let user_id = msg.from.as_ref().map(|u| u.id.0 as i64).unwrap_or(0);
-    let _ = crate::rich::send_rich_export_menu(bot.token(), msg.chat.id.0, None, user_id, pool).await;
+    let target_mid = match mid {
+        Some(m) => Some(m),
+        None => sessions.get_last_mid(user_id).await,
+    };
+    if let Ok(new_mid) = crate::rich::send_rich_export_menu(bot.token(), msg.chat.id.0, target_mid, user_id, pool).await {
+        sessions.set_last_mid(user_id, new_mid).await;
+    }
     Ok(())
 }
 

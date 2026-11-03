@@ -17,11 +17,19 @@ use crate::session::{FlowStep, SessionStore, UserState};
 pub async fn send_main_menu(
     bot: &Bot,
     chat_id: ChatId,
+    mid: Option<i32>,
     user_id: i64,
     first_name: &str,
     pool: &PgPool,
+    sessions: &SessionStore,
 ) -> ResponseResult<()> {
-    let _ = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, None, user_id, first_name, pool).await;
+    let target_mid = match mid {
+        Some(m) => Some(m),
+        None => sessions.get_last_mid(user_id).await,
+    };
+    if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, target_mid, user_id, first_name, pool).await {
+        sessions.set_last_mid(user_id, new_mid).await;
+    }
     Ok(())
 }
 
@@ -41,6 +49,9 @@ pub async fn handle_menu_callback(
     };
 
     let mid = q.regular_message().map(|m| m.id.0 as i32);
+    if let Some(m) = mid {
+        sessions.set_last_mid(user_id, m).await;
+    }
 
     match action {
         "log" => {
@@ -48,14 +59,16 @@ pub async fn handle_menu_callback(
         }
         "status" => {
             sessions.remove(user_id).await;
-            let _ = crate::rich::send_rich_status_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_status_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "history" | "calendar" => {
             use std::str::FromStr;
             let tz_str = crate::db::get_user_timezone(pool, user_id).await;
             let tz = chrono_tz::Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
             let today = chrono::Utc::now().with_timezone(&tz).date_naive();
-            let _ = crate::rich::send_rich_calendar_menu(
+            if let Ok(new_mid) = crate::rich::send_rich_calendar_menu(
                 bot.token(),
                 chat_id.0,
                 mid,
@@ -64,23 +77,35 @@ pub async fn handle_menu_callback(
                 chrono::Datelike::month(&today),
                 None,
                 pool,
-            ).await;
+            ).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "export" => {
-            let _ = crate::rich::send_rich_export_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_export_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "reminder" => {
-            let _ = crate::rich::send_rich_reminder_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_reminder_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "language" => {
-            let _ = crate::rich::send_rich_language_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_language_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "help" => {
-            let _ = crate::rich::send_rich_help_menu(bot.token(), chat_id.0, mid, user_id, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         "home" | "main" => {
             let first_name = &q.from.first_name;
-            let _ = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await;
+            if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
         }
         _ => {}
     }
@@ -105,11 +130,10 @@ pub async fn handle_message(
     // Check cancel command or button
     if text == "/cancel" || is_cancel_btn(text) {
         sessions.remove(user_id).await;
+        let _ = bot.delete_message(msg.chat.id, msg.id).await;
         let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
-        bot.send_message(msg.chat.id, get_text("action_cancelled", &lang))
-            .parse_mode(ParseMode::Html)
-            .await?;
-        send_main_menu(&bot, msg.chat.id, user_id, first_name, &pool).await?;
+        let last_mid = sessions.get_last_mid(user_id).await;
+        send_main_menu(&bot, msg.chat.id, last_mid, user_id, first_name, &pool, &sessions).await?;
         return Ok(());
     }
 
@@ -119,62 +143,41 @@ pub async fn handle_message(
     if let Some(state) = current_state {
         match state {
             UserState::WaitingCustomStartTime(mut form) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
                 form.start_time = Some(text.to_string());
                 form.current_step = Some(FlowStep::Intensity);
 
-                sessions.set(user_id, UserState::LoggingHeadache(form)).await;
-
-                let caption = get_text_fmt("step_2_title", &lang, &[("time_str", text)]);
-                let kb = get_intensity_keyboard(&lang);
-                let img_path = get_step_image_path("intensity", &lang);
-                if std::path::Path::new(&img_path).exists() {
-                    let photo = InputFile::file(img_path);
-                    let _ = bot.send_photo(msg.chat.id, photo)
-                        .caption(caption)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(kb)
-                        .await;
-                    return Ok(());
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
+                let last_mid = sessions.get_last_mid(user_id).await;
+                if let Ok(new_mid) = crate::rich::render_rich_headache_step(bot.token(), msg.chat.id.0, last_mid, user_id, &form, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
                 }
-                bot.send_message(msg.chat.id, caption)
-                    .parse_mode(ParseMode::Html)
-                    .reply_markup(kb)
-                    .await?;
                 return Ok(());
             }
 
             UserState::WaitingCustomTrigger(mut form) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
                 form.triggers.push(text.to_string());
                 form.current_step = Some(FlowStep::Medication);
 
-                sessions.set(user_id, UserState::LoggingHeadache(form)).await;
-
-                let caption = get_text("step_6_title", &lang);
-                let kb = get_medication_keyboard(&lang);
-                let img_path = get_step_image_path("medication", &lang);
-                if std::path::Path::new(&img_path).exists() {
-                    let photo = InputFile::file(img_path);
-                    let _ = bot.send_photo(msg.chat.id, photo)
-                        .caption(caption)
-                        .parse_mode(ParseMode::Html)
-                        .reply_markup(kb)
-                        .await;
-                    return Ok(());
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
+                let last_mid = sessions.get_last_mid(user_id).await;
+                if let Ok(new_mid) = crate::rich::render_rich_headache_step(bot.token(), msg.chat.id.0, last_mid, user_id, &form, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
                 }
-                bot.send_message(msg.chat.id, caption)
-                    .parse_mode(ParseMode::Html)
-                    .reply_markup(kb)
-                    .await?;
                 return Ok(());
             }
 
             UserState::WaitingCustomMedication(mut form) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
                 form.medication = Some(text.to_string());
                 form.current_step = Some(FlowStep::MedicationTime);
 
                 sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
-
-                let _ = crate::rich::render_rich_headache_step(bot.token(), msg.chat.id.0, None, user_id, &form, &pool).await;
+                let last_mid = sessions.get_last_mid(user_id).await;
+                if let Ok(new_mid) = crate::rich::render_rich_headache_step(bot.token(), msg.chat.id.0, last_mid, user_id, &form, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
                 return Ok(());
             }
 
@@ -252,92 +255,109 @@ pub async fn handle_message(
     }
 
     // Command dispatching
-    if text.starts_with("/start") {
-        let args = text.strip_prefix("/start").unwrap_or("").trim();
+    let is_cmd = text.starts_with('/') 
+        || is_log_btn(text)
+        || is_status_btn(text)
+        || is_history_btn(text)
+        || is_export_btn(text)
+        || is_reminder_btn(text)
+        || is_language_btn(text)
+        || is_help_btn(text);
 
-        // Clear old reply keyboard
-        if let Ok(temp) = bot.send_message(msg.chat.id, "⚡️")
+    if is_cmd {
+        let _ = bot.delete_message(msg.chat.id, msg.id).await;
+        if let Ok(temp) = bot.send_message(msg.chat.id, "🦊")
             .reply_markup(KeyboardRemove::default())
             .await 
         {
             let _ = bot.delete_message(msg.chat.id, temp.id).await;
         }
+    }
+
+    let last_mid = sessions.get_last_mid(user_id).await;
+
+    if text.starts_with("/start") {
+        let args = text.strip_prefix("/start").unwrap_or("").trim();
 
         match args {
             "log" => {
-                start_headache_flow(&bot, msg.chat.id, None, user_id, &pool, &sessions).await?;
+                start_headache_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
                 return Ok(());
             }
             "status" => {
-                handle_status_cmd(&bot, &msg, &pool, &sessions).await?;
+                handle_status_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
                 return Ok(());
             }
             "history" => {
-                handle_calendar_cmd(&bot, &msg, &pool).await?;
+                handle_calendar_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
                 return Ok(());
             }
             "export" => {
-                handle_export_cmd(&bot, &msg, &pool).await?;
+                handle_export_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
                 return Ok(());
             }
             "reminder" => {
-                handle_reminder_cmd(&bot, &msg, &pool).await?;
+                handle_reminder_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
                 return Ok(());
             }
             "language" => {
-                handle_language_cmd(&bot, &msg, &pool).await?;
+                handle_language_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
                 return Ok(());
             }
             "help" => {
-                let _ = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, None, user_id, &pool).await;
+                if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
                 return Ok(());
             }
             _ => {
                 let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
-                send_main_menu(&bot, msg.chat.id, user_id, first_name, &pool).await?;
+                send_main_menu(&bot, msg.chat.id, last_mid, user_id, first_name, &pool, &sessions).await?;
                 return Ok(());
             }
         }
     }
 
     if text == "/help" || is_help_btn(text) {
-        let _ = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, None, user_id, &pool).await;
+        if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+            sessions.set_last_mid(user_id, new_mid).await;
+        }
         return Ok(());
     }
 
     if text == "/log" || is_log_btn(text) {
-        start_headache_flow(&bot, msg.chat.id, None, user_id, &pool, &sessions).await?;
+        start_headache_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
         return Ok(());
     }
 
     if text == "/status" || text == "/finish" || is_status_btn(text) {
-        handle_status_cmd(&bot, &msg, &pool, &sessions).await?;
+        handle_status_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
         return Ok(());
     }
 
     if text == "/history" || is_history_btn(text) {
-        handle_calendar_cmd(&bot, &msg, &pool).await?;
+        handle_calendar_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
         return Ok(());
     }
 
     if text == "/export" || is_export_btn(text) {
-        handle_export_cmd(&bot, &msg, &pool).await?;
+        handle_export_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
         return Ok(());
     }
 
     if text == "/reminder" || text == "/remind" || text == "/settings" || is_reminder_btn(text) {
-        handle_reminder_cmd(&bot, &msg, &pool).await?;
+        handle_reminder_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
         return Ok(());
     }
 
     if text == "/language" || text == "/lang" || is_language_btn(text) {
-        handle_language_cmd(&bot, &msg, &pool).await?;
+        handle_language_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
         return Ok(());
     }
 
     // Default reply: show main menu
     let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
-    send_main_menu(&bot, msg.chat.id, user_id, first_name, &pool).await?;
+    send_main_menu(&bot, msg.chat.id, last_mid, user_id, first_name, &pool, &sessions).await?;
 
     Ok(())
 }

@@ -54,6 +54,7 @@ impl Default for UserState {
 pub struct SessionStoreInner {
     redis: Option<tokio::sync::Mutex<redis::aio::ConnectionManager>>,
     memory: RwLock<HashMap<i64, UserState>>,
+    last_mids: RwLock<HashMap<i64, i32>>,
 }
 
 #[derive(Clone)]
@@ -62,6 +63,30 @@ pub struct SessionStore {
 }
 
 impl SessionStore {
+    pub async fn get_last_mid(&self, user_id: i64) -> Option<i32> {
+        if let Some(ref r_mutex) = self.inner.redis {
+            let mut conn = r_mutex.lock().await;
+            let key = format!("kitsumed:last_mid:{}", user_id);
+            if let Ok(Some(val)) = redis::cmd("GET").arg(&key).query_async::<Option<String>>(&mut *conn).await {
+                if let Ok(mid) = val.parse::<i32>() {
+                    return Some(mid);
+                }
+            }
+        }
+        let lock = self.inner.last_mids.read().await;
+        lock.get(&user_id).cloned()
+    }
+
+    pub async fn set_last_mid(&self, user_id: i64, mid: i32) {
+        if let Some(ref r_mutex) = self.inner.redis {
+            let mut conn = r_mutex.lock().await;
+            let key = format!("kitsumed:last_mid:{}", user_id);
+            let _ = redis::cmd("SETEX").arg(&key).arg(604800).arg(mid.to_string()).query_async::<()>(&mut *conn).await;
+        }
+        let mut lock = self.inner.last_mids.write().await;
+        lock.insert(user_id, mid);
+    }
+
     pub async fn get(&self, user_id: i64) -> Option<UserState> {
         if let Some(ref r_mutex) = self.inner.redis {
             let mut conn = r_mutex.lock().await;
@@ -121,6 +146,7 @@ pub async fn create_session_store(redis_url: Option<&str>) -> SessionStore {
         inner: Arc::new(SessionStoreInner {
             redis: redis_mgr,
             memory: RwLock::new(HashMap::new()),
+            last_mids: RwLock::new(HashMap::new()),
         }),
     }
 }

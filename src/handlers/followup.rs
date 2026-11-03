@@ -29,10 +29,17 @@ pub async fn handle_status_cmd(
     msg: &Message,
     pool: &PgPool,
     sessions: &SessionStore,
+    mid: Option<i32>,
 ) -> ResponseResult<()> {
     let user_id = msg.from.as_ref().map(|u| u.id.0 as i64).unwrap_or(0);
     sessions.remove(user_id).await;
-    let _ = crate::rich::send_rich_status_menu(bot.token(), msg.chat.id.0, None, user_id, pool).await;
+    let target_mid = match mid {
+        Some(m) => Some(m),
+        None => sessions.get_last_mid(user_id).await,
+    };
+    if let Ok(new_mid) = crate::rich::send_rich_status_menu(bot.token(), msg.chat.id.0, target_mid, user_id, pool).await {
+        sessions.set_last_mid(user_id, new_mid).await;
+    }
     Ok(())
 }
 
