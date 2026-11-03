@@ -1,5 +1,5 @@
 use sqlx::{Executor, PgPool};
-use crate::models::{HeadacheEpisode, NewEpisode, User, UserReminder};
+use crate::models::{HeadacheEpisode, NewEpisode, User, UserMedication, UserReminder};
 use chrono::Utc;
 
 pub async fn init_db(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -54,6 +54,24 @@ pub async fn init_db(pool: &PgPool) -> Result<(), sqlx::Error> {
 
         CREATE INDEX IF NOT EXISTS idx_headache_episodes_user_status
         ON headache_episodes(user_id, status);
+
+        CREATE TABLE IF NOT EXISTS user_medications (
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            last_used_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(user_id, name)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_user_medications_user_id
+        ON user_medications(user_id, last_used_at DESC);
+
+        INSERT INTO user_medications (user_id, name, last_used_at)
+        SELECT user_id, medication, MAX(created_at)
+        FROM headache_episodes
+        WHERE medication IS NOT NULL AND medication != 'none' AND medication != ''
+        GROUP BY user_id, medication
+        ON CONFLICT (user_id, name) DO NOTHING;
         "#,
     )
     .await?;
@@ -558,4 +576,58 @@ pub async fn get_episodes_for_date(
     .bind(date_exact)
     .fetch_all(pool)
     .await
+}
+
+pub async fn get_user_medications(pool: &PgPool, user_id: i64) -> Vec<UserMedication> {
+    sqlx::query_as::<_, UserMedication>(
+        r#"
+        SELECT id, user_id, name, last_used_at
+        FROM user_medications
+        WHERE user_id = $1
+        ORDER BY last_used_at DESC
+        LIMIT 6;
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+}
+
+pub async fn get_user_medication_by_id(pool: &PgPool, user_id: i64, id: i32) -> Option<String> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT name FROM user_medications WHERE user_id = $1 AND id = $2;"
+    )
+    .bind(user_id)
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .unwrap_or(None)
+}
+
+pub async fn save_user_medication(pool: &PgPool, user_id: i64, name: &str) -> Result<i32, sqlx::Error> {
+    let row = sqlx::query_scalar::<_, i32>(
+        r#"
+        INSERT INTO user_medications (user_id, name, last_used_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (user_id, name) DO UPDATE SET last_used_at = NOW()
+        RETURNING id;
+        "#,
+    )
+    .bind(user_id)
+    .bind(name)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row)
+}
+
+pub async fn touch_user_medication(pool: &PgPool, user_id: i64, id: i32) {
+    let _ = sqlx::query(
+        "UPDATE user_medications SET last_used_at = NOW() WHERE user_id = $1 AND id = $2;"
+    )
+    .bind(user_id)
+    .bind(id)
+    .execute(pool)
+    .await;
 }
