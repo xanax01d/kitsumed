@@ -98,7 +98,11 @@ pub fn format_episode_card(ep: &HeadacheEpisode, lang: &str) -> String {
     }
 
     let time_line = if let Some(end) = &ep.end_time {
-        format!("{} → {}", ep.start_time, end)
+        if ep.start_time.len() >= 10 && end.len() >= 16 && ep.start_time[..10] == end[..10] {
+            format!("{} → {}", ep.start_time, &end[11..])
+        } else {
+            format!("{} → {}", ep.start_time, end)
+        }
     } else {
         ep.start_time.clone()
     };

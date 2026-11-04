@@ -16,6 +16,37 @@ use crate::locales::{
 use crate::models::UserReminder;
 use crate::session::{FlowStep, HeadacheForm};
 
+pub fn format_duration_label(dur: &str, norm: &str) -> String {
+    match dur {
+        "15m" => match norm {
+            "en" => "15 min".to_string(),
+            "be" => "15 хвілін".to_string(),
+            _ => "15 минут".to_string(),
+        },
+        "30m" => match norm {
+            "en" => "30 min".to_string(),
+            "be" => "30 хвілін".to_string(),
+            _ => "30 минут".to_string(),
+        },
+        "1h" | "60m" => match norm {
+            "en" => "1 hour".to_string(),
+            "be" => "1 гадзіна".to_string(),
+            _ => "1 час".to_string(),
+        },
+        "2h" | "120m" => match norm {
+            "en" => "2 hours".to_string(),
+            "be" => "2 гадзіны".to_string(),
+            _ => "2 часа".to_string(),
+        },
+        "4h" | "180m" | "240m" => match norm {
+            "en" => "4+ hours".to_string(),
+            "be" => "4+ гадзіны".to_string(),
+            _ => "4+ часа".to_string(),
+        },
+        other => other.to_string(),
+    }
+}
+
 pub fn html_escape(input: &str) -> String {
     input
         .replace('&', "&amp;")
@@ -1448,11 +1479,12 @@ pub async fn render_rich_headache_step(
 
             let is_resolved = form.medication_relief.as_deref() == Some("helped");
             let dur = form.relief_delay.as_deref().unwrap_or("1h");
+            let dur_str = format_duration_label(dur, norm);
 
             let title = get_text("confirm_rich_title", norm);
             let block_title = get_text("confirm_rich_block_title", norm);
             let status_line = if is_resolved {
-                get_text_fmt("confirm_status_resolved", norm, &[("dur", dur)])
+                get_text_fmt("confirm_status_resolved", norm, &[("dur", &dur_str)])
             } else {
                 get_text("confirm_status_active", norm)
             };
@@ -1510,11 +1542,12 @@ pub async fn send_rich_headache_saved(
 
     let is_completed = form.medication_relief.as_deref() == Some("helped");
     let dur = form.relief_delay.as_deref().unwrap_or("30m");
+    let dur_str = format_duration_label(dur, norm);
 
     let (title, text) = if is_completed {
         (
             get_text("saved_completed_title", norm),
-            get_text_fmt("saved_completed_text", norm, &[("id", &ep_id.to_string()), ("dur", dur)]),
+            get_text_fmt("saved_completed_text", norm, &[("id", &ep_id.to_string()), ("dur", &dur_str)]),
         )
     } else {
         (
