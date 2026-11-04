@@ -34,6 +34,9 @@ pub struct HeadacheEpisode {
     pub relief_delay: Option<String>,
     pub followup_due_at: Option<DateTime<Utc>>,
     pub followup_sent: Option<bool>,
+    pub pressure_hpa: Option<f32>,
+    pub temperature_c: Option<f32>,
+    pub is_quick_log: Option<bool>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -53,6 +56,9 @@ pub struct NewEpisode {
     pub relief_delay: Option<String>,
     pub status: String,
     pub pain_resolved: Option<bool>,
+    pub pressure_hpa: Option<f32>,
+    pub temperature_c: Option<f32>,
+    pub is_quick_log: Option<bool>,
 }
 
 #[derive(Debug, Clone)]

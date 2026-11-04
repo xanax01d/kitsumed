@@ -352,6 +352,8 @@ pub async fn send_rich_main_menu(
         _ => "Русский 🇷🇺",
     };
 
+    let btn_sos = get_text("btn_sos", norm);
+    let btn_stats = get_text("btn_stats", norm);
     let btn_log = get_text("btn_log", norm);
     let btn_status = get_text("btn_status", norm);
     let btn_history = get_text("btn_history", norm);
@@ -369,8 +371,12 @@ pub async fn send_rich_main_menu(
         • {tz_label}: <code>{tz_str}</code>\n\
         • {rem_label}: <b>{}</b> ({status_label})</blockquote>\n\n\
         <tg-button-row>\n\
+          <tg-button type=\"callback_data\" style=\"danger\" data=\"menu:sos\">{btn_sos}</tg-button>\n\
           <tg-button type=\"callback_data\" style=\"success\" data=\"menu:log\">{btn_log}</tg-button>\n\
-          <tg-button type=\"callback_data\" style=\"danger\" data=\"menu:status\">{btn_status}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"menu:status\">{btn_status}</tg-button>\n\
+          <tg-button type=\"callback_data\" data=\"menu:stats\">{btn_stats}</tg-button>\n\
         </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:history\">{btn_history}</tg-button>\n\
@@ -1640,19 +1646,255 @@ pub async fn send_rich_headache_saved(
         )
     };
 
+    let mut moh_warning = String::new();
+    if let Some(ref med) = form.medication {
+        if !med.is_empty() && med != "none" {
+            let med_days = crate::db::get_monthly_medication_days(pool, user_id).await.unwrap_or(0);
+            if med_days >= 10 {
+                let warn_title = get_text("moh_alert_title", norm);
+                let warn_body = get_text_fmt("moh_alert_body", norm, &[("days", &med_days.to_string())]);
+                moh_warning = format!("\n\n<blockquote><b>⚠️ {warn_title}</b>\n{warn_body}</blockquote>");
+            } else if med_days >= 8 {
+                let warn_title = get_text("moh_caution_title", norm);
+                let warn_body = get_text_fmt("moh_caution_body", norm, &[("days", &med_days.to_string())]);
+                moh_warning = format!("\n\n<blockquote><b>⚡ {warn_title}</b>\n{warn_body}</blockquote>");
+            }
+        }
+    }
+
     let btn_menu = get_text("btn_main_menu", norm);
     let btn_cal = get_text("btn_open_calendar", norm);
 
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
-        {text}\n\n\
+        {text}{moh_warning}\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"primary\" data=\"menu:main\">{btn_menu}</tg-button>\n\
         </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:calendar\">{btn_cal}</tg-button>\n\
         </tg-button-row>"
+    );
+
+    let img_path = format!("assets/images/{norm}/hero_banner.png");
+    send_or_edit_rich_raw(token, chat_id, message_id, &html, Some(&img_path)).await
+}
+
+pub async fn send_rich_sos_prompt(
+    token: &str,
+    chat_id: i64,
+    message_id: Option<i32>,
+    user_id: i64,
+    pool: &PgPool,
+) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
+    let lang = get_user_language(pool, user_id).await;
+    let norm = normalize_lang(&lang);
+
+    let title = get_text("sos_prompt_title", norm);
+    let desc = get_text("sos_prompt_desc", norm);
+    let btn_none = get_text("step7_btn_none", norm);
+    let btn_custom = get_text("step7_btn_custom", norm);
+    let btn_cancel = get_text("btn_cancel", norm);
+
+    let saved_meds = crate::db::get_user_medications(pool, user_id).await;
+
+    let mut med_rows = String::new();
+    for med in saved_meds {
+        let escaped = html_escape(&med.name);
+        med_rows.push_str(&format!(
+            "<tg-button-row>\n  <tg-button type=\"callback_data\" data=\"sosm:id:{id}\">💊 {escaped}</tg-button>\n</tg-button-row>\n",
+            id = med.id,
+            escaped = escaped
+        ));
+    }
+
+    let html = format!(
+        "<b>{title}</b>\n\n\
+        <img src=\"tg://photo?id=hero\">\n\n\
+        {desc}\n\n\
+        {med_rows}\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" style=\"primary\" data=\"sosm:custom\">{btn_custom}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"sosm:none\">{btn_none}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" style=\"danger\" data=\"menu:main\">{btn_cancel}</tg-button>\n\
+        </tg-button-row>"
+    );
+
+    let img_path = format!("assets/images/{norm}/hero_banner.png");
+    send_or_edit_rich_raw(token, chat_id, message_id, &html, Some(&img_path)).await
+}
+
+pub async fn send_rich_sos_saved(
+    token: &str,
+    chat_id: i64,
+    message_id: Option<i32>,
+    ep_id: i32,
+    medication: &str,
+    weather_str: Option<&str>,
+    user_id: i64,
+    pool: &PgPool,
+) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
+    let lang = get_user_language(pool, user_id).await;
+    let norm = normalize_lang(&lang);
+
+    let title = get_text("sos_saved_title", norm);
+    let desc = get_text("sos_saved_desc", norm);
+    let med_display = if medication == "none" || medication.is_empty() {
+        get_text("step7_btn_none", norm)
+    } else {
+        html_escape(medication)
+    };
+
+    let weather_line = if let Some(w) = weather_str {
+        format!("\n• Погода: <code>{}</code>", html_escape(w))
+    } else {
+        String::new()
+    };
+
+    let mut moh_warning = String::new();
+    if medication != "none" && !medication.is_empty() {
+        let med_days = crate::db::get_monthly_medication_days(pool, user_id).await.unwrap_or(0);
+        if med_days >= 10 {
+            let warn_title = get_text("moh_alert_title", norm);
+            let warn_body = get_text_fmt("moh_alert_body", norm, &[("days", &med_days.to_string())]);
+            moh_warning = format!("\n\n<blockquote><b>⚠️ {warn_title}</b>\n{warn_body}</blockquote>");
+        } else if med_days >= 8 {
+            let warn_title = get_text("moh_caution_title", norm);
+            let warn_body = get_text_fmt("moh_caution_body", norm, &[("days", &med_days.to_string())]);
+            moh_warning = format!("\n\n<blockquote><b>⚡ {warn_title}</b>\n{warn_body}</blockquote>");
+        }
+    }
+
+    let btn_menu = get_text("btn_main_menu", norm);
+    let btn_cal = get_text("btn_open_calendar", norm);
+
+    let html = format!(
+        "<b>{title}</b>\n\n\
+        <img src=\"tg://photo?id=hero\">\n\n\
+        <blockquote><b>📋 SOS Приступ #{ep_id}</b>\n\
+        • Статус: 🔴 <b>Активен</b>\n\
+        • Интенсивность: <b>8/10 (Сильная)</b>\n\
+        • Препарат: <b>{med_display}</b>{weather_line}</blockquote>\n\n\
+        {desc}{moh_warning}\n\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" style=\"primary\" data=\"menu:main\">{btn_menu}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"menu:calendar\">{btn_cal}</tg-button>\n\
+        </tg-button-row>"
+    );
+
+    let img_path = format!("assets/images/{norm}/hero_banner.png");
+    send_or_edit_rich_raw(token, chat_id, message_id, &html, Some(&img_path)).await
+}
+
+pub async fn send_rich_analytics_menu(
+    token: &str,
+    chat_id: i64,
+    message_id: Option<i32>,
+    user_id: i64,
+    pool: &PgPool,
+) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
+    let lang = get_user_language(pool, user_id).await;
+    let norm = normalize_lang(&lang);
+
+    let report = crate::services::analytics::generate_analytics_report(pool, user_id, &lang)
+        .await
+        .unwrap_or(crate::services::analytics::AnalyticsReport {
+            total_episodes_30d: 0,
+            pain_days_30d: 0,
+            avg_intensity: 0.0,
+            medication_days_30d: 0,
+            moh_risk: crate::services::analytics::MohRisk::Safe,
+            medication_efficacy_pct: None,
+            top_triggers: vec![],
+            top_symptoms: vec![],
+            peak_weekday: None,
+            avg_pressure_mmhg: None,
+        });
+
+    let title = get_text("stats_rich_title", norm);
+    let sub = get_text("stats_rich_sub", norm);
+    let btn_export = get_text("btn_export", norm);
+    let btn_menu = get_text("btn_main_menu", norm);
+
+    let moh_badge = match report.moh_risk {
+        crate::services::analytics::MohRisk::Safe => "🟢 В норме (<8 дн.)",
+        crate::services::analytics::MohRisk::Caution => "🟡 Внимание (8-9 дн.)",
+        crate::services::analytics::MohRisk::Alert => "🔴 Риск абузуса (≥10 дн.)",
+    };
+
+    let triggers_text = if report.top_triggers.is_empty() {
+        "• <i>Данных по триггерам пока недостаточно</i>".to_string()
+    } else {
+        report.top_triggers.iter()
+            .map(|(name, count, pct)| format!("• ⚡ <b>{}</b>: {} раз ({}%)", html_escape(name), count, pct))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    let symptoms_text = if report.top_symptoms.is_empty() {
+        "• <i>Симптомы пока не фиксировались</i>".to_string()
+    } else {
+        report.top_symptoms.iter()
+            .map(|(name, count, pct)| format!("• 🔹 <b>{}</b>: {} раз ({}%)", html_escape(name), count, pct))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    let efficacy_str = if let Some(eff) = report.medication_efficacy_pct {
+        format!("{}%", eff)
+    } else {
+        "—".to_string()
+    };
+
+    let peak_str = if let Some((ref wd, count)) = report.peak_weekday {
+        format!("{} ({} прист.)", wd, count)
+    } else {
+        "—".to_string()
+    };
+
+    let pressure_str = if let Some(p) = report.avg_pressure_mmhg {
+        format!("{} мм рт. ст.", p)
+    } else {
+        "—".to_string()
+    };
+
+    let html = format!(
+        "<b>{title}</b>\n\n\
+        <img src=\"tg://photo?id=hero\">\n\n\
+        {sub}\n\n\
+        <blockquote><b>📊 Сводка за последние 30 дней</b>\n\
+        • Всего приступов: <b>{}</b>\n\
+        • Дней с болью: <b>{}</b>\n\
+        • Средняя сила боли: <b>{:.1}/10</b>\n\
+        • Пиковый день: <b>{}</b></blockquote>\n\n\
+        <blockquote><b>⚡ Радар провоцирующих триггеров</b>\n\
+        {triggers_text}</blockquote>\n\n\
+        <blockquote><b>🩺 Симптомы и течение</b>\n\
+        {symptoms_text}</blockquote>\n\n\
+        <blockquote><b>💊 Лекарственный контроль & MOH</b>\n\
+        • Дней приема лекарств: <b>{}/10</b> ({moh_badge})\n\
+        • Эффективность купирования: <b>{}</b>\n\
+        • Ср. давление при боли: <b>{}</b></blockquote>\n\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" style=\"success\" data=\"menu:export\">{btn_export}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
+        </tg-button-row>",
+        report.total_episodes_30d,
+        report.pain_days_30d,
+        report.avg_intensity,
+        peak_str,
+        report.medication_days_30d,
+        efficacy_str,
+        pressure_str
     );
 
     let img_path = format!("assets/images/{norm}/hero_banner.png");

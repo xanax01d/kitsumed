@@ -17,7 +17,7 @@ use crate::handlers::calendar::handle_calendar_callback;
 use crate::handlers::commands::{handle_message, handle_menu_callback};
 use crate::handlers::export::handle_export_callback;
 use crate::handlers::followup::handle_followup_callback;
-use crate::handlers::headache::handle_headache_callback;
+use crate::handlers::headache::{handle_headache_callback, handle_sos_callback};
 use crate::handlers::language::handle_language_callback;
 use crate::handlers::reminder::{handle_reminder_callback, handle_reminder_prompt_callback, handle_timezone_callback};
 use crate::services::schedulers::{run_followup_scheduler, run_reminder_scheduler};
@@ -51,6 +51,8 @@ async fn handle_callback_query(
         handle_reminder_prompt_callback(&bot, &q, act, &pool, &sessions).await?;
     } else if data.starts_with("fu:") {
         handle_followup_callback(&bot, &q, data, &pool, &sessions).await?;
+    } else if data.starts_with("sosm:") {
+        handle_sos_callback(&bot, &q, data, &pool, &sessions).await?;
     } else {
         // Headache flow callbacks
         for prefix in ["hdt", "hdi", "hdl", "hdp", "hds", "hdtr", "hdm", "hdmt", "hdmr", "hdmrt", "hdc", "hdn"] {

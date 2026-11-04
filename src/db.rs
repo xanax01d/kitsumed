@@ -51,6 +51,9 @@ pub async fn init_db(pool: &PgPool) -> Result<(), sqlx::Error> {
         ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS relief_delay VARCHAR(32) DEFAULT NULL;
         ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_due_at TIMESTAMPTZ DEFAULT NULL;
         ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS followup_sent BOOLEAN DEFAULT FALSE;
+        ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS pressure_hpa REAL DEFAULT NULL;
+        ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS temperature_c REAL DEFAULT NULL;
+        ALTER TABLE headache_episodes ADD COLUMN IF NOT EXISTS is_quick_log BOOLEAN DEFAULT FALSE;
 
         CREATE INDEX IF NOT EXISTS idx_headache_episodes_user_status
         ON headache_episodes(user_id, status);
@@ -158,11 +161,11 @@ pub async fn create_episode(pool: &PgPool, ep: &NewEpisode) -> Result<i32, sqlx:
             INSERT INTO headache_episodes (
                 user_id, start_time, end_time, intensity, location, pain_type, symptoms, triggers,
                 medication, medication_relief, med_take_delay, relief_delay, status,
-                pain_resolved, followup_due_at, followup_sent
+                pain_resolved, followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8,
                 $9, $10, $11, $12, 'completed',
-                $13, NULL, TRUE
+                $13, NULL, TRUE, $14, $15, $16
             )
             RETURNING id;
             "#,
@@ -180,6 +183,9 @@ pub async fn create_episode(pool: &PgPool, ep: &NewEpisode) -> Result<i32, sqlx:
         .bind(&ep.med_take_delay)
         .bind(&ep.relief_delay)
         .bind(ep.pain_resolved.unwrap_or(true))
+        .bind(ep.pressure_hpa)
+        .bind(ep.temperature_c)
+        .bind(ep.is_quick_log.unwrap_or(false))
         .fetch_one(pool)
         .await?
     } else {
@@ -188,11 +194,11 @@ pub async fn create_episode(pool: &PgPool, ep: &NewEpisode) -> Result<i32, sqlx:
             INSERT INTO headache_episodes (
                 user_id, start_time, end_time, intensity, location, pain_type, symptoms, triggers,
                 medication, medication_relief, med_take_delay, relief_delay, status,
-                pain_resolved, followup_due_at, followup_sent
+                pain_resolved, followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8,
                 $9, $10, $11, $12, 'active',
-                $13, NOW() + INTERVAL '2 hours', FALSE
+                $13, NOW() + INTERVAL '2 hours', FALSE, $14, $15, $16
             )
             RETURNING id;
             "#,
@@ -210,6 +216,9 @@ pub async fn create_episode(pool: &PgPool, ep: &NewEpisode) -> Result<i32, sqlx:
         .bind(&ep.med_take_delay)
         .bind(&ep.relief_delay)
         .bind(ep.pain_resolved.unwrap_or(false))
+        .bind(ep.pressure_hpa)
+        .bind(ep.temperature_c)
+        .bind(ep.is_quick_log.unwrap_or(false))
         .fetch_one(pool)
         .await?
     };
@@ -223,7 +232,7 @@ pub async fn get_active_episode(pool: &PgPool, user_id: i64) -> Result<Option<He
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE user_id = $1 AND status = 'active'
         ORDER BY id DESC LIMIT 1;
@@ -240,7 +249,7 @@ pub async fn get_episode_by_id(pool: &PgPool, id: i32) -> Result<Option<Headache
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE id = $1;
         "#,
@@ -330,7 +339,7 @@ pub async fn get_pending_followup_episodes(
         SELECT e.id, e.user_id, e.start_time, e.end_time, e.intensity, e.location,
                e.pain_type, e.symptoms, e.triggers, e.medication, e.status, e.medication_relief,
                e.pain_resolved, e.med_take_delay, e.relief_delay,
-               e.followup_due_at, e.followup_sent, e.created_at
+               e.followup_due_at, e.followup_sent, e.pressure_hpa, e.temperature_c, e.is_quick_log, e.created_at
         FROM headache_episodes e
         WHERE e.status = 'active'
           AND e.followup_sent = FALSE
@@ -367,7 +376,7 @@ pub async fn get_recent_episodes(
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE user_id = $1
         ORDER BY id DESC LIMIT $2;
@@ -388,7 +397,7 @@ pub async fn get_all_episodes(
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE user_id = $1
         ORDER BY id ASC;
@@ -529,7 +538,7 @@ pub async fn get_episodes_for_month(
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE user_id = $1
           AND (
@@ -561,7 +570,7 @@ pub async fn get_episodes_for_date(
         SELECT id, user_id, start_time, end_time, intensity, location,
                pain_type, symptoms, triggers, medication, status, medication_relief,
                pain_resolved, med_take_delay, relief_delay,
-               followup_due_at, followup_sent, created_at
+               followup_due_at, followup_sent, pressure_hpa, temperature_c, is_quick_log, created_at
         FROM headache_episodes
         WHERE user_id = $1
           AND (
@@ -576,6 +585,25 @@ pub async fn get_episodes_for_date(
     .bind(date_exact)
     .fetch_all(pool)
     .await
+}
+
+pub async fn get_monthly_medication_days(pool: &PgPool, user_id: i64) -> Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(DISTINCT DATE(created_at))
+        FROM headache_episodes
+        WHERE user_id = $1
+          AND medication IS NOT NULL
+          AND medication != 'none'
+          AND medication != ''
+          AND created_at >= NOW() - INTERVAL '30 days';
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.0)
 }
 
 pub async fn get_user_medications(pool: &PgPool, user_id: i64) -> Vec<UserMedication> {

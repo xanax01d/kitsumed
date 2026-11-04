@@ -438,6 +438,12 @@ pub async fn handle_headache_callback(
                     None
                 };
 
+                let weather = crate::services::weather::fetch_current_weather(&tz_name).await;
+                let (pressure_hpa, temp_c) = match weather {
+                    Some((p, t)) => (Some(p), Some(t)),
+                    None => (None, None),
+                };
+
                 let new_ep = NewEpisode {
                     user_id,
                     start_time: form.start_time.clone().unwrap_or_else(|| Utc::now().with_timezone(&tz).format("%Y-%m-%d %H:%M").to_string()),
@@ -453,6 +459,9 @@ pub async fn handle_headache_callback(
                     relief_delay: form.relief_delay.clone(),
                     status: status.to_string(),
                     pain_resolved: if is_completed { Some(true) } else { Some(false) },
+                    pressure_hpa,
+                    temperature_c: temp_c,
+                    is_quick_log: Some(false),
                 };
 
                 let ep_id = create_episode(pool, &new_ep).await.unwrap_or(0);
@@ -504,6 +513,126 @@ pub async fn handle_headache_callback(
         }
 
         _ => {}
+    }
+
+    Ok(())
+}
+
+pub async fn start_sos_flow(
+    bot: &Bot,
+    chat_id: ChatId,
+    message_id: Option<i32>,
+    user_id: i64,
+    pool: &PgPool,
+    sessions: &SessionStore,
+) -> ResponseResult<()> {
+    sessions.remove(user_id).await;
+    if let Ok(new_mid) = crate::rich::send_rich_sos_prompt(
+        bot.token(),
+        chat_id.0,
+        message_id,
+        user_id,
+        pool,
+    ).await {
+        sessions.set_last_mid(user_id, new_mid).await;
+    }
+    Ok(())
+}
+
+pub async fn handle_sos_callback(
+    bot: &Bot,
+    q: &CallbackQuery,
+    data: &str,
+    pool: &PgPool,
+    sessions: &SessionStore,
+) -> ResponseResult<()> {
+    let user_id = q.from.id.0 as i64;
+    let _ = bot.answer_callback_query(&q.id).await;
+
+    let chat_id = match q.regular_message() {
+        Some(m) => m.chat.id,
+        None => return Ok(()),
+    };
+    let mid = q.regular_message().map(|m| m.id.0 as i32);
+
+    let tz_str = get_user_timezone(pool, user_id).await;
+    let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
+    let now = Utc::now().with_timezone(&tz);
+    let start_time_str = now.format("%Y-%m-%d %H:%M").to_string();
+
+    let weather = crate::services::weather::fetch_current_weather(&tz_str).await;
+    let (pressure_hpa, temp_c) = match weather {
+        Some((p, t)) => (Some(p), Some(t)),
+        None => (None, None),
+    };
+    let weather_display = crate::services::weather::format_weather_display(pressure_hpa, temp_c);
+
+    if data == "sosm:custom" {
+        sessions.set(user_id, UserState::WaitingSosCustomMedication(mid)).await;
+        let lang = get_user_language(pool, user_id).await;
+        let norm = normalize_lang(&lang);
+        let prompt = get_text("step7_custom_prompt", norm);
+
+        let pmid = bot.send_message(chat_id, prompt)
+            .parse_mode(teloxide::types::ParseMode::Html)
+            .await
+            .ok()
+            .map(|m| m.id.0 as i32);
+        sessions.set(user_id, UserState::WaitingSosCustomMedication(pmid)).await;
+        return Ok(());
+    }
+
+    let medication_name = if data == "sosm:none" {
+        "none".to_string()
+    } else if let Some(id_str) = data.strip_prefix("sosm:id:") {
+        if let Ok(med_id) = id_str.parse::<i32>() {
+            if let Some(med_name) = crate::db::get_user_medication_by_id(pool, user_id, med_id).await {
+                let _ = crate::db::touch_user_medication(pool, user_id, med_id).await;
+                med_name
+            } else {
+                "none".to_string()
+            }
+        } else {
+            "none".to_string()
+        }
+    } else {
+        "none".to_string()
+    };
+
+    let new_ep = NewEpisode {
+        user_id,
+        start_time: start_time_str,
+        end_time: None,
+        intensity: 8,
+        location: "both".to_string(),
+        pain_type: "throbbing".to_string(),
+        symptoms: vec![],
+        triggers: vec![],
+        medication: medication_name.clone(),
+        medication_relief: None,
+        med_take_delay: Some("0m".to_string()),
+        relief_delay: None,
+        status: "active".to_string(),
+        pain_resolved: Some(false),
+        pressure_hpa,
+        temperature_c: temp_c,
+        is_quick_log: Some(true),
+    };
+
+    let ep_id = create_episode(pool, &new_ep).await.unwrap_or(0);
+    sessions.remove(user_id).await;
+
+    if let Ok(new_mid) = crate::rich::send_rich_sos_saved(
+        bot.token(),
+        chat_id.0,
+        mid,
+        ep_id,
+        &medication_name,
+        weather_display.as_deref(),
+        user_id,
+        pool,
+    ).await {
+        sessions.set_last_mid(user_id, new_mid).await;
     }
 
     Ok(())
