@@ -4,13 +4,13 @@ use chrono_tz::Tz;
 use regex::Regex;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::{CallbackQuery, ChatId, InputFile, KeyboardRemove, MessageId, ParseMode};
+use teloxide::types::{CallbackQuery, ChatId, MessageId, ParseMode};
 
 use crate::db::{create_episode, get_episode_by_id, get_user_language, resolve_episode_pain, set_user_reminder, upsert_user};
 use crate::handlers::calendar::handle_calendar_cmd;
 use crate::handlers::export::handle_export_cmd;
 use crate::handlers::followup::handle_status_cmd;
-use crate::handlers::headache::{get_step_image_path, start_headache_flow, start_sos_flow};
+use crate::handlers::headache::{start_headache_flow, start_sos_flow};
 use crate::handlers::language::handle_language_cmd;
 use crate::handlers::reminder::{handle_reminder_cmd, resolve_timezone};
 use crate::keyboards::*;
@@ -21,20 +21,29 @@ use crate::session::{FlowStep, SessionStore, UserState};
 pub fn parse_custom_datetime_input(text: &str, tz_name: &str) -> String {
     let tz = Tz::from_str(tz_name).unwrap_or(chrono_tz::Europe::Moscow);
     let now = Utc::now().with_timezone(&tz);
+    let now_naive = now.naive_local();
     let t = text.trim();
+    let lower = t.to_lowercase();
+
+    // Запрет будущих дат: "завтра" / "заўтра" / "tomorrow"
+    if lower.contains("завтра") || lower.contains("заўтра") || lower.contains("tomorrow") {
+        return now.format("%Y-%m-%d %H:%M").to_string();
+    }
 
     if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%d %H:%M") {
-        return dt.format("%Y-%m-%d %H:%M").to_string();
+        let final_dt = if dt > now_naive { now_naive } else { dt };
+        return final_dt.format("%Y-%m-%d %H:%M").to_string();
     }
     if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(t, "%d.%m.%Y %H:%M") {
-        return dt.format("%Y-%m-%d %H:%M").to_string();
+        let final_dt = if dt > now_naive { now_naive } else { dt };
+        return final_dt.format("%Y-%m-%d %H:%M").to_string();
     }
     let curr_year = now.year();
     let with_year = format!("{curr_year}.{t}");
     if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(&with_year, "%Y.%d.%m %H:%M") {
-        return dt.format("%Y-%m-%d %H:%M").to_string();
+        let final_dt = if dt > now_naive { now_naive } else { dt };
+        return final_dt.format("%Y-%m-%d %H:%M").to_string();
     }
-    let lower = t.to_lowercase();
     if lower.contains("вчера") || lower.contains("учора") || lower.contains("yesterday") {
         let yesterday = now.date_naive() - Duration::days(1);
         let re = Regex::new(r"([0-1]?[0-9]|2[0-3]):([0-5][0-9])").unwrap();
@@ -49,7 +58,14 @@ pub fn parse_custom_datetime_input(text: &str, tz_name: &str) -> String {
     }
     if let Ok(time) = chrono::NaiveTime::parse_from_str(t, "%H:%M") {
         let dt = now.date_naive().and_time(time);
-        return dt.format("%Y-%m-%d %H:%M").to_string();
+        // Если указанное время сегодня еще не наступило (например, сейчас 13:00, а ввели 20:00),
+        // значит пользователь имеет в виду вчерашнее время, а не будущее!
+        let final_dt = if dt > now_naive {
+            (now.date_naive() - Duration::days(1)).and_time(time)
+        } else {
+            dt
+        };
+        return final_dt.format("%Y-%m-%d %H:%M").to_string();
     }
     let re_h_ago = Regex::new(r"(\d+)\s*(?:ч|час|часа|часов|h|hour|hours|гадз|гадзіны)?\s*(?:назад|ago|таму)").unwrap();
     if let Some(caps) = re_h_ago.captures(&lower) {
@@ -69,9 +85,19 @@ pub async fn send_main_menu(
     pool: &PgPool,
     sessions: &SessionStore,
 ) -> ResponseResult<()> {
+    let lang = get_user_language(pool, user_id).await;
+    let kb = get_persistent_main_keyboard(&lang);
+
     if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await {
         sessions.set_last_mid(user_id, new_mid).await;
+        let _ = bot.pin_chat_message(chat_id, MessageId(new_mid)).disable_notification(true).await;
     }
+
+    let _ = bot.send_message(chat_id, "🦊 <b>Меню KitsuMed</b> всегда под рукой:")
+        .parse_mode(ParseMode::Html)
+        .reply_markup(kb)
+        .await;
+
     Ok(())
 }
 
@@ -322,9 +348,22 @@ pub async fn handle_message(
                 sessions.remove(user_id).await;
 
                 let tz_str = crate::db::get_user_timezone(&pool, user_id).await;
-                let end_time = parse_custom_datetime_input(text, &tz_str);
-                let _ = resolve_episode_pain(&pool, ep_id, true, Some(&end_time)).await;
                 let ep = get_episode_by_id(&pool, ep_id).await.unwrap_or(None);
+                let mut end_time = parse_custom_datetime_input(text, &tz_str);
+
+                if let Some(ref e) = ep {
+                    if let (Ok(st_dt), Ok(end_dt)) = (
+                        chrono::NaiveDateTime::parse_from_str(&e.start_time, "%Y-%m-%d %H:%M"),
+                        chrono::NaiveDateTime::parse_from_str(&end_time, "%Y-%m-%d %H:%M"),
+                    ) {
+                        if end_dt <= st_dt {
+                            let adjusted = st_dt + Duration::minutes(15);
+                            end_time = adjusted.format("%Y-%m-%d %H:%M").to_string();
+                        }
+                    }
+                }
+
+                let _ = resolve_episode_pain(&pool, ep_id, true, Some(&end_time)).await;
                 let has_meds = ep.as_ref().map(|e| {
                     let m = e.medication.as_deref().unwrap_or("none");
                     m != "none" && !m.is_empty()
@@ -392,25 +431,40 @@ pub async fn handle_message(
 
     // Command dispatching
     let is_cmd = text.starts_with('/') 
+        || is_sos_btn(text)
         || is_log_btn(text)
         || is_status_btn(text)
+        || is_stats_btn(text)
         || is_history_btn(text)
         || is_export_btn(text)
         || is_reminder_btn(text)
         || is_language_btn(text)
-        || is_help_btn(text);
+        || is_help_btn(text)
+        || is_main_menu_btn(text);
 
     if is_cmd {
         let _ = bot.delete_message(msg.chat.id, msg.id).await;
-        if let Ok(temp) = bot.send_message(msg.chat.id, "🦊")
-            .reply_markup(KeyboardRemove::default())
-            .await 
-        {
-            let _ = bot.delete_message(msg.chat.id, temp.id).await;
-        }
     }
 
     let last_mid = sessions.get_last_mid(user_id).await;
+
+    if is_main_menu_btn(text) || text == "/menu" {
+        let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
+        send_main_menu(&bot, msg.chat.id, last_mid, user_id, first_name, &pool, &sessions).await?;
+        return Ok(());
+    }
+
+    if is_sos_btn(text) || text == "/sos" {
+        start_sos_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
+        return Ok(());
+    }
+
+    if is_stats_btn(text) || text == "/stats" || text == "/analytics" {
+        if let Ok(new_mid) = crate::rich::send_rich_analytics_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+            sessions.set_last_mid(user_id, new_mid).await;
+        }
+        return Ok(());
+    }
 
     if text.starts_with("/start") {
         let args = text.strip_prefix("/start").unwrap_or("").trim();
@@ -466,18 +520,6 @@ pub async fn handle_message(
 
     if text == "/help" || is_help_btn(text) {
         if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
-            sessions.set_last_mid(user_id, new_mid).await;
-        }
-        return Ok(());
-    }
-
-    if text == "/sos" {
-        start_sos_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
-        return Ok(());
-    }
-
-    if text == "/stats" || text == "/analytics" {
-        if let Ok(new_mid) = crate::rich::send_rich_analytics_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
             sessions.set_last_mid(user_id, new_mid).await;
         }
         return Ok(());

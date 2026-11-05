@@ -525,43 +525,58 @@ pub async fn send_rich_calendar_menu(
 
     let mut selected_info = String::new();
     if let Some(day) = selected_day {
-        let day_eps = get_episodes_for_date(pool, user_id, year, month, day).await.unwrap_or_default();
-        if day_eps.is_empty() {
-            let empty_text = get_text("calendar_empty_day", norm);
+        let is_future = NaiveDate::from_ymd_opt(year, month, day).map(|d| d > today).unwrap_or(false);
+        if is_future {
             selected_info = format!(
                 "<blockquote><b>📋 {day:02}.{month:02}.{year}</b>\n\
-                {empty_text}</blockquote>\n\n"
+                Этот день еще не наступил ✨</blockquote>\n\n"
             );
         } else {
-            let mut cards = Vec::new();
-            for ep in &day_eps {
-                let card = crate::handlers::calendar::format_episode_card(ep, norm);
-                cards.push(card);
+            let day_eps = get_episodes_for_date(pool, user_id, year, month, day).await.unwrap_or_default();
+            if day_eps.is_empty() {
+                let empty_text = get_text("calendar_empty_day", norm);
+                selected_info = format!(
+                    "<blockquote><b>📋 {day:02}.{month:02}.{year}</b>\n\
+                    {empty_text}</blockquote>\n\n"
+                );
+            } else {
+                let mut cards = Vec::new();
+                for ep in &day_eps {
+                    let card = crate::handlers::calendar::format_episode_card(ep, norm);
+                    cards.push(card);
+                }
+                let joined = cards.join("\n———\n");
+                let title_eps = get_text_fmt(
+                    "calendar_day_eps_title",
+                    norm,
+                    &[
+                        ("date", &format!("{day:02}.{month:02}.{year}")),
+                        ("count", &day_eps.len().to_string()),
+                    ],
+                );
+                selected_info = format!(
+                    "<blockquote><b>{title_eps}</b>\n\
+                    {joined}</blockquote>\n\n"
+                );
             }
-            let joined = cards.join("\n———\n");
-            let title_eps = get_text_fmt(
-                "calendar_day_eps_title",
-                norm,
-                &[
-                    ("date", &format!("{day:02}.{month:02}.{year}")),
-                    ("count", &day_eps.len().to_string()),
-                ],
-            );
-            selected_info = format!(
-                "<blockquote><b>{title_eps}</b>\n\
-                {joined}</blockquote>\n\n"
-            );
         }
     }
 
     let mut grid_html = String::new();
 
-    // Nav row
+    // Nav row - cannot navigate to future month
+    let is_current_or_future = (year > today.year()) || (year == today.year() && month >= today.month());
+    let next_btn = if is_current_or_future {
+        "<tg-button type=\"callback_data\" data=\"cal:ignore\"> </tg-button>".to_string()
+    } else {
+        format!("<tg-button type=\"callback_data\" data=\"cal:nav:{next_y}:{next_m}\">▶️</tg-button>")
+    };
+
     grid_html.push_str(&format!(
         "<tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"cal:nav:{prev_y}:{prev_m}\">◀️</tg-button>\n\
           <tg-button type=\"callback_data\" data=\"cal:ignore\">{month_name} {year}</tg-button>\n\
-          <tg-button type=\"callback_data\" data=\"cal:nav:{next_y}:{next_m}\">▶️</tg-button>\n\
+          {next_btn}\n\
         </tg-button-row>\n"
     ));
 
@@ -596,6 +611,7 @@ pub async fn send_rich_calendar_menu(
 
         let is_pain = pain_days.contains(&day);
         let is_today = today.year() == year && today.month() == month && today.day() == day;
+        let is_future = NaiveDate::from_ymd_opt(year, month, day).map(|d| d > today).unwrap_or(false);
 
         if is_pain {
             grid_html.push_str(&format!(
@@ -604,6 +620,10 @@ pub async fn send_rich_calendar_menu(
         } else if is_today {
             grid_html.push_str(&format!(
                 "  <tg-button type=\"callback_data\" style=\"primary\" data=\"cal:day:{year}:{month}:{day}\">·{day}·</tg-button>\n"
+            ));
+        } else if is_future {
+            grid_html.push_str(&format!(
+                "  <tg-button type=\"callback_data\" data=\"cal:future\">{day}</tg-button>\n"
             ));
         } else {
             grid_html.push_str(&format!(
@@ -629,12 +649,15 @@ pub async fn send_rich_calendar_menu(
     let cal_title = format!("{month_name} {year}");
 
     if let Some(day) = selected_day {
-        let btn_add_day = get_text("cal_btn_add_day", norm);
-        grid_html.push_str(&format!(
-            "<tg-button-row>\n\
-              <tg-button type=\"callback_data\" style=\"success\" data=\"cal:add:{year}:{month}:{day}\">{btn_add_day} ({day:02}.{month:02})</tg-button>\n\
-            </tg-button-row>\n"
-        ));
+        let is_future = NaiveDate::from_ymd_opt(year, month, day).map(|d| d > today).unwrap_or(false);
+        if !is_future {
+            let btn_add_day = get_text("cal_btn_add_day", norm);
+            grid_html.push_str(&format!(
+                "<tg-button-row>\n\
+                  <tg-button type=\"callback_data\" style=\"success\" data=\"cal:add:{year}:{month}:{day}\">{btn_add_day} ({day:02}.{month:02})</tg-button>\n\
+                </tg-button-row>\n"
+            ));
+        }
     }
 
     grid_html.push_str(&format!(
@@ -1068,6 +1091,22 @@ pub async fn send_rich_followup_when(
     let lang = get_user_language(pool, user_id).await;
     let norm = normalize_lang(&lang);
 
+    let ep = crate::db::get_episode_by_id(pool, ep_id).await.unwrap_or(None);
+    let tz_str = crate::db::get_user_timezone(pool, user_id).await;
+    let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
+    let now = Utc::now().with_timezone(&tz);
+
+    let elapsed_mins = if let Some(ref e) = ep {
+        if let Ok(st_dt) = chrono::NaiveDateTime::parse_from_str(&e.start_time, "%Y-%m-%d %H:%M") {
+            let diff = now.naive_local().signed_duration_since(st_dt);
+            diff.num_minutes()
+        } else {
+            120
+        }
+    } else {
+        120
+    };
+
     let title = get_text("fu_when_title", norm);
     let sub = get_text("fu_when_sub", norm);
     let t1 = get_text("fu_when_now_rich", norm);
@@ -1076,18 +1115,34 @@ pub async fn send_rich_followup_when(
     let t4 = get_text("fu_when_2h_rich", norm);
     let btn_menu = get_text("btn_main_menu", norm);
 
+    let mut when_buttons = String::new();
+    when_buttons.push_str(&format!(
+        "<tg-button-row>\n  <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:now\">{t1}</tg-button>\n"
+    ));
+    if elapsed_mins >= 35 {
+        when_buttons.push_str(&format!(
+            "  <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-30m\">{t2}</tg-button>\n"
+        ));
+    }
+    when_buttons.push_str("</tg-button-row>\n");
+
+    if elapsed_mins >= 65 {
+        when_buttons.push_str(&format!(
+            "<tg-button-row>\n  <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-1h\">{t3}</tg-button>\n"
+        ));
+        if elapsed_mins >= 125 {
+            when_buttons.push_str(&format!(
+                "  <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-2h\">{t4}</tg-button>\n"
+            ));
+        }
+        when_buttons.push_str("</tg-button-row>\n");
+    }
+
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         {sub}\n\n\
-        <tg-button-row>\n\
-          <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:now\">{t1}</tg-button>\n\
-          <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-30m\">{t2}</tg-button>\n\
-        </tg-button-row>\n\
-        <tg-button-row>\n\
-          <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-1h\">{t3}</tg-button>\n\
-          <tg-button type=\"callback_data\" data=\"fu:set_when:{ep_id}:-2h\">{t4}</tg-button>\n\
-        </tg-button-row>\n\
+        {when_buttons}\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
         </tg-button-row>"
