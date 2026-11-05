@@ -130,11 +130,13 @@ pub async fn handle_reminder_callback(
         }
         "time_custom" => {
             let _ = bot.answer_callback_query(&q.id).await;
-            sessions.set(user_id, UserState::WaitingReminderTime).await;
             if let Some(msg) = q.regular_message() {
-                bot.send_message(msg.chat.id, get_text("reminder_custom_time_prompt", &lang))
+                let sent = bot.send_message(msg.chat.id, get_text("reminder_custom_time_prompt", &lang))
                     .parse_mode(ParseMode::Html)
-                    .await?;
+                    .reply_markup(teloxide::types::KeyboardRemove::new())
+                    .await;
+                let pmid = sent.ok().map(|s| s.id.0 as i32);
+                sessions.set(user_id, UserState::WaitingReminderTime(pmid)).await;
             }
         }
         "tz" => {
@@ -145,11 +147,13 @@ pub async fn handle_reminder_callback(
         }
         "tz_custom" => {
             let _ = bot.answer_callback_query(&q.id).await;
-            sessions.set(user_id, UserState::WaitingCustomTimezone).await;
             if let Some(msg) = q.regular_message() {
-                bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang))
+                let sent = bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang))
                     .parse_mode(ParseMode::Html)
-                    .await?;
+                    .reply_markup(teloxide::types::KeyboardRemove::new())
+                    .await;
+                let pmid = sent.ok().map(|s| s.id.0 as i32);
+                sessions.set(user_id, UserState::WaitingCustomTimezone(pmid)).await;
             }
         }
         "back" => {
@@ -178,10 +182,16 @@ pub async fn handle_timezone_callback(
 
     if tz_val == "custom" {
         bot.answer_callback_query(&q.id).await?;
-        sessions.set(user_id, UserState::WaitingCustomTimezone).await;
-        if let Some(msg) = q.regular_message() {
-            bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang)).parse_mode(ParseMode::Html).await?;
-        }
+        let pmid = if let Some(msg) = q.regular_message() {
+            let sent = bot.send_message(msg.chat.id, get_text("tz_custom_prompt", &lang))
+                .parse_mode(ParseMode::Html)
+                .reply_markup(teloxide::types::KeyboardRemove::new())
+                .await;
+            sent.ok().map(|s| s.id.0 as i32)
+        } else {
+            None
+        };
+        sessions.set(user_id, UserState::WaitingCustomTimezone(pmid)).await;
         return Ok(());
     }
 

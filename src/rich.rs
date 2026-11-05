@@ -55,41 +55,106 @@ pub fn html_escape(input: &str) -> String {
 }
 
 pub fn format_rich_html(html: &str) -> String {
-    let mut out = String::with_capacity(html.len() + 128);
+    let mut out = String::with_capacity(html.len() + 256);
     let mut rest = html;
 
-    while let Some(start_idx) = rest.find("<blockquote") {
-        out.push_str(&rest[..start_idx]);
-        let after_start = &rest[start_idx..];
-        if let Some(tag_close) = after_start.find('>') {
-            out.push_str("<blockquote>");
-            let bq_content_start = &after_start[tag_close + 1..];
-            if let Some(end_idx) = bq_content_start.find("</blockquote>") {
-                let bq_content = &bq_content_start[..end_idx];
-                for line in bq_content.lines() {
-                    let trimmed = line.trim();
-                    if !trimmed.is_empty() {
-                        if trimmed.starts_with("<p>") && trimmed.ends_with("</p>") {
-                            out.push_str(trimmed);
-                        } else {
-                            out.push_str("<p>");
-                            out.push_str(trimmed);
-                            out.push_str("</p>");
-                        }
-                    }
+    while !rest.is_empty() {
+        let tags = [
+            rest.find("<blockquote"),
+            rest.find("<tg-button-row"),
+            rest.find("<img"),
+            rest.find("<p"),
+        ];
+        let next_tag = tags.into_iter().flatten().min();
+
+        if let Some(tag_idx) = next_tag {
+            let before = &rest[..tag_idx];
+            for line in before.lines() {
+                let trimmed = line.trim();
+                if !trimmed.is_empty() {
+                    out.push_str("<p>");
+                    out.push_str(trimmed);
+                    out.push_str("</p>\n");
                 }
-                out.push_str("</blockquote>");
-                rest = &bq_content_start[end_idx + 13..];
+            }
+
+            let after = &rest[tag_idx..];
+            if after.starts_with("<blockquote") {
+                if let Some(tag_close) = after.find('>') {
+                    out.push_str("<blockquote>\n");
+                    let bq_start = &after[tag_close + 1..];
+                    if let Some(end_idx) = bq_start.find("</blockquote>") {
+                        let bq_content = &bq_start[..end_idx];
+                        for line in bq_content.lines() {
+                            let trimmed = line.trim();
+                            if !trimmed.is_empty() {
+                                if trimmed.starts_with("<p>") && trimmed.ends_with("</p>") {
+                                    out.push_str(trimmed);
+                                } else {
+                                    out.push_str("<p>");
+                                    out.push_str(trimmed);
+                                    out.push_str("</p>");
+                                }
+                                out.push('\n');
+                            }
+                        }
+                        out.push_str("</blockquote>\n");
+                        rest = &bq_start[end_idx + 13..];
+                    } else {
+                        out.push_str(after);
+                        return out;
+                    }
+                } else {
+                    out.push_str(after);
+                    return out;
+                }
+            } else if after.starts_with("<tg-button-row") {
+                if let Some(end_idx) = after.find("</tg-button-row>") {
+                    let block = &after[..end_idx + 16];
+                    out.push_str(block);
+                    out.push('\n');
+                    rest = &after[end_idx + 16..];
+                } else {
+                    out.push_str(after);
+                    return out;
+                }
+            } else if after.starts_with("<img") {
+                if let Some(end_idx) = after.find('>') {
+                    let block = &after[..=end_idx];
+                    out.push_str(block);
+                    out.push('\n');
+                    rest = &after[end_idx + 1..];
+                } else {
+                    out.push_str(after);
+                    return out;
+                }
+            } else if after.starts_with("<p") {
+                if let Some(end_idx) = after.find("</p>") {
+                    let block = &after[..end_idx + 4];
+                    out.push_str(block);
+                    out.push('\n');
+                    rest = &after[end_idx + 4..];
+                } else {
+                    out.push_str(after);
+                    return out;
+                }
             } else {
-                out.push_str(after_start);
-                return out;
+                out.push_str(after);
+                break;
             }
         } else {
-            out.push_str(after_start);
-            return out;
+            for line in rest.lines() {
+                let trimmed = line.trim();
+                if !trimmed.is_empty() {
+                    out.push_str("<p>");
+                    out.push_str(trimmed);
+                    out.push_str("</p>\n");
+                }
+            }
+            break;
         }
     }
-    out.push_str(rest);
+
     out
 }
 
@@ -556,6 +621,15 @@ pub async fn send_rich_calendar_menu(
     let lbl_pain = get_text("calendar_lbl_pain", norm);
     let lbl_healthy = get_text("calendar_lbl_healthy", norm);
     let cal_title = format!("{month_name} {year}");
+
+    if let Some(day) = selected_day {
+        let btn_add_day = get_text("cal_btn_add_day", norm);
+        grid_html.push_str(&format!(
+            "<tg-button-row>\n\
+              <tg-button type=\"callback_data\" style=\"success\" data=\"cal:add:{year}:{month}:{day}\">{btn_add_day} ({day:02}.{month:02})</tg-button>\n\
+            </tg-button-row>\n"
+        ));
+    }
 
     grid_html.push_str(&format!(
         "<tg-button-row>\n\
@@ -1111,6 +1185,8 @@ pub async fn render_rich_headache_step(
             let st2 = get_text("step1_t2", norm);
             let st3 = get_text("step1_t3", norm);
             let st4 = get_text("step1_t4", norm);
+            let st_yesterday = get_text("step1_yesterday", norm);
+            let st_custom = get_text("step1_custom", norm);
 
             format!(
                 "<b>{title}</b>\n\n\
@@ -1123,6 +1199,10 @@ pub async fn render_rich_headache_step(
                 <tg-button-row>\n\
                   <tg-button type=\"callback_data\" data=\"hdt:-1h\">{st3}</tg-button>\n\
                   <tg-button type=\"callback_data\" data=\"hdt:-2h\">{st4}</tg-button>\n\
+                </tg-button-row>\n\
+                <tg-button-row>\n\
+                  <tg-button type=\"callback_data\" data=\"hdt:yesterday\">{st_yesterday}</tg-button>\n\
+                  <tg-button type=\"callback_data\" data=\"hdt:custom\">{st_custom}</tg-button>\n\
                 </tg-button-row>\n\
                 <tg-button-row>\n\
                   <tg-button type=\"callback_data\" style=\"danger\" data=\"hdn:cancel\">{btn_cancel}</tg-button>\n\

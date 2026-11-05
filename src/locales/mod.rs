@@ -121,10 +121,32 @@ pub fn get_trigger_name(key: &str, lang: &str) -> String {
         if let Some(val) = loc.triggers_map.get(key) {
             return val.clone();
         }
+        let alias = match key {
+            "skip_food" => "food",
+            "fatigue" => "stress",
+            "lack_of_sleep" => "sleep",
+            _ => "",
+        };
+        if !alias.is_empty() {
+            if let Some(val) = loc.triggers_map.get(alias) {
+                return val.clone();
+            }
+        }
     }
     if let Some(loc) = LOCALES.get("ru") {
         if let Some(val) = loc.triggers_map.get(key) {
             return val.clone();
+        }
+        let alias = match key {
+            "skip_food" => "food",
+            "fatigue" => "stress",
+            "lack_of_sleep" => "sleep",
+            _ => "",
+        };
+        if !alias.is_empty() {
+            if let Some(val) = loc.triggers_map.get(alias) {
+                return val.clone();
+            }
         }
     }
     key.to_string()

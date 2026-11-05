@@ -269,7 +269,12 @@
     "step7_m3": "💊 Ibuprofen 400mg",
     "step7_m4": "💊 Paracetamol 500mg",
     "step7_m5": "💊 Zolmitriptan 2.5mg",
-    "step7_m6": "💊 Aspirin (500mg)"
+    "step7_m6": "💊 Aspirin (500mg)",
+    "confirm_lbl_status": "Status:",
+    "step1_yesterday": "📅 Yesterday",
+    "step1_custom": "✍️ Custom date / time",
+    "cal_btn_add_day": "➕ Log episode for this day",
+    "step1_custom_prompt": "<b>Episode Date & Time</b>\n\nEnter the start date and time (e.g. <code>2026-11-10 14:00</code>, <code>10.11 14:00</code> or <code>14:00</code>):"
   },
   "location_map": {
     "left": "👈 Left side (unilateral)",
@@ -326,7 +331,9 @@
     "caffeine": "Caffeine",
     "sensory": "Noise / Bright light / Smells",
     "physical": "Physical exertion",
+    "skip_food": "Hunger / Skipped meal",
+    "fatigue": "Fatigue / Exhaustion",
+    "lack_of_sleep": "Lack of sleep",
     "none": "No clear trigger"
-  },
-  "confirm_lbl_status": "Status:"
+  }
 }

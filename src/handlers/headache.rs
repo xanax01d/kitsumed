@@ -181,6 +181,8 @@ pub async fn handle_headache_callback(
 
     let tz_name = get_user_timezone(pool, user_id).await;
     let tz = Tz::from_str(&tz_name).unwrap_or(chrono_tz::Europe::Moscow);
+    let lang = get_user_language(pool, user_id).await;
+    let norm = normalize_lang(&lang);
 
     let mid = q.regular_message().map(|m| m.id.0 as i32);
     let chat_id = match q.regular_message() {
@@ -197,6 +199,30 @@ pub async fn handle_headache_callback(
         "hdt" => {
             let preset = data.strip_prefix("hdt:").unwrap_or("now");
             let now = Utc::now().with_timezone(&tz);
+
+            if preset == "custom" {
+                let prompt = get_text("step1_custom_prompt", &norm);
+                let pmid = if let Ok(sent) = bot.send_message(teloxide::types::ChatId(chat_id), prompt)
+                    .parse_mode(teloxide::types::ParseMode::Html)
+                    .reply_markup(teloxide::types::KeyboardRemove::new())
+                    .await {
+                    Some(sent.id.0 as i32)
+                } else {
+                    None
+                };
+                sessions.set(user_id, UserState::WaitingCustomStartTime(form.clone(), pmid)).await;
+                return Ok(());
+            }
+
+            if preset == "yesterday" {
+                let yesterday_str = (now - Duration::days(1)).format("%Y-%m-%d 12:00").to_string();
+                form.start_time = Some(yesterday_str);
+                form.current_step = Some(FlowStep::Intensity);
+                sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
+                let _ = crate::rich::render_rich_headache_step(bot.token(), chat_id, mid, user_id, &form, pool).await;
+                return Ok(());
+            }
+
             let time_str = match preset {
                 "-30m" => (now - Duration::minutes(30)).format("%Y-%m-%d %H:%M").to_string(),
                 "-1h" => (now - Duration::hours(1)).format("%Y-%m-%d %H:%M").to_string(),
@@ -310,7 +336,6 @@ pub async fn handle_headache_callback(
             let med = data.strip_prefix("hdm:").unwrap_or("none");
 
             if med == "custom" {
-                sessions.set(user_id, UserState::WaitingCustomMedication(form.clone())).await;
                 let lang = crate::db::get_user_language(pool, user_id).await;
                 let norm = crate::locales::normalize_lang(&lang);
                 let prompt = match norm {
@@ -320,7 +345,15 @@ pub async fn handle_headache_callback(
                     "cyberpunk" => "<b>Фарм-препарат и дозировка</b>\n\nВведите идентификатор препарата и дозу (напр.: <code>Элетриптан 40 мг</code>):",
                     _ => "<b>Название препарата и дозировка</b>\n\nНапишите в ответном сообщении название лекарства и дозировку (например: <code>Элетриптан 40 мг</code> или <code>Налгезин 550 мг</code>):",
                 };
-                let _ = bot.send_message(teloxide::types::ChatId(chat_id), prompt).parse_mode(teloxide::types::ParseMode::Html).await;
+                let pmid = if let Ok(sent) = bot.send_message(teloxide::types::ChatId(chat_id), prompt)
+                    .parse_mode(teloxide::types::ParseMode::Html)
+                    .reply_markup(teloxide::types::KeyboardRemove::new())
+                    .await {
+                    Some(sent.id.0 as i32)
+                } else {
+                    None
+                };
+                sessions.set(user_id, UserState::WaitingCustomMedication(form.clone(), pmid)).await;
                 return Ok(());
             }
 

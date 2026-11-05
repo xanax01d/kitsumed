@@ -40,7 +40,7 @@ async fn handle_callback_query(
     } else if let Some(action) = data.strip_prefix("menu:") {
         handle_menu_callback(&bot, &q, action, &pool, &sessions).await?;
     } else if data.starts_with("cal:") {
-        handle_calendar_callback(&bot, &q, data, &pool).await?;
+        handle_calendar_callback(&bot, &q, data, &pool, &sessions).await?;
     } else if let Some(fmt) = data.strip_prefix("hde:") {
         handle_export_callback(&bot, &q, fmt, &pool).await?;
     } else if let Some(act) = data.strip_prefix("rem:") {

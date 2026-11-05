@@ -37,12 +37,12 @@ pub struct HeadacheForm {
 pub enum UserState {
     Idle,
     LoggingHeadache(HeadacheForm),
-    WaitingCustomStartTime(HeadacheForm),
-    WaitingCustomTrigger(HeadacheForm),
-    WaitingCustomMedication(HeadacheForm),
-    WaitingFollowupTime(i32),
-    WaitingReminderTime,
-    WaitingCustomTimezone,
+    WaitingCustomStartTime(HeadacheForm, Option<i32>),
+    WaitingCustomTrigger(HeadacheForm, Option<i32>),
+    WaitingCustomMedication(HeadacheForm, Option<i32>),
+    WaitingFollowupTime(i32, Option<i32>),
+    WaitingReminderTime(Option<i32>),
+    WaitingCustomTimezone(Option<i32>),
 }
 
 impl Default for UserState {
