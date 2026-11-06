@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use chrono::{Datelike, NaiveDate};
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 use crate::locales::{get_text, normalize_lang};
 
 pub fn is_sos_btn(text: &str) -> bool {
@@ -18,23 +18,6 @@ pub fn is_main_menu_btn(text: &str) -> bool {
     t.contains("Главное меню") || t.contains("Галоўнае меню") || t.contains("Main Menu") || t.contains("Главная поляна") || t.contains("Консоль")
 }
 
-pub fn get_persistent_main_keyboard(lang: &str) -> KeyboardMarkup {
-    let norm = normalize_lang(lang);
-    let (b_sos, b_log, b_menu, b_stats, b_cal) = match norm {
-        "be" => ("🆘 Хуткі SOS", "🤕 Запісаць прыступ", "🦊 Галоўнае меню", "📊 Аналітыка", "📅 Каляндар"),
-        "en" => ("🆘 Quick SOS", "🤕 Log Episode", "🦊 Main Menu", "📊 Analytics", "📅 Calendar"),
-        "cyberpunk" => ("🆘 Протокол SOS", "⚡️ Сбой нейросети", "🦊 Консоль", "📊 Телеметрия", "📅 Журнал"),
-        "meme" => ("🆘 F*** GO BACK", "🤕 Записать суету", "🦊 Главная поляна", "📊 Кринжометр", "📅 Календарь"),
-        _ => ("🆘 Быстрый SOS", "🤕 Записать приступ", "🦊 Главное меню", "📊 Аналитика", "📅 Календарь"),
-    };
-
-    KeyboardMarkup::new(vec![
-        vec![KeyboardButton::new(b_sos), KeyboardButton::new(b_log)],
-        vec![KeyboardButton::new(b_menu), KeyboardButton::new(b_stats), KeyboardButton::new(b_cal)],
-    ])
-    .resize_keyboard()
-    .persistent()
-}
 
 pub fn is_log_btn(text: &str) -> bool {
     let t = text.trim();
