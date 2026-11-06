@@ -248,9 +248,50 @@ cargo build --release
 ./target/release/kitsumed
 ```
 
-### 4. Run with Docker Compose (PostgreSQL + Redis + Bot)
+### 4. 🐳 Docker Deployment
+
+The project is fully containerized. The image includes all required components: a lightweight compiled Rust binary, Python 3 with ReportLab, and DejaVu fonts for generating clinical PDF reports.
+
+#### Option A: Run Full Stack via Docker Compose (Recommended)
+Spins up isolated PostgreSQL 16, Redis 7, and KitsuMed Bot with one command:
+
 ```bash
-docker-compose up -d
+# 1. Set your Telegram bot token
+export TOKEN="your_telegram_bot_token"
+
+# 2. Start all services in the background
+docker compose up -d --build
+
+# 3. View live bot logs
+docker compose logs -f bot
+```
+
+Managing containers:
+```bash
+docker compose ps          # Check container status
+docker compose stop        # Stop services gracefully
+docker compose down -v     # Stop and remove volumes (wipes DB)
+```
+
+#### Option B: Standalone Docker Image
+If you already have PostgreSQL and Redis running:
+
+```bash
+# Full multi-stage build from source:
+docker build -t kitsumed .
+
+# Or instant build using precompiled release binary:
+docker build -f Dockerfile.prebuilt -t kitsumed .
+
+# Run container:
+docker run -d \
+  --name kitsumed-bot \
+  --restart unless-stopped \
+  -e TELOXIDE_TOKEN="your_bot_token" \
+  -e DATABASE_URL="postgresql://kitsumed:kitsumed_secure_pass@host:5432/kitsumed" \
+  -e REDIS_URL="redis://host:6379" \
+  -v $(pwd)/assets:/app/assets:ro \
+  kitsumed:latest
 ```
 
 ---
