@@ -1,6 +1,6 @@
 use crate::models::HeadacheEpisode;
-use crate::locales::{get_location_name, get_medication_name, get_pain_type_name, get_symptom_name, get_trigger_name, get_intensity_label};
-use crate::services::weather::format_weather_display;
+use crate::locales::{get_location_name, get_medication_name, get_pain_type_name, get_symptom_name, get_trigger_name, get_intensity_label, normalize_lang};
+use crate::services::weather::format_weather_display_lang;
 use serde::Serialize;
 use std::path::Path;
 
@@ -35,10 +35,15 @@ pub fn generate_csv(episodes: &[HeadacheEpisode], lang: &str) -> Vec<u8> {
     // Write UTF-8 BOM for Excel Cyrillic compatibility
     let mut out = vec![0xEF, 0xBB, 0xBF];
 
-    let headers = match lang {
+    let norm = normalize_lang(lang);
+    let headers = match norm {
         "en" => vec![
             "Episode ID", "Start Time", "End Time", "Intensity (1-10)", "Location",
             "Pain Type", "Symptoms", "Triggers", "Medication", "Relief", "Weather", "Status"
+        ],
+        "be" => vec![
+            "ID прыступу", "Пачатак", "Заканчэнне", "Інтэнсіўнасць (1-10)", "Лакалізацыя",
+            "Характар болю", "Сімптомы", "Трыгеры", "Прэпарат", "Эфект прэпарата", "Надвор'е", "Статус"
         ],
         _ => vec![
             "ID приступа", "Начало", "Окончание", "Интенсивность (1-10)", "Локализация",
@@ -66,20 +71,32 @@ pub fn generate_csv(episodes: &[HeadacheEpisode], lang: &str) -> Vec<u8> {
         let med_name = ep.medication.as_deref().unwrap_or("none");
         let med_str = get_medication_name(med_name, lang);
 
-        let relief_str = match ep.medication_relief.as_deref() {
-            Some("helped") => "Помогло",
-            Some("partially") => "Частично",
-            Some("not_helped") => "Не помогло",
+        let relief_str = match (ep.medication_relief.as_deref(), norm) {
+            (Some("helped"), "be") => "Дапамагло",
+            (Some("helped"), "en") => "Helped",
+            (Some("helped"), _) => "Помогло",
+            (Some("partially"), "be") => "Часткова",
+            (Some("partially"), "en") => "Partially",
+            (Some("partially"), _) => "Частично",
+            (Some("not_helped"), "be") => "Не дапамагло",
+            (Some("not_helped"), "en") => "Not helped",
+            (Some("not_helped"), _) => "Не помогло",
             _ => "—",
         };
 
-        let status_str = match ep.status.as_deref() {
-            Some("completed") => "Купирован",
-            Some("not_resolved") => "Не прошла",
+        let status_str = match (ep.status.as_deref(), norm) {
+            (Some("completed"), "be") => "Купіраваны",
+            (Some("completed"), "en") => "Resolved",
+            (Some("completed"), _) => "Купирован",
+            (Some("not_resolved"), "be") => "Не прайшоў",
+            (Some("not_resolved"), "en") => "Not resolved",
+            (Some("not_resolved"), _) => "Не прошла",
+            (_, "be") => "Актыўны",
+            (_, "en") => "Active",
             _ => "Активен",
         };
 
-        let weather_str = format_weather_display(ep.pressure_hpa, ep.temperature_c).unwrap_or_else(|| "—".to_string());
+        let weather_str = format_weather_display_lang(ep.pressure_hpa, ep.temperature_c, lang).unwrap_or_else(|| "—".to_string());
 
         let row = vec![
             ep.id.to_string(),
@@ -129,20 +146,33 @@ pub async fn generate_pdf(
         let med_name = ep.medication.as_deref().unwrap_or("none");
         let med_str = get_medication_name(med_name, lang);
 
-        let relief_str = match ep.medication_relief.as_deref() {
-            Some("helped") => "Помогло",
-            Some("partially") => "Частично",
-            Some("not_helped") => "Не помогло",
+        let norm = normalize_lang(lang);
+        let relief_str = match (ep.medication_relief.as_deref(), norm) {
+            (Some("helped"), "be") => "Дапамагло",
+            (Some("helped"), "en") => "Helped",
+            (Some("helped"), _) => "Помогло",
+            (Some("partially"), "be") => "Часткова",
+            (Some("partially"), "en") => "Partially",
+            (Some("partially"), _) => "Частично",
+            (Some("not_helped"), "be") => "Не дапамагло",
+            (Some("not_helped"), "en") => "Not helped",
+            (Some("not_helped"), _) => "Не помогло",
             _ => "—",
         };
 
-        let status_str = match ep.status.as_deref() {
-            Some("completed") => "Купирован",
-            Some("not_resolved") => "Не прошла",
+        let status_str = match (ep.status.as_deref(), norm) {
+            (Some("completed"), "be") => "Купіраваны",
+            (Some("completed"), "en") => "Resolved",
+            (Some("completed"), _) => "Купирован",
+            (Some("not_resolved"), "be") => "Не прайшоў",
+            (Some("not_resolved"), "en") => "Not resolved",
+            (Some("not_resolved"), _) => "Не прошла",
+            (_, "be") => "Актыўны",
+            (_, "en") => "Active",
             _ => "Активен",
         };
 
-        let weather_str = format_weather_display(ep.pressure_hpa, ep.temperature_c).unwrap_or_default();
+        let weather_str = format_weather_display_lang(ep.pressure_hpa, ep.temperature_c, lang).unwrap_or_default();
 
         let time_str = if let Some(end) = &ep.end_time {
             if ep.start_time.len() >= 10 && end.len() >= 16 && ep.start_time[..10] == end[..10] {

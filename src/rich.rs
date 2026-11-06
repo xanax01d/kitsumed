@@ -527,9 +527,10 @@ pub async fn send_rich_calendar_menu(
     if let Some(day) = selected_day {
         let is_future = NaiveDate::from_ymd_opt(year, month, day).map(|d| d > today).unwrap_or(false);
         if is_future {
+            let future_text = get_text("cal_alert_future_day", norm);
             selected_info = format!(
                 "<blockquote><b>📋 {day:02}.{month:02}.{year}</b>\n\
-                Этот день еще не наступил ✨</blockquote>\n\n"
+                {future_text}</blockquote>\n\n"
             );
         } else {
             let day_eps = get_episodes_for_date(pool, user_id, year, month, day).await.unwrap_or_default();
@@ -1806,7 +1807,8 @@ pub async fn send_rich_sos_saved(
     };
 
     let weather_line = if let Some(w) = weather_str {
-        format!("\n• Погода: <code>{}</code>", html_escape(w))
+        let lbl_w = get_text("lbl_weather", norm);
+        format!("\n• {}: <code>{}</code>", lbl_w, html_escape(w))
     } else {
         String::new()
     };
@@ -1878,26 +1880,46 @@ pub async fn send_rich_analytics_menu(
     let btn_export = get_text("btn_export", norm);
     let btn_menu = get_text("btn_main_menu", norm);
 
+    let summary_title = get_text("stats_summary_title", norm);
+    let lbl_total_episodes = get_text("stats_total_episodes", norm);
+    let lbl_pain_days = get_text("stats_pain_days", norm);
+    let lbl_avg_intensity = get_text("stats_avg_intensity", norm);
+    let lbl_peak_day = get_text("stats_peak_day", norm);
+    let ep_suffix = get_text("stats_episodes_suffix", norm);
+
+    let triggers_title = get_text("stats_triggers_title", norm);
+    let triggers_empty = get_text("stats_triggers_empty", norm);
+    let times_suffix = get_text("stats_times_suffix", norm);
+
+    let symptoms_title = get_text("stats_symptoms_title", norm);
+    let symptoms_empty = get_text("stats_symptoms_empty", norm);
+
+    let med_title = get_text("stats_med_title", norm);
+    let lbl_med_days = get_text("stats_med_days", norm);
+    let lbl_med_efficacy = get_text("stats_med_efficacy", norm);
+    let lbl_avg_pressure = get_text("stats_avg_pressure", norm);
+    let pressure_unit = get_text("stats_pressure_unit", norm);
+
     let moh_badge = match report.moh_risk {
-        crate::services::analytics::MohRisk::Safe => "🟢 В норме (<8 дн.)",
-        crate::services::analytics::MohRisk::Caution => "🟡 Внимание (8-9 дн.)",
-        crate::services::analytics::MohRisk::Alert => "🔴 Риск абузуса (≥10 дн.)",
+        crate::services::analytics::MohRisk::Safe => get_text("stats_moh_safe", norm),
+        crate::services::analytics::MohRisk::Caution => get_text("stats_moh_caution", norm),
+        crate::services::analytics::MohRisk::Alert => get_text("stats_moh_alert", norm),
     };
 
     let triggers_text = if report.top_triggers.is_empty() {
-        "• <i>Данных по триггерам пока недостаточно</i>".to_string()
+        triggers_empty
     } else {
         report.top_triggers.iter()
-            .map(|(name, count, pct)| format!("• ⚡ <b>{}</b>: {} раз ({}%)", html_escape(name), count, pct))
+            .map(|(name, count, pct)| format!("• ⚡ <b>{}</b>: {} {} ({}%)", html_escape(name), count, times_suffix, pct))
             .collect::<Vec<_>>()
             .join("\n")
     };
 
     let symptoms_text = if report.top_symptoms.is_empty() {
-        "• <i>Симптомы пока не фиксировались</i>".to_string()
+        symptoms_empty
     } else {
         report.top_symptoms.iter()
-            .map(|(name, count, pct)| format!("• 🔹 <b>{}</b>: {} раз ({}%)", html_escape(name), count, pct))
+            .map(|(name, count, pct)| format!("• 🔹 <b>{}</b>: {} {} ({}%)", html_escape(name), count, times_suffix, pct))
             .collect::<Vec<_>>()
             .join("\n")
     };
@@ -1909,13 +1931,13 @@ pub async fn send_rich_analytics_menu(
     };
 
     let peak_str = if let Some((ref wd, count)) = report.peak_weekday {
-        format!("{} ({} прист.)", wd, count)
+        format!("{} ({} {})", wd, count, ep_suffix)
     } else {
         "—".to_string()
     };
 
     let pressure_str = if let Some(p) = report.avg_pressure_mmhg {
-        format!("{} мм рт. ст.", p)
+        format!("{} {}", p, pressure_unit)
     } else {
         "—".to_string()
     };
@@ -1924,19 +1946,19 @@ pub async fn send_rich_analytics_menu(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         {sub}\n\n\
-        <blockquote><b>📊 Сводка за последние 30 дней</b>\n\
-        • Всего приступов: <b>{}</b>\n\
-        • Дней с болью: <b>{}</b>\n\
-        • Средняя сила боли: <b>{:.1}/10</b>\n\
-        • Пиковый день: <b>{}</b></blockquote>\n\n\
-        <blockquote><b>⚡ Радар провоцирующих триггеров</b>\n\
+        <blockquote><b>{summary_title}</b>\n\
+        • {lbl_total_episodes} <b>{}</b>\n\
+        • {lbl_pain_days} <b>{}</b>\n\
+        • {lbl_avg_intensity} <b>{:.1}/10</b>\n\
+        • {lbl_peak_day} <b>{}</b></blockquote>\n\n\
+        <blockquote><b>{triggers_title}</b>\n\
         {triggers_text}</blockquote>\n\n\
-        <blockquote><b>🩺 Симптомы и течение</b>\n\
+        <blockquote><b>{symptoms_title}</b>\n\
         {symptoms_text}</blockquote>\n\n\
-        <blockquote><b>💊 Лекарственный контроль & MOH</b>\n\
-        • Дней приема лекарств: <b>{}/10</b> ({moh_badge})\n\
-        • Эффективность купирования: <b>{}</b>\n\
-        • Ср. давление при боли: <b>{}</b></blockquote>\n\n\
+        <blockquote><b>{med_title}</b>\n\
+        • {lbl_med_days} <b>{}/10</b> ({moh_badge})\n\
+        • {lbl_med_efficacy} <b>{}</b>\n\
+        • {lbl_avg_pressure} <b>{}</b></blockquote>\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"success\" data=\"menu:export\">{btn_export}</tg-button>\n\
         </tg-button-row>\n\

@@ -188,6 +188,8 @@ pub async fn handle_calendar_callback(
     let tz_str = get_user_timezone(pool, user_id).await;
     let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
     let today = Utc::now().with_timezone(&tz).date_naive();
+    let lang = get_user_language(pool, user_id).await;
+    let norm = crate::locales::normalize_lang(&lang);
 
     match action {
         "nav" => {
@@ -196,8 +198,9 @@ pub async fn handle_calendar_callback(
                 let m: u32 = parts[3].parse().unwrap_or(1);
 
                 if y > today.year() || (y == today.year() && m > today.month()) {
+                    let alert_msg = get_text("cal_alert_future_nav", norm);
                     let _ = bot.answer_callback_query(&q.id)
-                        .text("Нельзя перематывать календарь в будущее!")
+                        .text(alert_msg)
                         .show_alert(true)
                         .await;
                     return Ok(());
@@ -218,8 +221,9 @@ pub async fn handle_calendar_callback(
             }
         }
         "future" => {
+            let alert_msg = get_text("cal_alert_future_day", norm);
             let _ = bot.answer_callback_query(&q.id)
-                .text("Этот день еще не наступил ✨")
+                .text(alert_msg)
                 .show_alert(true)
                 .await;
         }
@@ -231,8 +235,9 @@ pub async fn handle_calendar_callback(
                 let sel_date = NaiveDate::from_ymd_opt(y, m, d).unwrap_or(today);
 
                 if sel_date > today {
+                    let alert_msg = get_text("cal_alert_future_add", norm);
                     let _ = bot.answer_callback_query(&q.id)
-                        .text("Нельзя записать приступ на будущую дату!")
+                        .text(alert_msg)
                         .show_alert(true)
                         .await;
                     return Ok(());
