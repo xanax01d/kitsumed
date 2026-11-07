@@ -1,0 +1,6 @@
+target/*
+!target/release/kitsumed
+.git/
+.env
+*.log
+.DS_Store
