@@ -1,10 +1,12 @@
 <div align="center">
 
-<img src="assets/images/be/hero_banner.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/be/hero_banner.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px;" />
 
-<img src="assets/images/avatar.jpg" alt="KitsuMed Logo" width="110" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-top: -65px; border: 4px solid #fff; position: relative;" />
+<hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(128,128,128,0.2);" />
 
-# 🦊 KitsuMed (Rust Edition)
+<img src="assets/images/avatar.jpg" alt="KitsuMed Logo" width="110" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: 10px 0; border: 4px solid #fff;" />
+
+# 🦊 KitsuMed
 ### Высокапрадукцыйны Telegram-дзённік прыступаў мігрэні і галаўнога болю на чыстым Rust
 
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
