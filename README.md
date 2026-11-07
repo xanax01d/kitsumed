@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="assets/images/readme/ru_kitsune.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+<img src="assets/images/ru/hero_banner.png" alt="KitsuMed Banner" width="100%" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 16px;" />
+
+<img src="assets/images/avatar.jpg" alt="KitsuMed Logo" width="110" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-top: -65px; border: 4px solid #fff; position: relative;" />
 
 # 🦊 KitsuMed (Rust Edition)
 ### Высокопроизводительный Telegram-дневник приступов мигрени и головной боли на чистом Rust
@@ -43,6 +45,10 @@
 
 ## 📐 Архитектура системы
 
+<p align="center">
+  <img src="assets/images/cyberpunk/hero_banner.png" alt="Архитектура KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
+
 Полностью асинхронная отказоустойчивая архитектура на базе чистого **Rust** (компилируемый бинарник с нулевым оверхедом), многопоточного рантайма **Tokio**, пула соединений **SQLx**, распределенного **Redis** для FSM-сессий и СУБД **PostgreSQL**:
 
 | Компонент | Технология | Назначение |
@@ -74,6 +80,10 @@
 ---
 
 ## 🌟 Основные возможности
+
+<p align="center">
+  <img src="assets/images/ru/hero_banner.png" alt="Клинические возможности KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 ### 1. ⏱ Пошаговый опросник с Rich Text интерфейсом
 - **Кнопки внутри текста (Telegram TG-13)**: Кнопки навигации, шкалы боли и выбора симптомов встроены прямо в тело сообщения через теги `<tg-button-row>` и `<tg-button>`.
@@ -114,6 +124,10 @@
 ---
 
 ## ⌨️ Команды и навигация
+
+<p align="center">
+  <img src="assets/images/en/hero_banner.png" alt="Команды и навигация KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 | Команда | Назначение |
 | :--- | :--- |
@@ -193,6 +207,10 @@ kitsumed/
 ---
 
 ## ⚙️ Быстрый старт
+
+<p align="center">
+  <img src="assets/images/meme/hero_banner.png" alt="Быстрый старт и развертывание" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 ### 1. Клонирование репозитория
 ```bash
@@ -292,6 +310,10 @@ docker-compose up -d
 ---
 
 ## 📋 База данных
+
+<p align="center">
+  <img src="assets/images/be/hero_banner.png" alt="База данных и схема хранения" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 
 Схема таблиц PostgreSQL автоматически инициализируется при запуске бота:
 
