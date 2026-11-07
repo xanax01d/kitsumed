@@ -82,6 +82,10 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 </p>
 
 ### 1. ⏱ Structured Questionnaire with Rich UI
+
+<p align="center">
+  <img src="assets/images/readme/sections/en/survey.jpg" alt="Structured Questionnaire with Rich UI" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - **Buttons inside text (TG-13)**: Navigation, pain sliders, and checkboxes are embedded directly within the message bubble.
 - **Onset Time**: Quick presets (*Right now, 30m ago, 1h ago, 2h ago*) or custom time input.
 - **Pain Scale (1–10)**: Clear severity gradation from mild (1) to unbearable (10 🔥).
@@ -92,6 +96,10 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 - **Medications & Relief**: Specific medication tracking, intake delay calculation, and efficacy recording.
 
 ### 2. 🩺 Automated Follow-up & Medication Efficacy
+
+<p align="center">
+  <img src="assets/images/readme/sections/en/followup.jpg" alt="Automated Follow-up & Medication Efficacy" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - **2-Hour Check**: Automatically prompts the user: *"Has your headache resolved?"*.
 - **Resolution Timing**: Quick responses (*just now, 30 min ago, 1 hour ago, 2 hours ago*).
 - **Medication Relief Rating**:
@@ -107,14 +115,26 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 - 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Neon netrunner aesthetic, neuro-glitches, Trauma Team protocols, and chrome resilience.
 
 ### 4. 📅 Interactive Monthly Calendar (`/history` / `/calendar`)
+
+<p align="center">
+  <img src="assets/images/readme/sections/en/calendar.jpg" alt="Interactive Monthly Calendar" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - Visual month grid marking pain days (🔴) and symptom-free days (🟢).
 - Month-by-month navigation and detailed daily episode cards.
 
 ### 5. ⏰ Personalized Daily Check-ins
+
+<p align="center">
+  <img src="assets/images/readme/sections/en/reminder.jpg" alt="Personalized Daily Check-ins" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - Scheduled daily check-ins (*"Did you experience any headache today?"*).
 - Full timezone support across all standard IANA identifiers and UTC offsets.
 
 ### 6. 📊 Clinical Reports for Neurologists (`/export`)
+
+<p align="center">
+  <img src="assets/images/readme/sections/en/export.jpg" alt="Clinical Reports for Neurologists" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - Structured data exports detailing episode frequency, severity, triggers, and acute treatment response.
 
 ---
