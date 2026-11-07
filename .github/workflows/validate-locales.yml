@@ -1,0 +1,28 @@
+name: Validate Locales
+
+on:
+  push:
+    paths:
+      - 'locales/**'
+      - 'scripts/validate_locale.py'
+  pull_request:
+    paths:
+      - 'locales/**'
+      - 'scripts/validate_locale.py'
+
+jobs:
+  validate:
+    name: Check JSON & Placeholders
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Locale Validator
+        run: |
+          python scripts/validate_locale.py
