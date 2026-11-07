@@ -88,6 +88,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/ru/survey.jpg" alt="Пошаговый опросник KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - **Кнопки внутри текста (Telegram TG-13)**: Кнопки навигации, шкалы боли и выбора симптомов встроены прямо в тело сообщения через теги `<tg-button-row>` и `<tg-button>`.
 - **Время начала**: Быстрые пресеты (*Прямо сейчас, 30 минут назад, 1 час, 2 часа назад*) или точное время.
 - **Шкала боли (1–10)**: Интуитивная градация от едва ощутимой (1) до невыносимой (10 🔥).
@@ -102,6 +103,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/ru/followup.jpg" alt="Автоматический follow-up и оценка препаратов" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - **Контроль через 2 часа**: Фоновый таймер Tokio автоматически находит открытые приступы и отправляет запрос: *«Прошла ли головная боль?»*.
 - **Фиксация времени стихания**: Быстрые кнопки ответа (*только что, 30 минут назад, 1 час назад, 2 часа назад*).
 - **Оценка эффективности**: Фиксация клинического действия лекарств:
@@ -121,6 +123,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/ru/calendar.jpg" alt="Интерактивный календарь приступов" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Месячная сетка с индикацией дней боли (🔴) и бессимптомных дней (🟢).
 - Навигация по месяцам вперед/назад и подробные карточки дней с полной клинической информацией.
 
@@ -129,6 +132,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/ru/reminder.jpg" alt="Ежедневные персонализированные чек-ины" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Регулярный опрос в установленное пользователем время (*«Болела ли голова сегодня?»*).
 - Полная поддержка часовых поясов (IANA и смещения UTC).
 
@@ -137,6 +141,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/ru/export.jpg" alt="Клинический экспорт отчёта для невролога" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Формирование структурированных выгрузок истории эпизодов, триггеров и эффективности медикаментов.
 
 ---

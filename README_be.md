@@ -88,6 +88,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/be/survey.jpg" alt="Пакрокавы апытальнік KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - **Кнопкі ўнутры тэксту (Telegram TG-13)**: Кнопкі навігацыі, шкалы болю і выбару сімптомаў убудаваныя непасрэдна ў цела паведамлення праз тэгі `<tg-button-row>` і `<tg-button>`.
 - **Час пачатку**: Хуткія прэсэты (*Толькі што, 30 хвілін таму, 1 гадзіну таму, 2 гадзіны таму*) альбо дакладны час.
 - **Шкала болю (1–10)**: Зразумелая градацыя ад ледзь адчувальнай (1) да невыноснай (10 🔥).
@@ -102,6 +103,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/be/followup.jpg" alt="Аўтаматычны follow-up і ацэнка прэпаратаў" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - **Кантроль праз 2 гадзіны**: Фанавы таймер Tokio аўтаматычна знаходзіць адкрытыя прыступы і дасылае запыт: *«Ці прайшоў галаўны боль?»*.
 - **Фіксацыя часу сціхання**: Хуткія кнопкі адказу (*толькі што, 30 хвілін таму, 1 гадзіну таму, 2 гадзіны таму*).
 - **Ацэнка эфектыўнасці**: Фіксацыя клінічнага дзеяння лекаў:
@@ -121,6 +123,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/be/calendar.jpg" alt="Інтэрактыўны каляндар прыступаў" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Месячная сетка з індыкацыяй дзён болю (🔴) і бессімптомых дзён (🟢).
 - Зручная навігацыя па месяцах наперад/назад і падрабязныя карткі дзён.
 
@@ -129,6 +132,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/be/reminder.jpg" alt="Штодзённыя персаналізаваныя чэк-іны" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Рэгулярнае апытанне ва ўсталяваны карыстальнікам час (*«Ці балела галава сёння?»*).
 - Поўная падтрымка часавых паясоў (Мінск, Варшава, Вільня, Кіеў, Масква і сусветныя зоны).
 
@@ -137,6 +141,7 @@
 <p align="center">
   <img src="assets/images/readme/sections/be/export.jpg" alt="Клінічны экспарт справаздачы для лекара" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
 </p>
+
 - Структураваныя выгрузкі гісторыі эпізодаў, трыгераў і эфектыўнасці медыкаментаў.
 
 ---
