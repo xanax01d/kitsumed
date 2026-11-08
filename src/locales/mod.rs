@@ -2,8 +2,15 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
+pub struct LocaleMeta {
+    pub code: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct LocaleData {
+    pub meta: Option<LocaleMeta>,
     pub messages: HashMap<String, String>,
     pub location_map: HashMap<String, String>,
     pub pain_type_map: HashMap<String, String>,
@@ -25,8 +32,80 @@ static LOCALES: LazyLock<HashMap<&'static str, LocaleData>> = LazyLock::new(|| {
     map.insert("en", serde_json::from_str(EN_JSON).expect("en locale"));
     map.insert("meme", serde_json::from_str(MEME_JSON).expect("meme locale"));
     map.insert("cyberpunk", serde_json::from_str(CYBERPUNK_JSON).expect("cyberpunk locale"));
+
+    let candidate_dirs = ["locales", "/opt/kitsumed/locales"];
+    for dir in candidate_dirs {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                    let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                    if file_stem == "template" || file_stem.is_empty() {
+                        continue;
+                    }
+                    if let Ok(content) = std::fs::read_to_string(&path) {
+                        match serde_json::from_str::<LocaleData>(&content) {
+                            Ok(data) => {
+                                let code = if let Some(ref meta) = data.meta {
+                                    meta.code.trim().to_lowercase()
+                                } else {
+                                    file_stem.to_lowercase()
+                                };
+                                let static_code: &'static str = Box::leak(code.into_boxed_str());
+                                log::info!("Loaded locale '{static_code}' from {}", path.display());
+                                map.insert(static_code, data);
+                            }
+                            Err(e) => {
+                                log::warn!("Failed to parse locale JSON at {}: {e}", path.display());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     map
 });
+
+pub fn get_locale_list() -> Vec<(&'static str, String)> {
+    let preferred = ["ru", "be", "en", "meme", "cyberpunk"];
+    let mut result = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    for code in preferred {
+        if let Some(loc) = LOCALES.get(code) {
+            let name = loc.meta.as_ref().map(|m| m.name.clone()).unwrap_or_else(|| match code {
+                "ru" => "🇷🇺 Русский".to_string(),
+                "be" => "🇧🇾 Беларуская".to_string(),
+                "en" => "🇬🇧 English".to_string(),
+                "meme" => "🎭 Мемный".to_string(),
+                "cyberpunk" => "🦾 Киберпанк 2077".to_string(),
+                _ => code.to_string(),
+            });
+            result.push((code, name));
+            seen.insert(code);
+        }
+    }
+
+    let mut custom_locales: Vec<(&'static str, String)> = LOCALES
+        .iter()
+        .filter(|(k, _)| !seen.contains(**k))
+        .map(|(code, loc)| {
+            let name = loc
+                .meta
+                .as_ref()
+                .map(|m| m.name.clone())
+                .unwrap_or_else(|| format!("🌐 {code}"));
+            (*code, name)
+        })
+        .collect();
+
+    custom_locales.sort_by(|a, b| a.0.cmp(b.0));
+    result.extend(custom_locales);
+
+    result
+}
 
 pub fn normalize_lang(lang: &str) -> &'static str {
     let cleaned = lang.trim().to_lowercase();
@@ -41,6 +120,11 @@ pub fn normalize_lang(lang: &str) -> &'static str {
     } else if cleaned.contains("cyber") || cleaned == "cp" {
         "cyberpunk"
     } else {
+        for key in LOCALES.keys() {
+            if cleaned == *key {
+                return key;
+            }
+        }
         "ru"
     }
 }

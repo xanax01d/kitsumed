@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "be",
+    "name": "🇧🇾 Беларуская"
+  },
   "messages": {
     "main_menu_title": "Галоўнае меню:",
     "btn_sos": "🆘 Хуткі SOS",

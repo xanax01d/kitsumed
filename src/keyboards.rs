@@ -547,16 +547,17 @@ pub fn get_reminder_prompt_keyboard(lang: &str) -> InlineKeyboardMarkup {
 
 pub fn get_language_keyboard(current: &str) -> InlineKeyboardMarkup {
     let mark = |code: &str| if code == current { " ✅" } else { "" };
-    let rows = vec![
-        vec![
-            InlineKeyboardButton::callback(format!("🇷🇺 Русский{}", mark("ru")), "lang:ru"),
-            InlineKeyboardButton::callback(format!("🇬🇧 English{}", mark("en")), "lang:en"),
-        ],
-        vec![
-            InlineKeyboardButton::callback(format!("🎭 Мемный (Рунет){}", mark("meme")), "lang:meme"),
-            InlineKeyboardButton::callback(format!("🦾 Киберпанк{}", mark("cyberpunk")), "lang:cyberpunk"),
-        ],
-    ];
+    let list = crate::locales::get_locale_list();
+    let mut rows: Vec<Vec<InlineKeyboardButton>> = Vec::new();
+    for chunk in list.chunks(2) {
+        let row = chunk
+            .iter()
+            .map(|(code, name)| {
+                InlineKeyboardButton::callback(format!("{name}{}", mark(code)), format!("lang:{code}"))
+            })
+            .collect();
+        rows.push(row);
+    }
     InlineKeyboardMarkup::new(rows)
 }
 

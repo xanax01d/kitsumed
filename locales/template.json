@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "code": "your_code",
+    "name": "🏳️ Your Language Name"
+  },
+  "messages": {
+    "btn_back": "« Back",
+    "btn_cancel": "Cancel",
+    "btn_confirm": "Confirm",
+    "btn_delete": "Delete",
+    "btn_edit": "Edit",
+    "btn_help": "Help",
+    "btn_home": "Home",
+    "btn_language": "Language",
+    "btn_log": "Log Episode",
+    "btn_main_menu": "« Main Menu",
+    "btn_next": "Next »",
+    "btn_save": "Save",
+    "btn_settings": "Settings",
+    "btn_status": "Status",
+    "lang_rich_title": "🌐 Interface Language",
+    "lang_rich_block": "Select your preferred language. All questionnaires, notifications, and analytics cards will be presented in this style.",
+    "menu_title": "🦊 KitsuMed • Main Menu",
+    "menu_description": "Smart clinical headache and migraine diary.",
+    "start_welcome": "Welcome to <b>KitsuMed</b>! 🦊\n\nI am your companion for tracking headaches and migraines.",
+    "intensity_mild": "Mild",
+    "intensity_moderate": "Moderate",
+    "intensity_severe": "Severe",
+    "intensity_unbearable": "Unbearable 🔥",
+    "saved_completed_title": "Episode #{id} Resolved 🟢",
+    "saved_completed_text": "Episode <b>#{id}</b> marked as resolved ({dur}). Take care and stay hydrated! ✨",
+    "saved_active_title": "Episode #{id} Active 🔴",
+    "saved_active_text": "Episode <b>#{id}</b> saved. I will check back in later to see if the pain has passed."
+  },
+  "location_map": {
+    "forehead": "Forehead",
+    "temples": "Temples",
+    "back_of_head": "Back of Head",
+    "left": "Left Side",
+    "right": "Right Side",
+    "bilateral": "Both Sides",
+    "diffuse": "Entire Head"
+  },
+  "pain_type_map": {
+    "throbbing": "Throbbing / Pulsing",
+    "pressing": "Pressing / Tight band",
+    "stabbing": "Stabbing / Sharp",
+    "dull": "Dull ache"
+  },
+  "symptoms_map": {
+    "nausea": "Nausea",
+    "vomiting": "Vomiting",
+    "photophobia": "Photophobia (Light sensitivity)",
+    "phonophobia": "Phonophobia (Sound sensitivity)",
+    "aura": "Visual Aura",
+    "dizziness": "Dizziness"
+  },
+  "triggers_map": {
+    "stress": "Emotional Stress",
+    "lack_of_sleep": "Sleep Deprivation",
+    "oversleep": "Oversleeping",
+    "weather": "Weather / Barometric Drop",
+    "fatigue": "Physical Fatigue",
+    "alcohol": "Alcohol",
+    "skip_food": "Skipped Meals / Fasting"
+  },
+  "medication_map": {
+    "sumatriptan_50": "Sumatriptan 50 mg",
+    "sumatriptan_100": "Sumatriptan 100 mg",
+    "ibuprofen_400": "Ibuprofen 400 mg",
+    "paracetamol_500": "Paracetamol 500 mg",
+    "zolmitriptan_2_5": "Zolmitriptan 2.5 mg",
+    "citramon": "Citramon (1 tab)"
+  }
+}

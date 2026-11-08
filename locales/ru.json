@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "ru",
+    "name": "🇷🇺 Русский"
+  },
   "messages": {
     "main_menu_title": "Главное меню:",
     "btn_sos": "🆘 Быстрый SOS",
