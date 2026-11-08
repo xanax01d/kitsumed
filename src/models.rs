@@ -62,3 +62,11 @@ pub struct UserReminder {
     pub timezone: String,
     pub last_reminded_date: Option<String>,
 }
+
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+pub struct UserMedication {
+    pub id: i32,
+    pub user_id: i64,
+    pub name: String,
+    pub last_used_at: Option<DateTime<Utc>>,
+}

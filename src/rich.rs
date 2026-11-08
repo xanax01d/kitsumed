@@ -1404,33 +1404,37 @@ pub async fn render_rich_headache_step(
 
         FlowStep::Medication => {
             let title = get_text("step7_rich_title", norm);
-            let sub = get_text("step7_rich_sub", norm);
-            let btn_custom = get_text("step7_btn_custom", norm);
             let btn_none = get_text("step7_btn_none", norm);
 
-            let m1 = get_text("step7_m1", norm);
-            let m2 = get_text("step7_m2", norm);
-            let m3 = get_text("step7_m3", norm);
-            let m4 = get_text("step7_m4", norm);
-            let m5 = get_text("step7_m5", norm);
-            let m6 = get_text("step7_m6", norm);
+            let saved_meds = crate::db::get_user_medications(pool, user_id).await;
+
+            let (sub, btn_custom) = if saved_meds.is_empty() {
+                (
+                    get_text("step7_rich_sub_empty", norm),
+                    get_text("step7_btn_custom", norm),
+                )
+            } else {
+                (
+                    get_text("step7_rich_sub", norm),
+                    get_text("step7_btn_custom_more", norm),
+                )
+            };
+
+            let mut med_rows = String::new();
+            for med in saved_meds {
+                let escaped_name = html_escape(&med.name);
+                med_rows.push_str(&format!(
+                    "<tg-button-row>\n  <tg-button type=\"callback_data\" data=\"hdm:id:{id}\">💊 {escaped_name}</tg-button>\n</tg-button-row>\n",
+                    id = med.id,
+                    escaped_name = escaped_name
+                ));
+            }
 
             format!(
                 "<b>{title}</b>\n\n\
                 <img src=\"tg://photo?id=hero\">\n\n\
                 {sub}\n\n\
-                <tg-button-row>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m1}\">{m1}</tg-button>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m2}\">{m2}</tg-button>\n\
-                </tg-button-row>\n\
-                <tg-button-row>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m3}\">{m3}</tg-button>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m4}\">{m4}</tg-button>\n\
-                </tg-button-row>\n\
-                <tg-button-row>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m5}\">{m5}</tg-button>\n\
-                  <tg-button type=\"callback_data\" data=\"hdm:{m6}\">{m6}</tg-button>\n\
-                </tg-button-row>\n\
+                {med_rows}\
                 <tg-button-row>\n\
                   <tg-button type=\"callback_data\" style=\"primary\" data=\"hdm:custom\">{btn_custom}</tg-button>\n\
                 </tg-button-row>\n\

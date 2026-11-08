@@ -222,8 +222,15 @@ pub async fn handle_message(
                 if let Some(p) = pmid {
                     let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
                 }
-                form.medication = Some(text.to_string());
-                form.current_step = Some(FlowStep::MedicationTime);
+                let trimmed = text.trim();
+                if !trimmed.is_empty() && trimmed != "none" {
+                    let _ = crate::db::save_user_medication(&pool, user_id, trimmed).await;
+                    form.medication = Some(trimmed.to_string());
+                    form.current_step = Some(FlowStep::MedicationTime);
+                } else {
+                    form.medication = Some("none".to_string());
+                    form.current_step = Some(FlowStep::Confirm);
+                }
 
                 sessions.set(user_id, UserState::LoggingHeadache(form.clone())).await;
                 let last_mid = sessions.get_last_mid(user_id).await;

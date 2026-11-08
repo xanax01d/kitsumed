@@ -357,11 +357,26 @@ pub async fn handle_headache_callback(
                 return Ok(());
             }
 
-            form.medication = Some(med.to_string());
-
             if med == "none" {
+                form.medication = Some("none".to_string());
                 form.current_step = Some(FlowStep::Confirm);
+            } else if let Some(id_str) = med.strip_prefix("id:") {
+                if let Ok(med_id) = id_str.parse::<i32>() {
+                    if let Some(med_name) = crate::db::get_user_medication_by_id(pool, user_id, med_id).await {
+                        crate::db::touch_user_medication(pool, user_id, med_id).await;
+                        form.medication = Some(med_name);
+                        form.current_step = Some(FlowStep::MedicationTime);
+                    } else {
+                        form.medication = Some("none".to_string());
+                        form.current_step = Some(FlowStep::Confirm);
+                    }
+                } else {
+                    form.medication = Some("none".to_string());
+                    form.current_step = Some(FlowStep::Confirm);
+                }
             } else {
+                let _ = crate::db::save_user_medication(pool, user_id, med).await;
+                form.medication = Some(med.to_string());
                 form.current_step = Some(FlowStep::MedicationTime);
             }
 
