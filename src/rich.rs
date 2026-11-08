@@ -168,13 +168,19 @@ pub async fn send_or_edit_rich_raw(
     let formatted_html = format_rich_html(html);
     let html = formatted_html.as_str();
     let client = reqwest::Client::new();
-    let has_image = img_path.map(|p| Path::new(p).exists()).unwrap_or(false);
+    let fallback_hero = "assets/images/en/hero_banner.png";
+    let effective_img_path = match img_path {
+        Some(p) if Path::new(p).exists() => Some(p),
+        Some(p) if p.contains("hero_banner.png") && Path::new(fallback_hero).exists() => Some(fallback_hero),
+        _ => None,
+    };
+    let has_image = effective_img_path.is_some();
 
     // If message_id is provided, attempt in-place edit first
     if let Some(mid) = message_id {
         let edit_url = format!("https://api.telegram.org/bot{token}/editMessageText");
         let ok = if has_image {
-            let path = img_path.unwrap();
+            let path = effective_img_path.unwrap();
             if let Ok(bytes) = tokio::fs::read(path).await {
                 let rich_message = serde_json::json!({
                     "html": html,
@@ -249,7 +255,7 @@ pub async fn send_or_edit_rich_raw(
     // Fallback or initial send
     let send_url = format!("https://api.telegram.org/bot{token}/sendRichMessage");
     if has_image {
-        let path = img_path.unwrap();
+        let path = effective_img_path.unwrap();
         let bytes = tokio::fs::read(path).await?;
         let rich_message = serde_json::json!({
             "html": html,
@@ -922,21 +928,24 @@ pub async fn send_rich_language_menu(
     let block = get_text("lang_rich_block", norm);
     let btn_menu = get_text("btn_main_menu", norm);
 
+    let locale_list = crate::locales::get_locale_list();
+    let mut buttons_html = String::new();
+    for chunk in locale_list.chunks(2) {
+        buttons_html.push_str("        <tg-button-row>\n");
+        for (code, name) in chunk {
+            let active_mark = if *code == norm { " ✅" } else { "" };
+            buttons_html.push_str(&format!(
+                "          <tg-button type=\"callback_data\" data=\"lang:{code}\">{name}{active_mark}</tg-button>\n"
+            ));
+        }
+        buttons_html.push_str("        </tg-button-row>\n");
+    }
+
     let html = format!(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         <blockquote>{block}</blockquote>\n\n\
-        <tg-button-row>\n\
-          <tg-button type=\"callback_data\" data=\"lang:ru\">🇷🇺 Русский</tg-button>\n\
-          <tg-button type=\"callback_data\" data=\"lang:be\">🇧🇾 Беларуская</tg-button>\n\
-        </tg-button-row>\n\
-        <tg-button-row>\n\
-          <tg-button type=\"callback_data\" data=\"lang:en\">🇬🇧 English</tg-button>\n\
-          <tg-button type=\"callback_data\" data=\"lang:meme\">🎭 Мемный</tg-button>\n\
-        </tg-button-row>\n\
-        <tg-button-row>\n\
-          <tg-button type=\"callback_data\" data=\"lang:cyberpunk\">🦾 Киберпанк 2077</tg-button>\n\
-        </tg-button-row>\n\
+{buttons_html}\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
         </tg-button-row>"

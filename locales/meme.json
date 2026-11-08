@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "meme",
+    "name": "🎭 Мемный"
+  },
   "messages": {
     "main_menu_title": "Главная поляна (движ):",
     "btn_sos": "🆘 F*** GO BACK / SOS",

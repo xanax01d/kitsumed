@@ -52,6 +52,19 @@ def validate_locale(target_path: Path, ref_data: dict) -> tuple[list[str], list[
     if err:
         return [err], []
 
+    # Check meta section
+    if "meta" in target_data:
+        meta = target_data["meta"]
+        if not isinstance(meta, dict):
+            errors.append("Section 'meta' must be an object with 'code' and 'name'")
+        else:
+            if "code" not in meta or not isinstance(meta["code"], str) or not meta["code"].strip():
+                errors.append("meta.code must be a non-empty string (e.g. 'de', 'es')")
+            if "name" not in meta or not isinstance(meta["name"], str) or not meta["name"].strip():
+                errors.append("meta.name must be a non-empty string with emoji (e.g. '🇩🇪 Deutsch')")
+    else:
+        errors.append("Missing required top-level section: 'meta' (with 'code' and 'name')")
+
     # Check top-level sections
     for sec in REQUIRED_SECTIONS:
         if sec not in target_data:

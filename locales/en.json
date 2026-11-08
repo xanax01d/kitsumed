@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "en",
+    "name": "🇬🇧 English"
+  },
   "messages": {
     "main_menu_title": "Main Menu:",
     "btn_sos": "🆘 Quick SOS",
