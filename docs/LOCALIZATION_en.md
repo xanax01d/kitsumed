@@ -1,5 +1,9 @@
 # 🌐 Contributing Localizations to KitsuMed
 
+<p align="center">
+  <a href="LOCALIZATION.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; <a href="LOCALIZATION_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
+</p>
+
 We welcome community translations! Whether you want to add a national language (German, Spanish, French, Polish, Ukrainian, etc.) or a fun thematic persona (Fantasy, Sci-Fi, Retro), follow this guide to add your localization to KitsuMed.
 
 ---
@@ -82,6 +86,7 @@ If you want to contribute artwork for your language:
 1. Format: **16:9 widescreen horizontal image** (`1376x768` or `1280x720`).
 2. Placement: `assets/images/<language_code>/hero_banner.png`.
 3. Aesthetic: Cozy, charming anime art style (Kyoto Animation / Makoto Shinkai vibe) featuring a kitsune fox girl with fluffy ears and tail, dressed in an outfit reflecting the culture or setting.
+*If a locale does not supply its own banner, the bot automatically falls back to the English banner.*
 
 ---
 
@@ -99,6 +104,7 @@ python scripts/validate_locale.py
 
 The validator checks:
 - Valid JSON syntax.
+- Required `meta` block (`code` and `name`).
 - All required keys from canonical `en.json` are present.
 - No empty translated strings.
 - All template placeholder variables (`{id}`, `{time}`, etc.) are preserved.
