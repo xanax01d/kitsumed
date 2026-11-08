@@ -45,10 +45,6 @@
 
 ## 📐 Архітэктура сістэмы
 
-<p align="center">
-  <img src="assets/images/cyberpunk/hero_banner.png" alt="Архітэктура KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
-
 Цалкам асінхронная адмоваўстойлівая архітэктура на базе чыстага **Rust** (кампіляваны бінарнік з нулявым аверхедам), шматпатокавага рантайму **Tokio**, пула злучэнняў **SQLx**, размеркаванага **Redis** для FSM-сесій і СУБД **PostgreSQL**:
 
 | Кампанент | Тэхналогія | Прызначэнне |
@@ -86,6 +82,10 @@
 </p>
 
 ### 1. ⏱ Пакрокавы апытальнік з Rich Text інтэрфейсам
+
+<p align="center">
+  <img src="assets/images/readme/sections/be/survey.jpg" alt="Пакрокавы апытальнік KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
+</p>
 - **Кнопкі ўнутры тэксту (Telegram TG-13)**: Кнопкі навігацыі, шкалы болю і выбару сімптомаў убудаваныя непасрэдна ў цела паведамлення праз тэгі `<tg-button-row>` і `<tg-button>`.
 - **Час пачатку**: Хуткія прэсэты (*Толькі што, 30 хвілін таму, 1 гадзіну таму, 2 гадзіны таму*) альбо дакладны час.
 - **Шкала болю (1–10)**: Зразумелая градацыя ад ледзь адчувальнай (1) да невыноснай (10 🔥).
@@ -124,10 +124,6 @@
 ---
 
 ## ⌨️ Каманды і навігацыя
-
-<p align="center">
-  <img src="assets/images/en/hero_banner.png" alt="Каманды і навігацыя KitsuMed" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 | Каманда | Прызначэнне |
 | :--- | :--- |
@@ -206,10 +202,6 @@ kitsumed/
 ---
 
 ## ⚙️ Хуткі старт
-
-<p align="center">
-  <img src="assets/images/meme/hero_banner.png" alt="Хуткі старт і разгортванне" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
 
 ### 1. Кланаванне рэпазіторыя
 ```bash
