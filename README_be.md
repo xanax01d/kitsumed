@@ -404,9 +404,6 @@ KitsuMed — цалкам бясплатны, незалежны праект з
   </a>
 </p>
 
-- 🌐 **Для браўзера / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(карты Белкарт/МІР, замежныя карты Visa/MC, TON)*
-- 📱 **Унутры Telegram**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
-
 ---
 
 <div align="center">
