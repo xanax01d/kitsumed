@@ -25,6 +25,7 @@
 [![Follow-up](https://img.shields.io/badge/Follow--up-Аўтаматычны%20кантроль-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#2-🩺-аўтаматычны-follow-up-і-ацэнка-прэпаратаў)
 [![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TXJ)
 
 <p align="center">
   <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; 🇧🇾 <b>Беларуская</b> &nbsp;•&nbsp; <a href="README_en.md"><b>🇬🇧 English</b></a>
@@ -166,6 +167,7 @@
 | `/calendar`, `/history` | Інтэрактыўны каляндар прыступаў па днях |
 | `/reminder`, `/settings` | Меню налады штодзённага чэк-іну і часавога пояса |
 | `/language` | Выбар мовы інтэрфейсу (BE, RU, EN, Meme, Cyberpunk) |
+| `/donate` | Падтрымаць распрацоўку і аплату сервераў праекта |
 | `/help` | Даведачная інфармацыя па шкале болю і вядзенні дзённіка |
 | `/cancel` | Перапыненне бягучага сцэнарыя і вяртанне ў галоўнае меню |
 
@@ -389,6 +391,21 @@ docker run -d \
    systemctl enable kitsumed.service
    systemctl restart kitsumed.service
    ```
+
+---
+
+## 💖 Падтрымка праекта
+
+KitsuMed — цалкам бясплатны, незалежны праект з адкрытым зыходным кодам. Калі бот дапамагае вам сачыць за мігрэнню і галаўным болем, вы можаце падтрымаць аплату сервераў і распрацоўку:
+
+<p align="center">
+  <a href="https://web.tribute.tg/d/TXJ">
+    <img src="https://img.shields.io/badge/Падтрымаць_праз_Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white" alt="Падтрымаць праз Tribute" />
+  </a>
+</p>
+
+- 🌐 **Для браўзера / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(карты Белкарт/МІР, замежныя карты Visa/MC, TON)*
+- 📱 **Унутры Telegram**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
 
 ---
 

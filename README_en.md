@@ -25,6 +25,7 @@
 [![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#2-🩺-automated-follow-up--medication-efficacy-tracking)
 [![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TXJ)
 
 <p align="center">
   <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; <a href="README_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
@@ -166,6 +167,7 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 | `/calendar`, `/history` | Interactive monthly calendar of past episodes |
 | `/reminder`, `/settings` | Daily check-in and timezone configuration |
 | `/language` | Interface language selection (RU, BE, EN, Meme, Cyberpunk) |
+| `/donate` | Support project development and cloud hosting |
 | `/help` | User guide and headache pain scale explanation |
 | `/cancel` | Cancel active questionnaire and return to menu |
 
@@ -393,6 +395,21 @@ docker run -d \
    ```bash
    journalctl -u kitsumed.service -f
    ```
+
+---
+
+## 💖 Support the Project
+
+KitsuMed is a completely free, independent, open-source project. If the bot helps you manage and track your headaches or migraines, you can support our server infrastructure and development:
+
+<p align="center">
+  <a href="https://web.tribute.tg/d/TXJ">
+    <img src="https://img.shields.io/badge/Support_via_Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white" alt="Support via Tribute" />
+  </a>
+</p>
+
+- 🌐 **Web / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(International Visa/Mastercard EUR/USD, CIS cards, TON)*
+- 📱 **Telegram Direct**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
 
 ---
 
