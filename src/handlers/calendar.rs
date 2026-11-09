@@ -185,18 +185,28 @@ pub async fn handle_calendar_callback(
     }
 
     let action = parts[1];
+    let tz_str = get_user_timezone(pool, user_id).await;
+    let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
+    let today = Utc::now().with_timezone(&tz).date_naive();
+
     match action {
         "nav" => {
             if parts.len() >= 4 {
                 let y: i32 = parts[2].parse().unwrap_or(2026);
                 let m: u32 = parts[3].parse().unwrap_or(1);
+
+                if y > today.year() || (y == today.year() && m > today.month()) {
+                    let _ = bot.answer_callback_query(&q.id)
+                        .text("Нельзя перематывать календарь в будущее!")
+                        .show_alert(true)
+                        .await;
+                    return Ok(());
+                }
+
                 let _ = crate::rich::send_rich_calendar_menu(bot.token(), chat_id.0, mid, user_id, y, m, None, pool).await;
             }
         }
         "today" => {
-            let tz_str = get_user_timezone(pool, user_id).await;
-            let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
-            let today = Utc::now().with_timezone(&tz).date_naive();
             let _ = crate::rich::send_rich_calendar_menu(bot.token(), chat_id.0, mid, user_id, today.year(), today.month(), Some(today.day()), pool).await;
         }
         "day" => {
@@ -207,11 +217,27 @@ pub async fn handle_calendar_callback(
                 let _ = crate::rich::send_rich_calendar_menu(bot.token(), chat_id.0, mid, user_id, y, m, Some(d), pool).await;
             }
         }
+        "future" => {
+            let _ = bot.answer_callback_query(&q.id)
+                .text("Этот день еще не наступил ✨")
+                .show_alert(true)
+                .await;
+        }
         "add" => {
             if parts.len() >= 5 {
                 let y: i32 = parts[2].parse().unwrap_or(2026);
                 let m: u32 = parts[3].parse().unwrap_or(1);
                 let d: u32 = parts[4].parse().unwrap_or(1);
+                let sel_date = NaiveDate::from_ymd_opt(y, m, d).unwrap_or(today);
+
+                if sel_date > today {
+                    let _ = bot.answer_callback_query(&q.id)
+                        .text("Нельзя записать приступ на будущую дату!")
+                        .show_alert(true)
+                        .await;
+                    return Ok(());
+                }
+
                 let date_str = format!("{y}-{m:02}-{d:02} 12:00");
                 let mut form = crate::session::HeadacheForm::default();
                 form.start_time = Some(date_str);

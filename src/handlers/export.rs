@@ -7,7 +7,7 @@ use teloxide::types::{CallbackQuery, InputFile, ParseMode};
 
 use crate::db::{get_all_episodes, get_user_language, get_user_timezone};
 use crate::locales::{get_text, get_text_fmt};
-use crate::services::export::generate_csv;
+use crate::services::export::{generate_csv, generate_pdf};
 use crate::session::SessionStore;
 
 pub async fn handle_export_cmd(
@@ -31,7 +31,7 @@ pub async fn handle_export_cmd(
 pub async fn handle_export_callback(
     bot: &Bot,
     q: &CallbackQuery,
-    _format: &str,
+    format_type: &str,
     pool: &PgPool,
 ) -> ResponseResult<()> {
     let user_id = q.from.id.0 as i64;
@@ -55,23 +55,53 @@ pub async fn handle_export_callback(
     let date_str = now.format("%Y%m%d_%H%M").to_string();
     let formatted_now = now.format("%d.%m.%Y %H:%M").to_string();
 
-    let csv_bytes = generate_csv(&episodes, &lang);
-    let filename = format!("kitsumed_diary_{date_str}.csv");
-    let doc = InputFile::memory(csv_bytes).file_name(filename);
+    if format_type == "pdf" {
+        match generate_pdf(&episodes, user_id, &formatted_now, &lang).await {
+            Ok(pdf_bytes) => {
+                let filename = format!("kitsumed_diary_{date_str}.pdf");
+                let doc = InputFile::memory(pdf_bytes).file_name(filename);
+                let caption = get_text_fmt(
+                    "export_caption_pdf",
+                    &lang,
+                    &[
+                        ("count", &episodes.len().to_string()),
+                        ("date", &formatted_now),
+                    ],
+                );
+                if let Some(msg) = q.regular_message() {
+                    let _ = bot.send_document(msg.chat.id, doc)
+                        .caption(caption)
+                        .parse_mode(ParseMode::Html)
+                        .await;
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to generate PDF for user {user_id}: {e}");
+                if let Some(msg) = q.regular_message() {
+                    let _ = bot.send_message(msg.chat.id, "⚠️ Ошибка при формировании PDF отчета. Попробуйте CSV.").await;
+                }
+            }
+        }
+    } else {
+        let csv_bytes = generate_csv(&episodes, &lang);
+        let filename = format!("kitsumed_diary_{date_str}.csv");
+        let doc = InputFile::memory(csv_bytes).file_name(filename);
 
-    let caption = get_text_fmt(
-        "export_caption_csv",
-        &lang,
-        &[
-            ("count", &episodes.len().to_string()),
-            ("date", &formatted_now),
-        ],
-    );
+        let caption = get_text_fmt(
+            "export_caption_csv",
+            &lang,
+            &[
+                ("count", &episodes.len().to_string()),
+                ("date", &formatted_now),
+            ],
+        );
 
-    if let Some(msg) = q.regular_message() {
-        let _ = bot.send_document(msg.chat.id, doc)
-            .caption(caption).parse_mode(ParseMode::Html)
-            .await;
+        if let Some(msg) = q.regular_message() {
+            let _ = bot.send_document(msg.chat.id, doc)
+                .caption(caption)
+                .parse_mode(ParseMode::Html)
+                .await;
+        }
     }
 
     Ok(())

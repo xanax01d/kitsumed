@@ -10,7 +10,7 @@ use crate::keyboards::{get_followup_medication_keyboard, get_followup_pain_keybo
 use crate::locales::{get_text, get_text_fmt};
 use crate::session::{SessionStore, UserState};
 
-pub fn calculate_end_time(preset: &str, tz_name: &str) -> String {
+pub fn calculate_end_time(preset: &str, tz_name: &str, start_time_str: Option<&str>) -> String {
     let tz = Tz::from_str(tz_name).unwrap_or(chrono_tz::Europe::Moscow);
     let now = Utc::now().with_timezone(&tz);
 
@@ -22,6 +22,20 @@ pub fn calculate_end_time(preset: &str, tz_name: &str) -> String {
         "-4h" | "4h" | "-240m" | "240m" => now - Duration::hours(4),
         _ => now,
     };
+
+    if let Some(st) = start_time_str {
+        if let Ok(st_dt) = chrono::NaiveDateTime::parse_from_str(st, "%Y-%m-%d %H:%M") {
+            let target_naive = target.naive_local();
+            if target_naive <= st_dt {
+                // Боль не может заканчиваться раньше, чем началась!
+                let adjusted = st_dt + Duration::minutes(15);
+                let now_naive = now.naive_local();
+                let final_dt = if adjusted <= now_naive { adjusted } else { now_naive };
+                return final_dt.format("%Y-%m-%d %H:%M").to_string();
+            }
+        }
+    }
+
     target.format("%Y-%m-%d %H:%M").to_string()
 }
 
@@ -99,10 +113,11 @@ pub async fn handle_followup_callback(
             if parts.len() >= 4 {
                 let ep_id: i32 = parts[2].parse().unwrap_or(0);
                 let preset = parts[3];
-                let end_time = calculate_end_time(preset, &tz_name);
+                let ep = get_episode_by_id(pool, ep_id).await.unwrap_or(None);
+                let start_time = ep.as_ref().map(|e| e.start_time.as_str());
+                let end_time = calculate_end_time(preset, &tz_name, start_time);
 
                 let _ = resolve_episode_pain(pool, ep_id, true, Some(&end_time)).await;
-                let ep = get_episode_by_id(pool, ep_id).await.unwrap_or(None);
                 let has_meds = ep.as_ref().map(|e| {
                     let m = e.medication.as_deref().unwrap_or("none");
                     m != "none" && !m.is_empty()

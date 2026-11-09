@@ -10,7 +10,7 @@ mod handlers;
 use std::env;
 use sqlx::postgres::PgPoolOptions;
 use teloxide::prelude::*;
-use teloxide::types::Update;
+use teloxide::types::{BotCommand, Update};
 
 use crate::db::init_db;
 use crate::handlers::calendar::handle_calendar_callback;
@@ -124,6 +124,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn background schedulers
     tokio::spawn(run_followup_scheduler(bot.clone(), pool.clone()));
     tokio::spawn(run_reminder_scheduler(bot.clone(), pool.clone()));
+
+    let commands = vec![
+        BotCommand::new("menu", "🦊 Главное меню"),
+        BotCommand::new("sos", "🆘 Быстрый SOS"),
+        BotCommand::new("log", "🤕 Записать приступ"),
+        BotCommand::new("status", "⏹ Прошла ли боль?"),
+        BotCommand::new("stats", "📊 Аналитика и радар"),
+        BotCommand::new("history", "📅 Календарь приступов"),
+        BotCommand::new("export", "📥 Экспорт отчета (PDF/CSV)"),
+        BotCommand::new("reminder", "⏰ Напоминания"),
+        BotCommand::new("language", "🌐 Язык и стиль"),
+        BotCommand::new("help", "ℹ️ Справка"),
+    ];
+    let _ = bot.set_my_commands(commands).await;
 
     log::info!("Bot started successfully and is polling for updates...");
 

@@ -42,7 +42,7 @@ pub fn calculate_headache_end_time(
     let now = Utc::now().with_timezone(tz);
     let med_mins = parse_delay_to_minutes(med_take_delay);
     let relief_mins = parse_delay_to_minutes(relief_delay);
-    let total_mins = med_mins + relief_mins;
+    let total_mins = (med_mins + relief_mins).max(15);
 
     if let Some(st) = start_time_str {
         if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(st, "%Y-%m-%d %H:%M") {
