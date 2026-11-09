@@ -43,6 +43,7 @@ pub enum UserState {
     WaitingFollowupTime(i32, Option<i32>),
     WaitingReminderTime(Option<i32>),
     WaitingCustomTimezone(Option<i32>),
+    WaitingSosCustomMedication(Option<i32>),
 }
 
 impl Default for UserState {

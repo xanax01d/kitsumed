@@ -6,15 +6,16 @@ use sqlx::PgPool;
 use teloxide::prelude::*;
 use teloxide::types::{CallbackQuery, ChatId, InputFile, KeyboardRemove, MessageId, ParseMode};
 
-use crate::db::{get_episode_by_id, get_user_language, resolve_episode_pain, set_user_reminder, upsert_user};
+use crate::db::{create_episode, get_episode_by_id, get_user_language, resolve_episode_pain, set_user_reminder, upsert_user};
 use crate::handlers::calendar::handle_calendar_cmd;
 use crate::handlers::export::handle_export_cmd;
 use crate::handlers::followup::handle_status_cmd;
-use crate::handlers::headache::{get_step_image_path, start_headache_flow};
+use crate::handlers::headache::{get_step_image_path, start_headache_flow, start_sos_flow};
 use crate::handlers::language::handle_language_cmd;
 use crate::handlers::reminder::{handle_reminder_cmd, resolve_timezone};
 use crate::keyboards::*;
 use crate::locales::{get_text, get_text_fmt};
+use crate::models::NewEpisode;
 use crate::session::{FlowStep, SessionStore, UserState};
 
 pub fn parse_custom_datetime_input(text: &str, tz_name: &str) -> String {
@@ -95,12 +96,21 @@ pub async fn handle_menu_callback(
     }
 
     match action {
+        "sos" => {
+            start_sos_flow(bot, chat_id, mid, user_id, pool, sessions).await?;
+        }
         "log" => {
             start_headache_flow(bot, chat_id, mid, user_id, pool, sessions).await?;
         }
         "status" => {
             sessions.remove(user_id).await;
             if let Ok(new_mid) = crate::rich::send_rich_status_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
+        }
+        "stats" => {
+            sessions.remove(user_id).await;
+            if let Ok(new_mid) = crate::rich::send_rich_analytics_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
                 sessions.set_last_mid(user_id, new_mid).await;
             }
         }
@@ -240,6 +250,70 @@ pub async fn handle_message(
                 return Ok(());
             }
 
+            UserState::WaitingSosCustomMedication(pmid) => {
+                let _ = bot.delete_message(msg.chat.id, msg.id).await;
+                if let Some(p) = pmid {
+                    let _ = bot.delete_message(msg.chat.id, MessageId(p)).await;
+                }
+                let trimmed = text.trim();
+                let medication_name = if !trimmed.is_empty() && trimmed != "none" {
+                    let _ = crate::db::save_user_medication(&pool, user_id, trimmed).await;
+                    trimmed.to_string()
+                } else {
+                    "none".to_string()
+                };
+
+                let tz_str = crate::db::get_user_timezone(&pool, user_id).await;
+                let tz = Tz::from_str(&tz_str).unwrap_or(chrono_tz::Europe::Moscow);
+                let now = Utc::now().with_timezone(&tz);
+                let start_time_str = now.format("%Y-%m-%d %H:%M").to_string();
+
+                let weather = crate::services::weather::fetch_current_weather(&tz_str).await;
+                let (pressure_hpa, temp_c) = match weather {
+                    Some((p, t)) => (Some(p), Some(t)),
+                    None => (None, None),
+                };
+                let weather_display = crate::services::weather::format_weather_display(pressure_hpa, temp_c);
+
+                let new_ep = NewEpisode {
+                    user_id,
+                    start_time: start_time_str,
+                    end_time: None,
+                    intensity: 8,
+                    location: "both".to_string(),
+                    pain_type: "throbbing".to_string(),
+                    symptoms: vec![],
+                    triggers: vec![],
+                    medication: medication_name.clone(),
+                    medication_relief: None,
+                    med_take_delay: Some("0m".to_string()),
+                    relief_delay: None,
+                    status: "active".to_string(),
+                    pain_resolved: Some(false),
+                    pressure_hpa,
+                    temperature_c: temp_c,
+                    is_quick_log: Some(true),
+                };
+
+                let ep_id = create_episode(&pool, &new_ep).await.unwrap_or(0);
+                sessions.remove(user_id).await;
+
+                let last_mid = sessions.get_last_mid(user_id).await;
+                if let Ok(new_mid) = crate::rich::send_rich_sos_saved(
+                    bot.token(),
+                    msg.chat.id.0,
+                    last_mid,
+                    ep_id,
+                    &medication_name,
+                    weather_display.as_deref(),
+                    user_id,
+                    &pool,
+                ).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
+                return Ok(());
+            }
+
             UserState::WaitingFollowupTime(ep_id, pmid) => {
                 let _ = bot.delete_message(msg.chat.id, msg.id).await;
                 if let Some(p) = pmid {
@@ -342,12 +416,22 @@ pub async fn handle_message(
         let args = text.strip_prefix("/start").unwrap_or("").trim();
 
         match args {
+            "sos" => {
+                start_sos_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
+                return Ok(());
+            }
             "log" => {
                 start_headache_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
                 return Ok(());
             }
             "status" => {
                 handle_status_cmd(&bot, &msg, &pool, &sessions, last_mid).await?;
+                return Ok(());
+            }
+            "stats" => {
+                if let Ok(new_mid) = crate::rich::send_rich_analytics_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
                 return Ok(());
             }
             "history" => {
@@ -382,6 +466,18 @@ pub async fn handle_message(
 
     if text == "/help" || is_help_btn(text) {
         if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+            sessions.set_last_mid(user_id, new_mid).await;
+        }
+        return Ok(());
+    }
+
+    if text == "/sos" {
+        start_sos_flow(&bot, msg.chat.id, last_mid, user_id, &pool, &sessions).await?;
+        return Ok(());
+    }
+
+    if text == "/stats" || text == "/analytics" {
+        if let Ok(new_mid) = crate::rich::send_rich_analytics_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
             sessions.set_last_mid(user_id, new_mid).await;
         }
         return Ok(());
