@@ -408,9 +408,6 @@ KitsuMed is a completely free, independent, open-source project. If the bot help
   </a>
 </p>
 
-- 🌐 **Web / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(International Visa/Mastercard EUR/USD, CIS cards, TON)*
-- 📱 **Telegram Direct**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
-
 ---
 
 <div align="center">

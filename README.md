@@ -448,9 +448,6 @@ KitsuMed — полностью бесплатный, независимый п�
   </a>
 </p>
 
-- 🌐 **Для браузера / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(карты РФ/МИР, европейские карты Visa/MC, TON)*
-- 📱 **Внутри Telegram**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
-
 ---
 
 <div align="center">
