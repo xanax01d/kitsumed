@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::HashSet;
 use chrono::{Datelike, NaiveDate};
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};

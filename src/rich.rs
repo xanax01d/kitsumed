@@ -972,7 +972,10 @@ pub async fn send_rich_help_menu(
     let help_items = get_text("help_rich_items", norm);
     let btn_log = get_text("help_rich_btn_log", norm);
     let btn_donate = get_text("btn_donate", norm);
+    let btn_channel = get_text("btn_channel", norm);
     let btn_menu = get_text("btn_main_menu", norm);
+    let channel_url = std::env::var("TELEGRAM_CHANNEL_URL")
+        .unwrap_or_else(|_| "https://t.me/kitsumed".to_string());
 
     let html = format!(
         "<b>{title}</b>\n\n\
@@ -982,6 +985,9 @@ pub async fn send_rich_help_menu(
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"success\" data=\"menu:log\">{btn_log}</tg-button>\n\
           <tg-button type=\"callback_data\" data=\"menu:donate\">{btn_donate}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"url\" url=\"{channel_url}\">{btn_channel}</tg-button>\n\
         </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
@@ -1011,6 +1017,13 @@ pub async fn send_rich_donate_menu(
         "<b>{title}</b>\n\n\
         <img src=\"tg://photo?id=hero\">\n\n\
         <blockquote>{block}</blockquote>\n\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"stars:50\">⭐️ 50 Stars (🍪)</tg-button>\n\
+          <tg-button type=\"callback_data\" data=\"stars:100\">⭐️ 100 Stars (☕)</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"stars:250\">⭐️ 250 Stars (🦊)</tg-button>\n\
+        </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"url\" url=\"https://t.me/tribute/app?startapp=dTXJ\">{btn_tribute}</tg-button>\n\
         </tg-button-row>\n\

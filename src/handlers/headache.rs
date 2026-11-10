@@ -3,10 +3,9 @@ use chrono::{Duration, Utc};
 use chrono_tz::Tz;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::{CallbackQuery, InputFile};
+use teloxide::types::CallbackQuery;
 
 use crate::db::{create_episode, get_user_language, get_user_timezone};
-use crate::keyboards::*;
 use crate::locales::*;
 use crate::models::NewEpisode;
 use crate::session::{FlowStep, HeadacheForm, SessionStore, UserState};
@@ -65,6 +64,7 @@ pub fn calculate_headache_end_time(
     }
 }
 
+#[allow(dead_code)]
 pub fn get_step_image_path(step: &str, lang: &str) -> String {
     let norm = normalize_lang(lang);
     let filename = match step {
@@ -99,6 +99,7 @@ pub async fn start_headache_flow(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn format_summary(form: &HeadacheForm, lang: &str) -> String {
     let start_time = form.start_time.clone().unwrap_or_else(|| "—".to_string());
     let intensity = form.intensity.unwrap_or(5);

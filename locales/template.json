@@ -22,7 +22,7 @@
     "lang_rich_title": "🌐 Interface Language",
     "lang_rich_block": "Select your preferred language. All questionnaires, notifications, and analytics cards will be presented in this style.",
     "donate_rich_title": "Support KitsuMed 🦊",
-    "donate_rich_block": "Donation description...",
+    "donate_rich_block": "",
     "donate_rich_btn_tribute": "💖 Support via Tribute",
     "menu_title": "🦊 KitsuMed • Main Menu",
     "menu_description": "Smart clinical headache and migraine diary.",
@@ -34,7 +34,15 @@
     "saved_completed_title": "Episode #{id} Resolved 🟢",
     "saved_completed_text": "Episode <b>#{id}</b> marked as resolved ({dur}). Take care and stay hydrated! ✨",
     "saved_active_title": "Episode #{id} Active 🔴",
-    "saved_active_text": "Episode <b>#{id}</b> saved. I will check back in later to see if the pain has passed."
+    "saved_active_text": "Episode <b>#{id}</b> saved. I will check back in later to see if the pain has passed.",
+    "btn_channel": "",
+    "donate_stars_50_title": "",
+    "donate_stars_50_desc": "",
+    "donate_stars_100_title": "",
+    "donate_stars_100_desc": "",
+    "donate_stars_250_title": "",
+    "donate_stars_250_desc": "",
+    "donate_stars_thank_you": ""
   },
   "location_map": {
     "forehead": "Forehead",
