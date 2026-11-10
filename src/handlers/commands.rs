@@ -4,7 +4,7 @@ use chrono_tz::Tz;
 use regex::Regex;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::{CallbackQuery, ChatId, MessageId, ParseMode};
+use teloxide::types::{CallbackQuery, ChatId, KeyboardRemove, MessageId, ParseMode};
 
 use crate::db::{create_episode, get_episode_by_id, get_user_language, resolve_episode_pain, set_user_reminder, upsert_user};
 use crate::handlers::calendar::handle_calendar_cmd;
@@ -85,18 +85,18 @@ pub async fn send_main_menu(
     pool: &PgPool,
     sessions: &SessionStore,
 ) -> ResponseResult<()> {
-    let lang = get_user_language(pool, user_id).await;
-    let kb = get_persistent_main_keyboard(&lang);
-
     if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await {
         sessions.set_last_mid(user_id, new_mid).await;
         let _ = bot.pin_chat_message(chat_id, MessageId(new_mid)).disable_notification(true).await;
     }
 
-    let _ = bot.send_message(chat_id, "🦊 <b>Меню KitsuMed</b> всегда под рукой:")
-        .parse_mode(ParseMode::Html)
-        .reply_markup(kb)
+    // Dismiss reply keyboard so it does not clutter user's screen
+    let rm = bot.send_message(chat_id, "🦊")
+        .reply_markup(KeyboardRemove::new())
         .await;
+    if let Ok(m) = rm {
+        let _ = bot.delete_message(chat_id, m.id).await;
+    }
 
     Ok(())
 }
@@ -444,6 +444,12 @@ pub async fn handle_message(
 
     if is_cmd {
         let _ = bot.delete_message(msg.chat.id, msg.id).await;
+        let rm = bot.send_message(msg.chat.id, "🦊")
+            .reply_markup(KeyboardRemove::new())
+            .await;
+        if let Ok(m) = rm {
+            let _ = bot.delete_message(msg.chat.id, m.id).await;
+        }
     }
 
     let last_mid = sessions.get_last_mid(user_id).await;
