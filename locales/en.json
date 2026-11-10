@@ -377,10 +377,11 @@
   },
   "btn_channel": "📢 Telegram Channel",
   "donate_stars_50_title": "🍪 Cookie for Kitsume (50 ⭐️)",
-  "donate_stars_50_desc": "A sweet treat and server support for Kitsumed 🦊",
-  "donate_stars_100_title": "☕ Cup of Coffee (100 ⭐️)",
-  "donate_stars_100_desc": "Fuel for late-night commits and feature updates 💻",
-  "donate_stars_250_title": "🦊 KitsuMed Server Boost (250 ⭐️)",
-  "donate_stars_250_desc": "Massive contribution to our open-source infrastructure! ✨",
-  "donate_stars_thank_you": "🎉 <b>Huge thank you for your support!</b> 🦊💜\n\nYour <b>{stars} ⭐️</b> have been successfully received! Thanks to you, KitsuMed stays fast, free, and open-source."
+  "donate_stars_50_desc": "A sweet treat for our fox mascot! Helps cover database hosting costs and brings a warm smile to the team.",
+  "donate_stars_100_title": "☕ Hot Coffee for Dev (100 ⭐️)",
+  "donate_stars_100_desc": "Essential fuel for late-night Rust coding sessions, performance tuning, and helpful medical features!",
+  "donate_stars_250_title": "🦊 Server Boost (250 ⭐️)",
+  "donate_stars_250_desc": "Major support for our open-source infrastructure! Keeps high-speed VPS and Redis running smoothly 24/7.",
+  "donate_stars_thank_you": "🎉 <b>Huge thank you for your support!</b> 🦊💜\n\nYour <b>{stars} ⭐️</b> have been successfully received! Thanks to you, KitsuMed stays fast, free, and open-source.",
+  "donate_rich_block": "<b>KitsuMed</b> is a free, independent, open-source headache and migraine tracker.\n\nYour donations directly cover cloud server costs, database hosting, and future medical features!\n\n⭐️ <b>Telegram Stars:</b> instant in-app support with 1 click.\n💖 <b>Tribute:</b> bank cards (Visa/Mastercard EUR/USD, CIS) and crypto (TON)."
 }
