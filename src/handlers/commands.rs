@@ -222,7 +222,12 @@ pub async fn handle_message(
               <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
             </tg-button-row>"
         );
-        let img_path = format!("assets/images/{norm}/hero_banner.png");
+        let thanks_banner = format!("assets/images/{norm}/thanks_banner.png");
+        let img_path = if std::path::Path::new(&thanks_banner).exists() {
+            thanks_banner
+        } else {
+            format!("assets/images/{norm}/hero_banner.png")
+        };
         let last_mid = sessions.get_last_mid(user_id).await;
         if let Ok(new_mid) = crate::rich::send_or_edit_rich_raw(bot.token(), msg.chat.id.0, last_mid, &html, Some(&img_path)).await {
             sessions.set_last_mid(user_id, new_mid).await;
