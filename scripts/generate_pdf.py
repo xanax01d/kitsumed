@@ -73,7 +73,13 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.5)
         self.line(36, 32, A4[0] - 36, 32)
         
-        footer_text = f"KitsuMed — Дневник головной боли  |  Страница {self._pageNumber} из {page_count}"
+        lang = getattr(self, "lang", "ru")
+        if "be" in lang or "by" in lang:
+            footer_text = f"KitsuMed — Дзённік галаўнога болю  |  Старонка {self._pageNumber} з {page_count}"
+        elif "en" in lang:
+            footer_text = f"KitsuMed — Headache Diary  |  Page {self._pageNumber} of {page_count}"
+        else:
+            footer_text = f"KitsuMed — Дневник головной боли  |  Страница {self._pageNumber} из {page_count}"
         self.drawString(36, 20, footer_text)
         self.drawRightString(A4[0] - 36, 20, "t.me/KitsuMedBot")
         self.restoreState()
@@ -145,14 +151,23 @@ def generate_pdf_report(data, output_path):
 
     elements = []
 
+    lang = data.get("lang", "ru").lower()
+    is_be = "be" in lang or "by" in lang
+    is_en = "en" in lang
+
     # Title block
-    title_text = "🦊 KitsuMed — Дневник головной боли и мигрени"
+    if is_be:
+        title_text = "🦊 KitsuMed — Дзённік галаўнога болю і мігрэні"
+        sub_text = f"Справаздача для лекара-неўролага  •  ID пацыента: <code>{user_id}</code>  •  Дата выгрузкі: {date_gen}"
+    elif is_en:
+        title_text = "🦊 KitsuMed — Headache & Migraine Diary"
+        sub_text = f"Clinical Report for Neurologist  •  Patient ID: <code>{user_id}</code>  •  Date: {date_gen}"
+    else:
+        title_text = "🦊 KitsuMed — Дневник головной боли и мигрени"
+        sub_text = f"Отчет для врача-невролога  •  ID пациента: <code>{user_id}</code>  •  Дата выгрузки: {date_gen}"
+
     elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 4))
-    
-    date_gen = data.get("date_generated", "")
-    user_id = data.get("user_id", "")
-    sub_text = f"Отчет для врача-невролога  •  ID пациента: <code>{user_id}</code>  •  Дата выгрузки: {date_gen}"
     elements.append(Paragraph(sub_text, subtitle_style))
     elements.append(Spacer(1, 10))
     elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#E2E8F0"), spaceAfter=10))
@@ -170,7 +185,7 @@ def generate_pdf_report(data, output_path):
             pain_days_set.add(raw_start[:10])
         total_intensity += ep.get("intensity", 0)
         med = ep.get("medication", "").lower()
-        if med and med != "none" and med != "—" and med != "не принимались":
+        if med and med != "none" and med != "—" and med != "не принимались" and med != "не прымаліся":
             if len(raw_start) >= 10:
                 med_days_set.add(raw_start[:10])
 
@@ -178,22 +193,87 @@ def generate_pdf_report(data, output_path):
     pain_days = len(pain_days_set)
     med_days = len(med_days_set)
 
-    moh_badge = "🟢 В пределах нормы (<8 дней)"
-    if med_days >= 10:
-        moh_badge = "🔴 Высокий риск абузусной боли (≥10 дней)"
-    elif med_days >= 8:
-        moh_badge = "🟡 Внимание: приближение к риску (8-9 дней)"
+    if is_be:
+        moh_badge = "🟢 У межах нормы (<8 дзён)"
+        if med_days >= 10:
+            moh_badge = "🔴 Высокая рызыка абузуснага болю (≥10 дзён)"
+        elif med_days >= 8:
+            moh_badge = "🟡 Увага: набліжэнне да рызыкі (8-9 дзён)"
 
-    summary_data = [
-        [
-            Paragraph("<b>Всего приступов:</b>", cell_style), Paragraph(str(total_eps), cell_bold),
-            Paragraph("<b>Дней с болью:</b>", cell_style), Paragraph(str(pain_days), cell_bold)
-        ],
-        [
-            Paragraph("<b>Средняя интенсивность:</b>", cell_style), Paragraph(f"{avg_intensity:.1f} / 10", cell_bold),
-            Paragraph("<b>Дней приема лекарств:</b>", cell_style), Paragraph(f"{med_days} дн. ({moh_badge})", cell_bold)
+        summary_data = [
+            [
+                Paragraph("<b>Усяго прыступаў:</b>", cell_style), Paragraph(str(total_eps), cell_bold),
+                Paragraph("<b>Дзён з болем:</b>", cell_style), Paragraph(str(pain_days), cell_bold)
+            ],
+            [
+                Paragraph("<b>Сярэдняя інтэнсіўнасць:</b>", cell_style), Paragraph(f"{avg_intensity:.1f} / 10", cell_bold),
+                Paragraph("<b>Дзён прыёму лекаў:</b>", cell_style), Paragraph(f"{med_days} дн. ({moh_badge})", cell_bold)
+            ]
         ]
-    ]
+        table_title = "📋 Журнал зарэгістраваных прыступаў"
+        headers = [
+            Paragraph("#", cell_header),
+            Paragraph("Дата і час", cell_header),
+            Paragraph("Боль", cell_header),
+            Paragraph("Лакалізацыя і характар", cell_header),
+            Paragraph("Сімптомы і трыгеры", cell_header),
+            Paragraph("Прэпарат і эфект", cell_header),
+            Paragraph("Статус", cell_header)
+        ]
+    elif is_en:
+        moh_badge = "🟢 Within normal range (<8 days)"
+        if med_days >= 10:
+            moh_badge = "🔴 High Medication Overuse Risk (≥10 days)"
+        elif med_days >= 8:
+            moh_badge = "🟡 Caution: approaching threshold (8-9 days)"
+
+        summary_data = [
+            [
+                Paragraph("<b>Total attacks:</b>", cell_style), Paragraph(str(total_eps), cell_bold),
+                Paragraph("<b>Pain days:</b>", cell_style), Paragraph(str(pain_days), cell_bold)
+            ],
+            [
+                Paragraph("<b>Average intensity:</b>", cell_style), Paragraph(f"{avg_intensity:.1f} / 10", cell_bold),
+                Paragraph("<b>Medication days:</b>", cell_style), Paragraph(f"{med_days} d. ({moh_badge})", cell_bold)
+            ]
+        ]
+        table_title = "📋 Log of Recorded Episodes"
+        headers = [
+            Paragraph("#", cell_header),
+            Paragraph("Date & Time", cell_header),
+            Paragraph("Pain", cell_header),
+            Paragraph("Location & Type", cell_header),
+            Paragraph("Symptoms & Triggers", cell_header),
+            Paragraph("Medication & Relief", cell_header),
+            Paragraph("Status", cell_header)
+        ]
+    else:
+        moh_badge = "🟢 В пределах нормы (<8 дней)"
+        if med_days >= 10:
+            moh_badge = "🔴 Высокий риск абузусной боли (≥10 дней)"
+        elif med_days >= 8:
+            moh_badge = "🟡 Внимание: приближение к риску (8-9 дней)"
+
+        summary_data = [
+            [
+                Paragraph("<b>Всего приступов:</b>", cell_style), Paragraph(str(total_eps), cell_bold),
+                Paragraph("<b>Дней с болью:</b>", cell_style), Paragraph(str(pain_days), cell_bold)
+            ],
+            [
+                Paragraph("<b>Средняя интенсивность:</b>", cell_style), Paragraph(f"{avg_intensity:.1f} / 10", cell_bold),
+                Paragraph("<b>Дней приема лекарств:</b>", cell_style), Paragraph(f"{med_days} дн. ({moh_badge})", cell_bold)
+            ]
+        ]
+        table_title = "📋 Журнал зарегистрированных приступов"
+        headers = [
+            Paragraph("#", cell_header),
+            Paragraph("Дата и время", cell_header),
+            Paragraph("Боль", cell_header),
+            Paragraph("Локализация и характер", cell_header),
+            Paragraph("Симптомы и триггеры", cell_header),
+            Paragraph("Препарат и эффект", cell_header),
+            Paragraph("Статус", cell_header)
+        ]
 
     summary_table = Table(summary_data, colWidths=[130, 110, 140, 150])
     summary_table.setStyle(TableStyle([
@@ -210,23 +290,10 @@ def generate_pdf_report(data, output_path):
     elements.append(Spacer(1, 14))
 
     # Table of Episodes
-    elements.append(Paragraph("📋 Журнал зарегистрированных приступов", h2_style))
+    elements.append(Paragraph(table_title, h2_style))
     elements.append(Spacer(1, 6))
 
-    # Columns: # (22), Дата и время (100), Боль (38), Локация и тип (95), Симптомы и триггеры (115), Препарат и эффект (105), Статус (55)
-    # Total width: 22 + 100 + 38 + 95 + 115 + 105 + 55 = 530 (matches A4 printable area: 595 - 64 = 531)
     col_widths = [22, 100, 38, 95, 115, 105, 55]
-
-    headers = [
-        Paragraph("#", cell_header),
-        Paragraph("Дата и время", cell_header),
-        Paragraph("Боль", cell_header),
-        Paragraph("Локализация и характер", cell_header),
-        Paragraph("Симптомы и триггеры", cell_header),
-        Paragraph("Препарат и эффект", cell_header),
-        Paragraph("Статус", cell_header)
-    ]
-
     table_rows = [headers]
 
     for idx, ep in enumerate(episodes, 1):
@@ -239,7 +306,6 @@ def generate_pdf_report(data, output_path):
         time_p = Paragraph(time_text, cell_style)
 
         intensity = ep.get("intensity", 0)
-        level = ep.get("pain_level", "")
         pain_text = f"<b>{intensity}/10</b>"
         if intensity >= 8:
             pain_text = f"<font color='#E53E3E'><b>{intensity}/10</b></font>"
@@ -253,7 +319,9 @@ def generate_pdf_report(data, output_path):
 
         sym = ep.get("symptoms", "—")
         trig = ep.get("triggers", "—")
-        st_text = f"<b>Симп:</b> {sym}<br/><b>Триг:</b> {trig}"
+        lbl_sym = "Сімптомы" if is_be else ("Symptoms" if is_en else "Симп")
+        lbl_trig = "Трыгеры" if is_be else ("Triggers" if is_en else "Триг")
+        st_text = f"<b>{lbl_sym}:</b> {sym}<br/><b>{lbl_trig}:</b> {trig}"
         st_p = Paragraph(st_text, cell_style)
 
         med = ep.get("medication", "—")
@@ -262,12 +330,13 @@ def generate_pdf_report(data, output_path):
         med_p = Paragraph(med_text, cell_style)
 
         status = ep.get("status", "—")
-        if "Купирован" in status or "completed" in status.lower() or "Попустило" in status:
-            status_html = "<font color='#2E7D32'><b>Купирован</b></font>"
-        elif "Не прошла" in status or "not_resolved" in status.lower():
-            status_html = "<font color='#D32F2F'><b>Не прошла</b></font>"
+        s_low = status.lower()
+        if "купіраван" in s_low or "купирован" in s_low or "resolved" in s_low or "попустило" in s_low:
+            status_html = f"<font color='#2E7D32'><b>{status}</b></font>"
+        elif "не прайшоў" in s_low or "не прошла" in s_low or "not resolved" in s_low:
+            status_html = f"<font color='#D32F2F'><b>{status}</b></font>"
         else:
-            status_html = "<font color='#C67D00'><b>Активен</b></font>"
+            status_html = f"<font color='#C67D00'><b>{status}</b></font>"
         status_p = Paragraph(status_html, cell_style)
 
         table_rows.append([num_p, time_p, pain_p, loc_p, st_p, med_p, status_p])
@@ -292,7 +361,11 @@ def generate_pdf_report(data, output_path):
     ep_table.setStyle(TableStyle(t_style))
     elements.append(ep_table)
 
-    doc.build(elements, canvasmaker=NumberedCanvas)
+    class CustomCanvas(NumberedCanvas):
+        pass
+    CustomCanvas.lang = lang
+
+    doc.build(elements, canvasmaker=CustomCanvas)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

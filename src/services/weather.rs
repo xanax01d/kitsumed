@@ -75,17 +75,23 @@ pub async fn fetch_current_weather(tz: &str) -> Option<(f32, f32)> {
     Some((curr.surface_pressure?, curr.temperature_2m?))
 }
 
-/// Форматирование строки погоды для карточки приступа
-pub fn format_weather_display(pressure_hpa: Option<f32>, temp_c: Option<f32>) -> Option<String> {
+/// Форматирование строки погоды для карточки приступа с учетом локали
+pub fn format_weather_display_lang(pressure_hpa: Option<f32>, temp_c: Option<f32>, lang: &str) -> Option<String> {
+    let norm = crate::locales::normalize_lang(lang);
+    let unit = match norm {
+        "be" => "мм рт. сл.",
+        "en" => "mmHg",
+        _ => "мм рт. ст.",
+    };
     match (pressure_hpa, temp_c) {
         (Some(p), Some(t)) => {
             let mmhg = hpa_to_mmhg(p);
             let sign = if t > 0.0 { "+" } else { "" };
-            Some(format!("{}{}°C, {} мм рт. ст.", sign, t.round() as i32, mmhg))
+            Some(format!("{}{}°C, {} {}", sign, t.round() as i32, mmhg, unit))
         }
         (Some(p), None) => {
             let mmhg = hpa_to_mmhg(p);
-            Some(format!("{} мм рт. ст.", mmhg))
+            Some(format!("{} {}", mmhg, unit))
         }
         (None, Some(t)) => {
             let sign = if t > 0.0 { "+" } else { "" };
@@ -93,4 +99,8 @@ pub fn format_weather_display(pressure_hpa: Option<f32>, temp_c: Option<f32>) ->
         }
         (None, None) => None,
     }
+}
+
+pub fn format_weather_display(pressure_hpa: Option<f32>, temp_c: Option<f32>) -> Option<String> {
+    format_weather_display_lang(pressure_hpa, temp_c, "ru")
 }
