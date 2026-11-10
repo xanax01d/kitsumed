@@ -4,14 +4,15 @@ use chrono::{Datelike, NaiveDate, Utc};
 use chrono_tz::Tz;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::{CallbackQuery, ChatId, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, MessageId, ParseMode};
+use teloxide::types::{CallbackQuery, ChatId, InlineKeyboardMarkup, MessageId, ParseMode};
 
-use crate::db::{get_episodes_for_date, get_episodes_for_month, get_user_language, get_user_timezone};
+use crate::db::{get_episodes_for_month, get_user_language, get_user_timezone};
 use crate::keyboards::{build_calendar_keyboard, get_month_name};
 use crate::locales::{get_intensity_label, get_location_name, get_medication_name, get_pain_type_name, get_symptom_name, get_text, get_text_fmt, get_trigger_name};
 use crate::models::HeadacheEpisode;
 use crate::session::SessionStore;
 
+#[allow(dead_code)]
 pub async fn render_calendar(
     pool: &PgPool,
     user_id: i64,
@@ -50,6 +51,7 @@ pub async fn render_calendar(
     (caption, kb)
 }
 
+#[allow(dead_code)]
 fn parse_episode_date(st: &str) -> Option<NaiveDate> {
     if st.len() >= 10 {
         NaiveDate::parse_from_str(&st[..10], "%Y-%m-%d").ok()
@@ -119,6 +121,7 @@ pub fn format_episode_card(ep: &HeadacheEpisode, lang: &str) -> String {
     out
 }
 
+#[allow(dead_code)]
 async fn update_calendar_view(
     bot: &Bot,
     chat_id: ChatId,

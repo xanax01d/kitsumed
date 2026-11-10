@@ -5,8 +5,7 @@ use sqlx::PgPool;
 use teloxide::prelude::*;
 use teloxide::types::{CallbackQuery, ParseMode};
 
-use crate::db::{get_active_episode, get_episode_by_id, get_user_language, get_user_timezone, resolve_episode_pain, update_medication_relief};
-use crate::keyboards::{get_followup_medication_keyboard, get_followup_pain_keyboard, get_followup_when_keyboard};
+use crate::db::{get_episode_by_id, get_user_language, get_user_timezone, resolve_episode_pain, update_medication_relief};
 use crate::locales::{get_text, get_text_fmt};
 use crate::session::{SessionStore, UserState};
 

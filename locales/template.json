@@ -75,5 +75,13 @@
     "paracetamol_500": "Paracetamol 500 mg",
     "zolmitriptan_2_5": "Zolmitriptan 2.5 mg",
     "citramon": "Citramon (1 tab)"
-  }
+  },
+  "btn_channel": "",
+  "donate_stars_50_title": "",
+  "donate_stars_50_desc": "",
+  "donate_stars_100_title": "",
+  "donate_stars_100_desc": "",
+  "donate_stars_250_title": "",
+  "donate_stars_250_desc": "",
+  "donate_stars_thank_you": ""
 }

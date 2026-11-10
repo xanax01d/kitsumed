@@ -4,11 +4,8 @@ use chrono::Utc;
 use chrono_tz::Tz;
 use sqlx::PgPool;
 use teloxide::prelude::*;
-use teloxide::types::ChatId;
 
 use crate::db::{get_enabled_reminder_users, get_pending_followup_episodes, mark_followup_sent, mark_user_reminded};
-use crate::keyboards::{get_followup_pain_keyboard, get_reminder_prompt_keyboard};
-use crate::locales::get_text;
 
 pub async fn run_followup_scheduler(bot: Bot, pool: PgPool) {
     log::info!("Follow-up background scheduler started.");

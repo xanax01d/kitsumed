@@ -26,13 +26,14 @@
 [![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TXJ)
+[![Channel](https://img.shields.io/badge/Channel-Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/kitsumed)
 
 <p align="center">
   <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; 🇧🇾 <b>Беларуская</b> &nbsp;•&nbsp; <a href="README_en.md"><b>🇬🇧 English</b></a>
 </p>
 
 <p align="center">
-  🤖 <b>Тэлеграм-бот:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a><br>
+  🤖 <b>Тэлеграм-бот:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a> &nbsp;•&nbsp; 📢 <b>Канал:</b> <a href="https://t.me/kitsumed"><b>@kitsumed</b></a><br>
   <b>Разумны бот для структураванай фіксацыі сімптомаў, характару і інтэнсіўнасці болю,<br>
   з кнопкамі ўнутры тэксту паведамленняў (Telegram Rich Text TG-13), аўтаматычным кантролем палёгкі і выгрузкай справаздач для лекара.</b>
 </p>

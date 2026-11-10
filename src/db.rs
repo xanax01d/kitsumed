@@ -259,6 +259,7 @@ pub async fn get_episode_by_id(pool: &PgPool, id: i32) -> Result<Option<Headache
     .await
 }
 
+#[allow(dead_code)]
 pub async fn finish_episode(pool: &PgPool, user_id: i64, end_time: Option<&str>) -> Result<bool, sqlx::Error> {
     let now_str = Utc::now().format("%Y-%m-%d %H:%M").to_string();
     let finish_time = end_time.unwrap_or(&now_str);
@@ -366,6 +367,7 @@ pub async fn mark_followup_sent(pool: &PgPool, episode_id: i32) -> Result<bool, 
     Ok(res.rows_affected() > 0)
 }
 
+#[allow(dead_code)]
 pub async fn get_recent_episodes(
     pool: &PgPool,
     user_id: i64,

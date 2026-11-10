@@ -26,13 +26,14 @@
 [![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TXJ)
+[![Channel](https://img.shields.io/badge/Channel-Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/kitsumed)
 
 <p align="center">
   <a href="README.md"><b>🇷🇺 Русский</b></a> &nbsp;•&nbsp; <a href="README_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; 🇬🇧 <b>English</b>
 </p>
 
 <p align="center">
-  🤖 <b>Telegram Bot:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a><br>
+  🤖 <b>Telegram Bot:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a> &nbsp;•&nbsp; 📢 <b>Channel:</b> <a href="https://t.me/kitsumed"><b>@kitsumed</b></a><br>
   <b>Smart bot for structured tracking of headache symptoms, character, and intensity,<br>
   featuring in-message button interfaces (Telegram Rich Text TG-13), automated pain relief follow-ups, and clinical reporting.</b>
 </p>
