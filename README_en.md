@@ -192,45 +192,65 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 
 ```text
 kitsumed/
-├── assets/
-│   └── images/            # Localized banners and graphic cards
-│       ├── ru/            # Russian banner, steps & UI screens
-│       ├── be/            # Belarusian banner (kitsune in vyshyvanka)
-│       ├── en/            # English banner, steps & UI screens
-│       ├── meme/          # Meme banner
-│       └── cyberpunk/     # Cyberpunk banner
-├── locales/               # Standalone JSON translation dictionaries
-│   ├── ru.json
-│   ├── be.json
-│   ├── en.json
-│   ├── meme.json
-│   └── cyberpunk.json
+├── .github/               # CI/CD workflows and sponsorship setup
+│   ├── workflows/         # GitHub Actions (locale validation & tests)
+│   └── FUNDING.yml        # Sponsorship & Tribute config
+├── assets/                # Graphic assets and typography
+│   ├── fonts/             # DejaVu Sans fonts for full Cyrillic support in PDFs
+│   └── images/            # Localized character banners & UI artwork
+│       ├── ru/            # Russian banners (hero_banner, thanks_banner)
+│       ├── be/            # Belarusian banners (kitsune in vyshyvanka)
+│       ├── en/            # British Scholar banners & UI screens
+│       ├── meme/          # Meme mode banners
+│       ├── cyberpunk/     # Cyberpunk netrunner banners
+│       ├── readme/        # Visual documentation diagrams
+│       └── avatar_4k.png  # Official 4K project mascot avatar
+├── docs/                  # Community guides and extended docs
+│   ├── LOCALIZATION.md    # Localization Guide (RU)
+│   ├── LOCALIZATION_be.md # Localization Guide (BE)
+│   └── LOCALIZATION_en.md # Community Localization Guide (EN)
+├── locales/               # Standalone JSON translation dictionaries (i18n)
+│   ├── ru.json            # Russian locale
+│   ├── be.json            # Belarusian locale
+│   ├── en.json            # English reference locale
+│   ├── meme.json          # Meme persona locale
+│   ├── cyberpunk.json     # Cyberpunk 2077 persona locale
+│   └── template.json      # Starter template for new language contributors
+├── scripts/               # Automation & helper Python scripts
+│   ├── generate_pdf.py    # ReportLab clinical PDF report generator
+│   └── validate_locale.py # JSON schema & placeholder validation script
 ├── src/                   # Pure Rust source tree
 │   ├── db.rs              # PostgreSQL queries and schema migrations
 │   ├── handlers/          # Command, callback, and dialogue handlers
-│   │   ├── calendar.rs
-│   │   ├── commands.rs
-│   │   ├── export.rs
-│   │   ├── followup.rs
-│   │   ├── headache.rs
-│   │   ├── language.rs
+│   │   ├── calendar.rs    # Interactive calendar grid & episode history
+│   │   ├── commands.rs    # System commands (/start, /menu, /help, /donate, /cancel)
+│   │   ├── export.rs      # PDF and CSV report exports
+│   │   ├── followup.rs    # Pain resolution check & medication tracking
+│   │   ├── headache.rs    # Step-by-step FSM headache episode logger
+│   │   ├── language.rs    # Language & persona switcher
 │   │   ├── mod.rs
-│   │   └── reminder.rs
-│   ├── keyboards.rs       # Inline button helpers
-│   ├── locales/           # Embedded JSON translation lookup
-│   ├── main.rs            # Entry point, DB pool, Redis connection & dispatcher
-│   ├── models.rs          # Domain structs
+│   │   └── reminder.rs    # Daily check-in & timezone settings
+│   ├── keyboards.rs       # Inline button helpers & fallback layouts
+│   ├── locales/
+│   │   └── mod.rs         # In-binary embedded JSON translation lookup
+│   ├── main.rs            # Entry point, Telegram Stars handlers, DB pool & dispatcher
+│   ├── models.rs          # Domain data models & serialization
 │   ├── rich.rs            # Rich Text TG-13 generator with in-message buttons
 │   ├── services/
-│   │   ├── export.rs
+│   │   ├── export.rs      # CSV generation and Python PDF runner
 │   │   ├── mod.rs
-│   │   └── schedulers.rs  # Background Tokio workers
-│   └── session.rs         # Persistent FSM session store (Redis + In-memory fallback)
-├── Cargo.toml             # Rust dependency manifest
-├── Cargo.lock
+│   │   └── schedulers.rs  # Background Tokio workers for check-ins & follow-ups
+│   └── session.rs         # Persistent FSM session store (Redis + Memory fallback)
+├── Cargo.toml             # Rust dependency manifest & metadata
+├── Cargo.lock             # Exact locked library versions (lockfile)
 ├── Dockerfile             # Multi-stage lightweight Docker image
+├── Dockerfile.prebuilt    # Fast deployment Dockerfile with prebuilt binary
 ├── docker-compose.yml     # Compose config for bot, PostgreSQL, and Redis
-└── README.md
+├── install.sh             # Interactive 1-click bash installer
+├── LICENSE                # MIT License
+├── README.md              # Documentation (Russian)
+├── README_be.md           # Documentation (Belarusian)
+└── README_en.md           # Documentation (English)
 ```
 
 ---
@@ -396,6 +416,70 @@ docker run -d \
    ```bash
    journalctl -u kitsumed.service -f
    ```
+
+---
+
+## 📋 Database Schema
+
+The PostgreSQL database schema is automatically initialized and migrated during bot startup (`init_db` in [`src/db.rs`](file:///Users/zahariaklimkovich/Documents/projects/migrebot_analog/src/db.rs)):
+
+### `users` — User Profiles & Preferences
+Stores notification schedule settings, timezone, and active interface persona.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `user_id` | `BIGINT PRIMARY KEY` | Telegram unique user ID |
+| `username` | `VARCHAR(255)` | Telegram handle (`@username`) |
+| `first_name` | `VARCHAR(255)` | Profile first name |
+| `reminder_time` | `VARCHAR(8) DEFAULT '21:00'` | Evening daily check-in time (`HH:MM`) |
+| `reminder_enabled` | `BOOLEAN DEFAULT TRUE` | Daily reminder status toggle |
+| `timezone` | `VARCHAR(64) DEFAULT 'Europe/Moscow'` | User IANA time zone (e.g. `Europe/Minsk`, `Europe/London`) |
+| `last_reminded_date` | `VARCHAR(16) DEFAULT NULL` | Date of last delivered check-in (`YYYY-MM-DD`) to avoid duplicate pings |
+| `language` | `VARCHAR(16) DEFAULT 'ru'` | Selected persona / UI language (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Registration timestamp |
+
+### `headache_episodes` — Headache & Migraine Episode Records
+Captures clinical episode details: pain intensity, localization, triggers, medications, relief progression, and weather metrics.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Unique episode ID |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Foreign key referencing Telegram user with cascading deletion |
+| `start_time` | `VARCHAR(64) NOT NULL` | Pain onset timestamp / date string |
+| `end_time` | `VARCHAR(64)` | Pain resolution timestamp (for completed episodes) |
+| `intensity` | `INTEGER NOT NULL` | Pain intensity on a 1–10 numeric rating scale |
+| `location` | `VARCHAR(128) NOT NULL` | Pain localization (temples, forehead, occipital, unilateral, etc.) |
+| `pain_type` | `VARCHAR(128) NOT NULL` | Pain quality (pulsating, pressing, stabbing, burning, etc.) |
+| `symptoms` | `JSONB` | JSON array of accompanying symptoms (`["nausea", "photophobia", ...]`) |
+| `triggers` | `JSONB` | JSON array of suspected triggers (`["stress", "sleep_lack", ...]`) |
+| `medication` | `TEXT` | Name and dosage of taken medication |
+| `status` | `VARCHAR(32) DEFAULT 'active'` | Episode status: `active` (ongoing) or `completed` |
+| `medication_relief` | `VARCHAR(32) DEFAULT NULL` | Drug effectiveness rating (`helped`, `partially`, `not_helped`) |
+| `pain_resolved` | `BOOLEAN DEFAULT NULL` | Pain resolution status confirmed during follow-up (`true`/`false`) |
+| `med_take_delay` | `VARCHAR(32) DEFAULT NULL` | Delay from pain onset to pill intake (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `relief_delay` | `VARCHAR(32) DEFAULT NULL` | Time to noticeable pain relief (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `followup_due_at` | `TIMESTAMPTZ DEFAULT NULL` | Scheduled timestamp for the 2-hour efficacy check-in notification |
+| `followup_sent` | `BOOLEAN DEFAULT FALSE` | Follow-up dispatch completion flag |
+| `pressure_hpa` | `REAL DEFAULT NULL` | Atmospheric pressure in hPa at episode start (via Open-Meteo API) |
+| `temperature_c` | `REAL DEFAULT NULL` | Outdoor temperature in °C at episode start (via Open-Meteo API) |
+| `is_quick_log` | `BOOLEAN DEFAULT FALSE` | Flag indicating 1-click Quick Log entry |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Record insertion timestamp |
+
+### `user_medications` — Personalized Medication Dictionary
+Auto-populated user medication list enabling quick one-tap selections on inline keyboards.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Unique medication entry ID |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Foreign key referencing Telegram user with cascading deletion |
+| `name` | `VARCHAR(255) NOT NULL` | Commercial or generic medication name |
+| `last_used_at` | `TIMESTAMPTZ DEFAULT NOW()` | Last intake timestamp (used for recency sorting) |
+
+*Unique Constraint:* `UNIQUE(user_id, name)` — ensures no duplicate medication names per user.
+
+### ⚡ Database Indexes
+- `idx_headache_episodes_user_status` — `ON headache_episodes(user_id, status)`: optimizes active episode retrieval and background 2-hour follow-up scheduler queries.
+- `idx_user_medications_user_id` — `ON user_medications(user_id, last_used_at DESC)`: optimizes instant rendering of recent medication buttons.
 
 ---
 

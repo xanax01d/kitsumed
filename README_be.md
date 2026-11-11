@@ -192,46 +192,65 @@
 
 ```text
 kitsumed/
-├── assets/
-│   └── images/            # Анімэ-банеры персанажаў для кожнай лакалі
+├── .github/               # CI/CD аўтаматызацыя і налады спонсарства
+│   ├── workflows/         # GitHub Actions (праверка лакалей і тэсты)
+│   └── FUNDING.yml        # Канфігурацыя данатаў і Tribute
+├── assets/                # Графічныя рэсурсы і шрыфты
+│   ├── fonts/             # DejaVu Sans шрыфты для кірыліцы ў PDF-справаздачах
+│   └── images/            # Лакалізаваныя банеры персанажаў і візуальныя схемы
 │       ├── be/            # Беларускі банер (лісічка ў вышыванцы з васількамі)
-│       ├── ru/            # Расійскі банер
-│       ├── en/            # Англійскі банер
-│       ├── meme/          # Мемны банер
-│       └── cyberpunk/     # Cyberpunk банер
-├── locales/               # Чыстыя JSON-слоўнікі лакалізацыі
-│   ├── be.json
-│   ├── ru.json
-│   ├── en.json
-│   ├── meme.json
-│   └── cyberpunk.json
+│       ├── ru/            # Расійскі банер (доктар Кіцумэ)
+│       ├── en/            # British Scholar банеры і экраны
+│       ├── meme/          # Мемныя банеры
+│       ├── cyberpunk/     # Кіберпанк нэтранэр банеры
+│       ├── readme/        # Ілюстрацыі раздзелаў дакументацыі
+│       └── avatar_4k.png  # Афіцыйны 4K-маскот праекта
+├── docs/                  # Кіраўніцтвы і дакументацыя для супольнасці
+│   ├── LOCALIZATION.md    # Кіраўніцтва па даданні моў (RU)
+│   ├── LOCALIZATION_be.md # Кіраўніцтва па лакалізацыі (BE)
+│   └── LOCALIZATION_en.md # Community Localization Guide (EN)
+├── locales/               # Слоўнікі лакалізацыі (i18n) і шаблоны
+│   ├── be.json            # Беларускі інтэрфейс
+│   ├── ru.json            # Расійскі інтэрфейс
+│   ├── en.json            # English interface
+│   ├── meme.json          # Мемны рэжым
+│   ├── cyberpunk.json     # Кіберпанк 2077 рэжым
+│   └── template.json      # Стартовы шаблон для новых моў
+├── scripts/               # Службовыя Python-скрыпты аўтаматызацыі
+│   ├── generate_pdf.py    # Генератар медыцынскіх PDF-справаздач ReportLab
+│   └── validate_locale.py # Скрыпт праверкі сінтаксісу і ключоў лакалей
 ├── src/                   # Зыходны код на чыстым Rust
-│   ├── db.rs              # SQLx-запыты да PostgreSQL і ініцыялізацыя табліц
+│   ├── db.rs              # SQLx-запыты да PostgreSQL і міграцыі схемы БД
 │   ├── handlers/          # Апрацоўшчыкі каманд, колбэкаў і дыялогаў
-│   │   ├── calendar.rs    # Каляндарная сетка і гісторыя
-│   │   ├── commands.rs    # Сістэмныя каманды (/start, /menu, /help, /cancel)
-│   │   ├── export.rs      # Экспарт даных
+│   │   ├── calendar.rs    # Каляндарная сетка прыступаў і гісторыя
+│   │   ├── commands.rs    # Сістэмныя каманды (/start, /menu, /help, /donate, /cancel)
+│   │   ├── export.rs      # Экспарт даных у PDF і CSV
 │   │   ├── followup.rs    # Кантроль сціхання болю і ацэнка лекаў
-│   │   ├── headache.rs    # Пакрокавы FSM-апытальнік прыступу
-│   │   ├── language.rs    # Змена мовы
+│   │   ├── headache.rs    # Пакрокавы FSM-апытальнік фіксацыі прыступу
+│   │   ├── language.rs    # Змена мовы і персаны маскота
 │   │   ├── mod.rs
-│   │   └── reminder.rs    # Налады чэк-іну і часавых паясоў
-│   ├── keyboards.rs       # Генератары інлайн-клавіятур
+│   │   └── reminder.rs    # Налады штодзённага чэк-іну і часавых паясоў
+│   ├── keyboards.rs       # Генератары інлайн-клавіятур і навігацыі
 │   ├── locales/
 │   │   └── mod.rs         # Убудаванне JSON у бінарнік і функцыі get_text / get_text_fmt
-│   ├── main.rs            # Точка ўваходу, пул БД, кліент Redis і дыспетчар Teloxide
-│   ├── models.rs          # Даменныя структуры даных
+│   ├── main.rs            # Точка ўваходу, Telegram Stars хэндлеры, пул БД і дыспетчар
+│   ├── models.rs          # Даменныя структуры даных і серыялізацыя
 │   ├── rich.rs            # Генератар Rich-паведамленняў TG-13 з убудаванымі кнопкамі
 │   ├── services/
-│   │   ├── export.rs
+│   │   ├── export.rs      # Фарміраванне выгрузак CSV і выклік генератара PDF
 │   │   ├── mod.rs
-│   │   └── schedulers.rs  # Фанавыя Tokio-варкеры для чэк-інаў і follow-up
-│   └── session.rs         # Персістэнтнае сховішча FSM у Redis з in-memory fallback
-├── Cargo.toml             # Маніфест залежнасцей Rust
-├── Cargo.lock
+│   │   └── schedulers.rs  # Фанавыя Tokio-варкеры для апытанняў і follow-up
+│   └── session.rs         # Персістэнтнае сховішча FSM (Redis + Memory fallback)
+├── Cargo.toml             # Маніфест залежнасцей і метаданыя Rust
+├── Cargo.lock             # Зафіксаваныя версіі бібліятэк (lockfile)
 ├── Dockerfile             # Multi-stage Dockerfile
-├── docker-compose.yml
-└── README_be.md           # Беларуская дакументацыя праекта
+├── Dockerfile.prebuilt    # Dockerfile для хуткага разгортвання гатовага бінарніка
+├── docker-compose.yml     # Compose-канфігурацыя для сэрвісу, PostgreSQL і Redis
+├── install.sh             # Інтэрактыўны bash-усталёўшчык у 1 клік
+├── LICENSE                # Ліцэнзія MIT
+├── README.md              # Дакументацыя (Русский)
+├── README_be.md           # Дакументацыя (Беларуская)
+└── README_en.md           # Documentation (English)
 ```
 
 ---
@@ -392,6 +411,72 @@ docker run -d \
    systemctl enable kitsumed.service
    systemctl restart kitsumed.service
    ```
+
+---
+
+## 📋 База даных
+
+Схема табліц PostgreSQL аўтаматычна ініцыялізуецца і мігруе пры старце бота (`init_db` у [`src/db.rs`](file:///Users/zahariaklimkovich/Documents/projects/migrebot_analog/src/db.rs)):
+
+### `users` — Профілі карыстальнікаў
+Захоўвае налады раскладу напамінкаў, часавы пояс і выбраную мову інтэрфейсу.
+
+| Калонка | Тып | Апісанне |
+| :--- | :--- | :--- |
+| `user_id` | `BIGINT PRIMARY KEY` | Унікальны Telegram ID карыстальніка |
+| `username` | `VARCHAR(255)` | Юзернэйм у Telegram (`@username`) |
+| `first_name` | `VARCHAR(255)` | Імя профілю ў Telegram |
+| `reminder_time` | `VARCHAR(8) DEFAULT '21:00'` | Час штодзённага вячэрняга чэк-іну (`ГГ:ХХ`) |
+| `reminder_enabled` | `BOOLEAN DEFAULT TRUE` | Статус актыўнасці штодзённага напамінку |
+| `timezone` | `VARCHAR(64) DEFAULT 'Europe/Moscow'` | Часавы пояс карыстальніка (IANA, напр. `Europe/Minsk`, `Europe/Moscow`) |
+| `last_reminded_date` | `VARCHAR(16) DEFAULT NULL` | Дата апошняй адпраўкі чэк-іну (`ГГГГ-ММ-ДД`) дзеля выключэння дубляў |
+| `language` | `VARCHAR(16) DEFAULT 'ru'` | Выбраная персона/мова інтэрфейсу (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Дата і час першай рэгістрацыі |
+
+### `headache_episodes` — Запісы прыступаў галаўнога болю
+Захоўвае поўную клінічную карціну эпізоду: лакалізацыю, моц болю, сімптомы, трыгеры, прынятыя прэпараты, дынаміку купіравання і ўмовы надвор'я.
+
+| Калонка | Тып | Апісанне |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Унікальны ідэнтыфікатар эпізоду |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Знешні ключ Telegram ID карыстальніка з каскадным выдаленнем |
+| `start_time` | `VARCHAR(64) NOT NULL` | Дата і час пачатку прыступу |
+| `end_time` | `VARCHAR(64)` | Дата і час заканчэння прыступу (для завершаных эпізодаў) |
+| `intensity` | `INTEGER NOT NULL` | Інтэнсіўнасць болю па 10-бальнай шкале (1–10) |
+| `location` | `VARCHAR(128) NOT NULL` | Лакалізацыя болю (скроні, лоб, патыліца, аднабаковы і г.д.) |
+| `pain_type` | `VARCHAR(128) NOT NULL` | Характар болю (пульсуючы, сціскальны, распіральны, колючы і г.д.) |
+| `symptoms` | `JSONB` | JSON-масіў спадарожных сімптомаў (`["nausea", "photophobia", ...]`) |
+| `triggers` | `JSONB` | JSON-масіў правакацыйных фактараў (`["stress", "sleep_lack", ...]`) |
+| `medication` | `TEXT` | Назва і дазіроўка прынятага прэпарата |
+| `status` | `VARCHAR(32) DEFAULT 'active'` | Бягучы статус эпізоду: `active` (трывае) або `completed` (завершаны) |
+| `medication_relief` | `VARCHAR(32) DEFAULT NULL` | Эфектыўнасць прэпарата паводле кантролю (`helped`, `partially`, `not_helped`) |
+| `pain_resolved` | `BOOLEAN DEFAULT NULL` | Поўнае сціханне болю па выніках кантрольнага апытання (`true`/`false`) |
+| `med_take_delay` | `VARCHAR(32) DEFAULT NULL` | Затрымка прыёму лекаў ад пачатку болю (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `relief_delay` | `VARCHAR(32) DEFAULT NULL` | Час да надыходу палёгкі (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `followup_due_at` | `TIMESTAMPTZ DEFAULT NULL` | Разліковы час адпраўкі кантрольнага чэк-іну эфектыўнасці (праз 2 гадзіны) |
+| `followup_sent` | `BOOLEAN DEFAULT FALSE` | Сцяжок адпраўкі кантрольнага апытання эфектыўнасці |
+| `pressure_hpa` | `REAL DEFAULT NULL` | Атмасферны ціск у гПа на момант прыступу (Open-Meteo) |
+| `temperature_c` | `REAL DEFAULT NULL` | Тэмпература паветра ў °C на момант прыступу (Open-Meteo) |
+| `is_quick_log` | `BOOLEAN DEFAULT FALSE` | Адзнака экспрэс-запісу ў адзін клік |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Адзнака часу стварэння запісу ў БД |
+
+### `user_medications` — Персанальны даведнік прэпаратаў
+Аўтаматычна папаўняльны спіс лекаў карыстальніка для хуткага выбару на інлайн-клавіятуры.
+
+| Калонка | Тып | Апісанне |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Унікальны ідэнтыфікатар запісу |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Знешні ключ Telegram ID карыстальніка з каскадным выдаленнем |
+| `name` | `VARCHAR(255) NOT NULL` | Гандлёвая ці міжнародная назва прэпарата |
+| `last_used_at` | `TIMESTAMPTZ DEFAULT NOW()` | Адзнака часу апошняга ўжывання (для сартавання па актуальнасці) |
+
+*Абмежаванне ўнікальнасці:* `UNIQUE(user_id, name)` — прадухіляе дубляванне назвы прэпарата ў аднаго карыстальніка.
+
+### ⚡ Індэксы базы даных
+- `idx_headache_episodes_user_status` — `ON headache_episodes(user_id, status)`: забяспечвае імгненную выбарку бягучых актыўных прыступаў карыстальніка і паскарае фонавыя варкеры follow-up.
+- `idx_user_medications_user_id` — `ON user_medications(user_id, last_used_at DESC)`: аптымізуе хуткі рэндэрынг кнопак апошніх прынятых лекаў.
+
+---
 
 ---
 
