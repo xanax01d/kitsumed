@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -154,6 +155,9 @@ def generate_pdf_report(data, output_path):
     lang = data.get("lang", "ru").lower()
     is_be = "be" in lang or "by" in lang
     is_en = "en" in lang
+
+    user_id = data.get("user_id", "—")
+    date_gen = data.get("date_generated", datetime.now().strftime("%d.%m.%Y %H:%M"))
 
     # Title block
     if is_be:
