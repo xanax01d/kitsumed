@@ -9,6 +9,12 @@
 # 🦊 KitsuMed
 ### Высокапрадукцыйны Telegram-дзённік прыступаў мігрэні і галаўнога болю на чыстым Rust
 
+<p align="center">
+  <a href="https://t.me/KitsuMedBot">
+    <img src="https://img.shields.io/badge/Telegram_Bot-@KitsuMedBot-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Запусціць бота ў Telegram" />
+  </a>
+</p>
+
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![teloxide](https://img.shields.io/badge/teloxide-0.13-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://teloxide.rs/)
 [![tokio](https://img.shields.io/badge/tokio-async-blue?style=for-the-badge&logo=rust&logoColor=white)](https://tokio.rs/)
@@ -25,6 +31,7 @@
 </p>
 
 <p align="center">
+  🤖 <b>Тэлеграм-бот:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a><br>
   <b>Разумны бот для структураванай фіксацыі сімптомаў, характару і інтэнсіўнасці болю,<br>
   з кнопкамі ўнутры тэксту паведамленняў (Telegram Rich Text TG-13), аўтаматычным кантролем палёгкі і выгрузкай справаздач для лекара.</b>
 </p>

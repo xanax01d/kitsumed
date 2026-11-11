@@ -9,6 +9,12 @@
 # 🦊 KitsuMed
 ### High-Performance Telegram Headache & Migraine Diary Bot written in pure Rust
 
+<p align="center">
+  <a href="https://t.me/KitsuMedBot">
+    <img src="https://img.shields.io/badge/Telegram_Bot-@KitsuMedBot-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Launch Bot in Telegram" />
+  </a>
+</p>
+
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![teloxide](https://img.shields.io/badge/teloxide-0.13-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://teloxide.rs/)
 [![tokio](https://img.shields.io/badge/tokio-async-blue?style=for-the-badge&logo=rust&logoColor=white)](https://tokio.rs/)
@@ -25,6 +31,7 @@
 </p>
 
 <p align="center">
+  🤖 <b>Telegram Bot:</b> <a href="https://t.me/KitsuMedBot"><b>@KitsuMedBot</b></a><br>
   <b>Smart bot for structured tracking of headache symptoms, character, and intensity,<br>
   featuring in-message button interfaces (Telegram Rich Text TG-13), automated pain relief follow-ups, and clinical reporting.</b>
 </p>
