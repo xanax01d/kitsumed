@@ -192,45 +192,65 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 
 ```text
 kitsumed/
-├── assets/
-│   └── images/            # Localized banners and graphic cards
-│       ├── ru/            # Russian banner, steps & UI screens
-│       ├── be/            # Belarusian banner (kitsune in vyshyvanka)
-│       ├── en/            # English banner, steps & UI screens
-│       ├── meme/          # Meme banner
-│       └── cyberpunk/     # Cyberpunk banner
-├── locales/               # Standalone JSON translation dictionaries
-│   ├── ru.json
-│   ├── be.json
-│   ├── en.json
-│   ├── meme.json
-│   └── cyberpunk.json
+├── .github/               # CI/CD workflows and sponsorship setup
+│   ├── workflows/         # GitHub Actions (locale validation & tests)
+│   └── FUNDING.yml        # Sponsorship & Tribute config
+├── assets/                # Graphic assets and typography
+│   ├── fonts/             # DejaVu Sans fonts for full Cyrillic support in PDFs
+│   └── images/            # Localized character banners & UI artwork
+│       ├── ru/            # Russian banners (hero_banner, thanks_banner)
+│       ├── be/            # Belarusian banners (kitsune in vyshyvanka)
+│       ├── en/            # British Scholar banners & UI screens
+│       ├── meme/          # Meme mode banners
+│       ├── cyberpunk/     # Cyberpunk netrunner banners
+│       ├── readme/        # Visual documentation diagrams
+│       └── avatar_4k.png  # Official 4K project mascot avatar
+├── docs/                  # Community guides and extended docs
+│   ├── LOCALIZATION.md    # Localization Guide (RU)
+│   ├── LOCALIZATION_be.md # Localization Guide (BE)
+│   └── LOCALIZATION_en.md # Community Localization Guide (EN)
+├── locales/               # Standalone JSON translation dictionaries (i18n)
+│   ├── ru.json            # Russian locale
+│   ├── be.json            # Belarusian locale
+│   ├── en.json            # English reference locale
+│   ├── meme.json          # Meme persona locale
+│   ├── cyberpunk.json     # Cyberpunk 2077 persona locale
+│   └── template.json      # Starter template for new language contributors
+├── scripts/               # Automation & helper Python scripts
+│   ├── generate_pdf.py    # ReportLab clinical PDF report generator
+│   └── validate_locale.py # JSON schema & placeholder validation script
 ├── src/                   # Pure Rust source tree
 │   ├── db.rs              # PostgreSQL queries and schema migrations
 │   ├── handlers/          # Command, callback, and dialogue handlers
-│   │   ├── calendar.rs
-│   │   ├── commands.rs
-│   │   ├── export.rs
-│   │   ├── followup.rs
-│   │   ├── headache.rs
-│   │   ├── language.rs
+│   │   ├── calendar.rs    # Interactive calendar grid & episode history
+│   │   ├── commands.rs    # System commands (/start, /menu, /help, /donate, /cancel)
+│   │   ├── export.rs      # PDF and CSV report exports
+│   │   ├── followup.rs    # Pain resolution check & medication tracking
+│   │   ├── headache.rs    # Step-by-step FSM headache episode logger
+│   │   ├── language.rs    # Language & persona switcher
 │   │   ├── mod.rs
-│   │   └── reminder.rs
-│   ├── keyboards.rs       # Inline button helpers
-│   ├── locales/           # Embedded JSON translation lookup
-│   ├── main.rs            # Entry point, DB pool, Redis connection & dispatcher
-│   ├── models.rs          # Domain structs
+│   │   └── reminder.rs    # Daily check-in & timezone settings
+│   ├── keyboards.rs       # Inline button helpers & fallback layouts
+│   ├── locales/
+│   │   └── mod.rs         # In-binary embedded JSON translation lookup
+│   ├── main.rs            # Entry point, Telegram Stars handlers, DB pool & dispatcher
+│   ├── models.rs          # Domain data models & serialization
 │   ├── rich.rs            # Rich Text TG-13 generator with in-message buttons
 │   ├── services/
-│   │   ├── export.rs
+│   │   ├── export.rs      # CSV generation and Python PDF runner
 │   │   ├── mod.rs
-│   │   └── schedulers.rs  # Background Tokio workers
-│   └── session.rs         # Persistent FSM session store (Redis + In-memory fallback)
-├── Cargo.toml             # Rust dependency manifest
-├── Cargo.lock
+│   │   └── schedulers.rs  # Background Tokio workers for check-ins & follow-ups
+│   └── session.rs         # Persistent FSM session store (Redis + Memory fallback)
+├── Cargo.toml             # Rust dependency manifest & metadata
+├── Cargo.lock             # Exact locked library versions (lockfile)
 ├── Dockerfile             # Multi-stage lightweight Docker image
+├── Dockerfile.prebuilt    # Fast deployment Dockerfile with prebuilt binary
 ├── docker-compose.yml     # Compose config for bot, PostgreSQL, and Redis
-└── README.md
+├── install.sh             # Interactive 1-click bash installer
+├── LICENSE                # MIT License
+├── README.md              # Documentation (Russian)
+├── README_be.md           # Documentation (Belarusian)
+└── README_en.md           # Documentation (English)
 ```
 
 ---
