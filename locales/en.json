@@ -166,7 +166,7 @@
     "help_rich_items": "• <b>/sos</b> — 1-tap emergency headache logger.\n• <b>/stats</b> — Smart analytics & trigger radar.\n• <b>/log</b> — Record a migraine or headache attack.\n• <b>/status</b> — Check if your active episode has resolved.\n• <b>/calendar</b> — Interactive monthly calendar of headache days.\n• <b>/export</b> — Download detailed clinical PDF or CSV export.\n• <b>/reminder</b> — Configure daily wellness check-in notifications.\n• <b>/language</b> — Change language and assistant personality.\n• <b>/donate</b> — Support project infrastructure & development.\n• <b>/menu</b> — Open the bot's interactive main menu.",
     "help_rich_btn_log": "🤕 Log Episode",
     "donate_rich_title": "Support KitsuMed 🦊",
-    "donate_rich_block": "<b>KitsuMed</b> is a free, independent, open-source headache and migraine tracker.\n\nYour donations help us cover server infrastructure, database hosting, and ongoing development of smart clinical tools, reports for neurologists, and charming kitsune artwork!\n\n<i>Accepts International cards (Visa/Mastercard EUR/USD), CIS cards, and cryptocurrency (TON).</i>",
+    "donate_rich_block": "<b>KitsuMed</b> is a free, independent, open-source headache and migraine tracker.\n\nYour donations directly cover cloud server costs, database hosting, and future medical features!\n\n⭐️ <b>Telegram Stars:</b> instant in-app support with 1 click.\n💖 <b>Tribute:</b> bank cards (Visa/Mastercard EUR/USD, CIS) and crypto (TON).",
     "donate_rich_btn_tribute": "💖 Support via Tribute",
     "sos_prompt_title": "Emergency Attack Logging (SOS)",
     "sos_prompt_desc": "Take your medication, drink a glass of water, and dim the lights.\n\nSelect which medicine you took (or choose 'No medication'):",
@@ -313,7 +313,15 @@
     "cal_alert_future_nav": "Cannot navigate calendar into the future!",
     "cal_alert_future_day": "This day has not arrived yet ✨",
     "cal_alert_future_add": "Cannot log an episode for a future date!",
-    "lbl_weather": "Weather"
+    "lbl_weather": "Weather",
+    "btn_channel": "📢 Telegram Channel",
+    "donate_stars_50_title": "🍪 Cookie for Kitsume (50 ⭐️)",
+    "donate_stars_50_desc": "A sweet treat for our fox mascot! Helps cover database hosting costs and brings a warm smile to the team.",
+    "donate_stars_100_title": "☕ Hot Coffee for Dev (100 ⭐️)",
+    "donate_stars_100_desc": "Essential fuel for late-night Rust coding sessions, performance tuning, and helpful medical features!",
+    "donate_stars_250_title": "🦊 Server Boost (250 ⭐️)",
+    "donate_stars_250_desc": "Major support for our open-source infrastructure! Keeps high-speed VPS and Redis running smoothly 24/7.",
+    "donate_stars_thank_you": "🎉 <b>Huge thank you for your support!</b> 🦊💜\n\nYour <b>{stars} ⭐️</b> have been successfully received! Thanks to you, KitsuMed stays fast, free, and open-source."
   },
   "location_map": {
     "left": "👈 Left side (unilateral)",
@@ -374,14 +382,5 @@
     "fatigue": "Fatigue / Exhaustion",
     "lack_of_sleep": "Lack of sleep",
     "none": "No clear trigger"
-  },
-  "btn_channel": "📢 Telegram Channel",
-  "donate_stars_50_title": "🍪 Cookie for Kitsume (50 ⭐️)",
-  "donate_stars_50_desc": "A sweet treat for our fox mascot! Helps cover database hosting costs and brings a warm smile to the team.",
-  "donate_stars_100_title": "☕ Hot Coffee for Dev (100 ⭐️)",
-  "donate_stars_100_desc": "Essential fuel for late-night Rust coding sessions, performance tuning, and helpful medical features!",
-  "donate_stars_250_title": "🦊 Server Boost (250 ⭐️)",
-  "donate_stars_250_desc": "Major support for our open-source infrastructure! Keeps high-speed VPS and Redis running smoothly 24/7.",
-  "donate_stars_thank_you": "🎉 <b>Huge thank you for your support!</b> 🦊💜\n\nYour <b>{stars} ⭐️</b> have been successfully received! Thanks to you, KitsuMed stays fast, free, and open-source.",
-  "donate_rich_block": "<b>KitsuMed</b> is a free, independent, open-source headache and migraine tracker.\n\nYour donations directly cover cloud server costs, database hosting, and future medical features!\n\n⭐️ <b>Telegram Stars:</b> instant in-app support with 1 click.\n💖 <b>Tribute:</b> bank cards (Visa/Mastercard EUR/USD, CIS) and crypto (TON)."
+  }
 }
