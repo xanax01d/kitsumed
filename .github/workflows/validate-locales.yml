@@ -2,13 +2,14 @@ name: Validate Locales
 
 on:
   push:
-    paths:
-      - 'locales/**'
-      - 'scripts/validate_locale.py'
+    branches:
+      - main
+      - dev
   pull_request:
-    paths:
-      - 'locales/**'
-      - 'scripts/validate_locale.py'
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
 
 jobs:
   validate:
