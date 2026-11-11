@@ -7,7 +7,6 @@ use teloxide::prelude::*;
 use teloxide::types::{CallbackQuery, ParseMode};
 
 use crate::db::{get_user_language, get_user_reminder, set_user_reminder, upsert_user};
-use crate::keyboards::{get_reminder_settings_keyboard, get_timezone_keyboard};
 use crate::locales::{get_text, get_text_fmt};
 use crate::session::{SessionStore, UserState};
 
@@ -37,6 +36,7 @@ pub fn resolve_timezone(input_str: &str) -> Option<String> {
     None
 }
 
+#[allow(dead_code)]
 pub fn format_reminder_text(
     reminder_time: &str,
     enabled: bool,

@@ -10,7 +10,7 @@ mod handlers;
 use std::env;
 use sqlx::postgres::PgPoolOptions;
 use teloxide::prelude::*;
-use teloxide::types::{BotCommand, Update};
+use teloxide::types::{BotCommand, LabeledPrice, PreCheckoutQuery, Update};
 
 use crate::db::init_db;
 use crate::handlers::calendar::handle_calendar_callback;
@@ -53,6 +53,32 @@ async fn handle_callback_query(
         handle_followup_callback(&bot, &q, data, &pool, &sessions).await?;
     } else if data.starts_with("sosm:") {
         handle_sos_callback(&bot, &q, data, &pool, &sessions).await?;
+    } else if let Some(stars_str) = data.strip_prefix("stars:") {
+        let stars_amount: u32 = stars_str.parse().unwrap_or(50);
+        let lang = crate::db::get_user_language(&pool, q.from.id.0 as i64).await;
+        let norm = crate::locales::normalize_lang(&lang);
+
+        let (title_key, desc_key) = match stars_amount {
+            100 => ("donate_stars_100_title", "donate_stars_100_desc"),
+            250 => ("donate_stars_250_title", "donate_stars_250_desc"),
+            _ => ("donate_stars_50_title", "donate_stars_50_desc"),
+        };
+        let title = crate::locales::get_text(title_key, norm);
+        let desc = crate::locales::get_text(desc_key, norm);
+
+        let _ = bot.answer_callback_query(q.id.clone()).await;
+
+        let chat_id = q.message.as_ref().map(|m| m.chat().id).unwrap_or(teloxide::types::ChatId(q.from.id.0 as i64));
+        let _ = bot.send_invoice(
+            chat_id,
+            title,
+            desc,
+            format!("stars_donate_{}", stars_amount),
+            "",
+            "XTR",
+            vec![LabeledPrice::new(format!("{} Stars", stars_amount), stars_amount)],
+        ).await;
+        return Ok(());
     } else {
         // Headache flow callbacks
         for prefix in ["hdt", "hdi", "hdl", "hdp", "hds", "hdtr", "hdm", "hdmt", "hdmr", "hdmrt", "hdc", "hdn"] {
@@ -152,6 +178,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Update::filter_callback_query()
                 .endpoint(|bot: Bot, q: CallbackQuery, pool: sqlx::PgPool, sessions: SessionStore| async move {
                     handle_callback_query(bot, q, pool, sessions).await
+                }),
+        )
+        .branch(
+            Update::filter_pre_checkout_query()
+                .endpoint(|bot: Bot, q: PreCheckoutQuery| async move {
+                    let _ = bot.answer_pre_checkout_query(q.id, true).await;
+                    ResponseResult::Ok(())
                 }),
         );
 

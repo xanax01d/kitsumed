@@ -65,7 +65,9 @@ pub struct NewEpisode {
 pub struct UserReminder {
     pub reminder_time: String,
     pub reminder_enabled: bool,
+    #[allow(dead_code)]
     pub timezone: String,
+    #[allow(dead_code)]
     pub last_reminded_date: Option<String>,
 }
 
