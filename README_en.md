@@ -4,7 +4,7 @@
 
 <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(128,128,128,0.2);" />
 
-<img src="assets/images/avatar.jpg" alt="KitsuMed Logo" width="110" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: 10px 0; border: 4px solid #fff;" />
+<img src="assets/images/avatar_4k.png" alt="KitsuMed Logo" width="140" style="border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: 10px 0; border: 4px solid #fff;" />
 
 # 🦊 KitsuMed
 ### High-Performance Telegram Headache & Migraine Diary Bot written in pure Rust
