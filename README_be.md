@@ -192,46 +192,65 @@
 
 ```text
 kitsumed/
-├── assets/
-│   └── images/            # Анімэ-банеры персанажаў для кожнай лакалі
+├── .github/               # CI/CD аўтаматызацыя і налады спонсарства
+│   ├── workflows/         # GitHub Actions (праверка лакалей і тэсты)
+│   └── FUNDING.yml        # Канфігурацыя данатаў і Tribute
+├── assets/                # Графічныя рэсурсы і шрыфты
+│   ├── fonts/             # DejaVu Sans шрыфты для кірыліцы ў PDF-справаздачах
+│   └── images/            # Лакалізаваныя банеры персанажаў і візуальныя схемы
 │       ├── be/            # Беларускі банер (лісічка ў вышыванцы з васількамі)
-│       ├── ru/            # Расійскі банер
-│       ├── en/            # Англійскі банер
-│       ├── meme/          # Мемны банер
-│       └── cyberpunk/     # Cyberpunk банер
-├── locales/               # Чыстыя JSON-слоўнікі лакалізацыі
-│   ├── be.json
-│   ├── ru.json
-│   ├── en.json
-│   ├── meme.json
-│   └── cyberpunk.json
+│       ├── ru/            # Расійскі банер (доктар Кіцумэ)
+│       ├── en/            # British Scholar банеры і экраны
+│       ├── meme/          # Мемныя банеры
+│       ├── cyberpunk/     # Кіберпанк нэтранэр банеры
+│       ├── readme/        # Ілюстрацыі раздзелаў дакументацыі
+│       └── avatar_4k.png  # Афіцыйны 4K-маскот праекта
+├── docs/                  # Кіраўніцтвы і дакументацыя для супольнасці
+│   ├── LOCALIZATION.md    # Кіраўніцтва па даданні моў (RU)
+│   ├── LOCALIZATION_be.md # Кіраўніцтва па лакалізацыі (BE)
+│   └── LOCALIZATION_en.md # Community Localization Guide (EN)
+├── locales/               # Слоўнікі лакалізацыі (i18n) і шаблоны
+│   ├── be.json            # Беларускі інтэрфейс
+│   ├── ru.json            # Расійскі інтэрфейс
+│   ├── en.json            # English interface
+│   ├── meme.json          # Мемны рэжым
+│   ├── cyberpunk.json     # Кіберпанк 2077 рэжым
+│   └── template.json      # Стартовы шаблон для новых моў
+├── scripts/               # Службовыя Python-скрыпты аўтаматызацыі
+│   ├── generate_pdf.py    # Генератар медыцынскіх PDF-справаздач ReportLab
+│   └── validate_locale.py # Скрыпт праверкі сінтаксісу і ключоў лакалей
 ├── src/                   # Зыходны код на чыстым Rust
-│   ├── db.rs              # SQLx-запыты да PostgreSQL і ініцыялізацыя табліц
+│   ├── db.rs              # SQLx-запыты да PostgreSQL і міграцыі схемы БД
 │   ├── handlers/          # Апрацоўшчыкі каманд, колбэкаў і дыялогаў
-│   │   ├── calendar.rs    # Каляндарная сетка і гісторыя
-│   │   ├── commands.rs    # Сістэмныя каманды (/start, /menu, /help, /cancel)
-│   │   ├── export.rs      # Экспарт даных
+│   │   ├── calendar.rs    # Каляндарная сетка прыступаў і гісторыя
+│   │   ├── commands.rs    # Сістэмныя каманды (/start, /menu, /help, /donate, /cancel)
+│   │   ├── export.rs      # Экспарт даных у PDF і CSV
 │   │   ├── followup.rs    # Кантроль сціхання болю і ацэнка лекаў
-│   │   ├── headache.rs    # Пакрокавы FSM-апытальнік прыступу
-│   │   ├── language.rs    # Змена мовы
+│   │   ├── headache.rs    # Пакрокавы FSM-апытальнік фіксацыі прыступу
+│   │   ├── language.rs    # Змена мовы і персаны маскота
 │   │   ├── mod.rs
-│   │   └── reminder.rs    # Налады чэк-іну і часавых паясоў
-│   ├── keyboards.rs       # Генератары інлайн-клавіятур
+│   │   └── reminder.rs    # Налады штодзённага чэк-іну і часавых паясоў
+│   ├── keyboards.rs       # Генератары інлайн-клавіятур і навігацыі
 │   ├── locales/
 │   │   └── mod.rs         # Убудаванне JSON у бінарнік і функцыі get_text / get_text_fmt
-│   ├── main.rs            # Точка ўваходу, пул БД, кліент Redis і дыспетчар Teloxide
-│   ├── models.rs          # Даменныя структуры даных
+│   ├── main.rs            # Точка ўваходу, Telegram Stars хэндлеры, пул БД і дыспетчар
+│   ├── models.rs          # Даменныя структуры даных і серыялізацыя
 │   ├── rich.rs            # Генератар Rich-паведамленняў TG-13 з убудаванымі кнопкамі
 │   ├── services/
-│   │   ├── export.rs
+│   │   ├── export.rs      # Фарміраванне выгрузак CSV і выклік генератара PDF
 │   │   ├── mod.rs
-│   │   └── schedulers.rs  # Фанавыя Tokio-варкеры для чэк-інаў і follow-up
-│   └── session.rs         # Персістэнтнае сховішча FSM у Redis з in-memory fallback
-├── Cargo.toml             # Маніфест залежнасцей Rust
-├── Cargo.lock
+│   │   └── schedulers.rs  # Фанавыя Tokio-варкеры для апытанняў і follow-up
+│   └── session.rs         # Персістэнтнае сховішча FSM (Redis + Memory fallback)
+├── Cargo.toml             # Маніфест залежнасцей і метаданыя Rust
+├── Cargo.lock             # Зафіксаваныя версіі бібліятэк (lockfile)
 ├── Dockerfile             # Multi-stage Dockerfile
-├── docker-compose.yml
-└── README_be.md           # Беларуская дакументацыя праекта
+├── Dockerfile.prebuilt    # Dockerfile для хуткага разгортвання гатовага бінарніка
+├── docker-compose.yml     # Compose-канфігурацыя для сэрвісу, PostgreSQL і Redis
+├── install.sh             # Інтэрактыўны bash-усталёўшчык у 1 клік
+├── LICENSE                # Ліцэнзія MIT
+├── README.md              # Дакументацыя (Русский)
+├── README_be.md           # Дакументацыя (Беларуская)
+└── README_en.md           # Documentation (English)
 ```
 
 ---

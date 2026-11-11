@@ -193,46 +193,65 @@
 
 ```text
 kitsumed/
-├── assets/
+├── .github/               # CI/CD автоматизация и настройки спонсорства
+│   ├── workflows/         # GitHub Actions (проверка локалей и тесты)
+│   └── FUNDING.yml        # Конфигурация донатов и Tribute
+├── assets/                # Графические ресурсы и шрифты
+│   ├── fonts/             # DejaVu Sans шрифты для кириллицы в PDF-отчетах
 │   └── images/            # Локализованные баннеры персонажей и визуальные схемы
-│       ├── ru/            # Русский баннер, шаги опросника и скриншоты UI
+│       ├── ru/            # Русский баннер (hero_banner, thanks_banner)
 │       ├── be/            # Беларускі банер (лісічка ў вышыванцы з вянком)
-│       ├── en/            # English banner, questionnaire steps & UI screens
-│       ├── meme/          # Мемный баннер
-│       └── cyberpunk/     # Cyberpunk баннер
-├── locales/               # Чистые JSON-словари локализации
-│   ├── ru.json
-│   ├── be.json
-│   ├── en.json
-│   ├── meme.json
-│   └── cyberpunk.json
-├── src/                   # Исходный код на чистом Rust
-│   ├── db.rs              # SQLx-запросы к PostgreSQL и инициализация таблиц
+│       ├── en/            # British Scholar банеры и экраны
+│       ├── meme/          # Мемные банеры
+│       ├── cyberpunk/     # Киберпанк нетраннер банеры
+│       ├── readme/        # Иллюстрации разделов документации
+│       └── avatar_4k.png  # Официальный 4K-маскот проекта
+├── docs/                  # Руководства и документация для сообщества
+│   ├── LOCALIZATION.md    # Гайд по добавлению новых языков (RU)
+│   ├── LOCALIZATION_be.md # Кіраўніцтва па лакалізацыі (BE)
+│   └── LOCALIZATION_en.md # Community Localization Guide (EN)
+├── locales/               # Словари локализации (i18n) и шаблоны
+│   ├── ru.json            # Русский интерфейс
+│   ├── be.json            # Беларускі інтэрфейс
+│   ├── en.json            # English interface
+│   ├── meme.json          # Мемный режим
+│   ├── cyberpunk.json     # Киберпанк 2077 режим
+│   └── template.json      # Стартовый шаблон для новых языков
+├── scripts/               # Служебные Python-скрипты автоматизации
+│   ├── generate_pdf.py    # Генератор медицинских PDF-отчётов ReportLab
+│   └── validate_locale.py # Скрипт проверки синтаксиса и ключей локалей
+├── src/                   # Исходный код бота на чистом Rust
+│   ├── db.rs              # SQLx-запросы к PostgreSQL и миграции схемы БД
 │   ├── handlers/          # Обработчики команд, коллбэков и сценариев
-│   │   ├── calendar.rs    # Календарная сетка и история
-│   │   ├── commands.rs    # Системные команды (/start, /menu, /help, /cancel)
-│   │   ├── export.rs      # Экспорт данных
-│   │   ├── followup.rs    # Контроль стихания боли и оценка лекарств
-│   │   ├── headache.rs    # Пошаговый FSM-опросник приступа
-│   │   ├── language.rs    # Смена языка
+│   │   ├── calendar.rs    # Календарная сетка приступов и история
+│   │   ├── commands.rs    # Системные команды (/start, /menu, /help, /donate, /cancel)
+│   │   ├── export.rs      # Экспорт выгрузок в PDF и CSV
+│   │   ├── followup.rs    # Контроль стихания боли и оценка эффективности лекарств
+│   │   ├── headache.rs    # Пошаговый FSM-опросник фиксации приступа
+│   │   ├── language.rs    # Смена языка и персоны маскота
 │   │   ├── mod.rs
-│   │   └── reminder.rs    # Настройки чек-ина и часовых поясов
-│   ├── keyboards.rs       # Генераторы инлайн-клавиатур
+│   │   └── reminder.rs    # Настройки ежедневного чек-ина и часовых поясов
+│   ├── keyboards.rs       # Генераторы инлайн-клавиатур и навигации
 │   ├── locales/
 │   │   └── mod.rs         # Встраивание JSON в бинарник и функции get_text / get_text_fmt
-│   ├── main.rs            # Точка входа, инициализация пула БД, Redis и диспетчера Teloxide
-│   ├── models.rs          # Доменные структуры данных
-│   ├── rich.rs            # Генератор Rich-сообщений TG-13 с встроенными кнопками
+│   ├── main.rs            # Точка входа, Telegram Stars хендлеры, пул БД и диспетчер
+│   ├── models.rs          # Доменные структуры данных и сериализация
+│   ├── rich.rs            # Генератор Rich-сообщений TG-13 со встроенными кнопками
 │   ├── services/
-│   │   ├── export.rs      # Формирование выгрузок
+│   │   ├── export.rs      # Формирование выгрузок CSV и вызов генератора PDF
 │   │   ├── mod.rs
-│   │   └── schedulers.rs  # Фоновые Tokio-воркеры для чек-инов и follow-up
-│   └── session.rs         # Персистентное хранилище FSM-сессий (Redis + In-memory fallback)
-├── Cargo.toml             # Манифест зависимостей Rust
-├── Cargo.lock             # Зафиксированные версии библиотек
+│   │   └── schedulers.rs  # Фоновые Tokio-воркеры для опросов и follow-up
+│   └── session.rs         # Персистентное хранилище FSM-сессий (Redis + Memory fallback)
+├── Cargo.toml             # Манифест зависимостей и метаданные Rust
+├── Cargo.lock             # Зафиксированные версии библиотек (lockfile)
 ├── Dockerfile             # Multi-stage Dockerfile для легковесного контейнера
+├── Dockerfile.prebuilt    # Dockerfile для быстрого развертывания готового бинарника
 ├── docker-compose.yml     # Compose-конфигурация для сервиса, PostgreSQL и Redis
-└── README.md              # Документация проекта
+├── install.sh             # Интерактивный bash-установщик в 1 клик
+├── LICENSE                # Лицензия MIT
+├── README.md              # Документация (Русский)
+├── README_be.md           # Дакументацыя (Беларуская)
+└── README_en.md           # Documentation (English)
 ```
 
 ---
