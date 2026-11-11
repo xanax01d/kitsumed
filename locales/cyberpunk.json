@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "cyberpunk",
+    "name": "🦾 Киберпанк 2077"
+  },
   "messages": {
     "main_menu_title": "<b>Терминал Киберпространства // Night City Net:</b>",
     "btn_sos": "🆘 Экстренный протокол SOS",

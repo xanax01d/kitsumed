@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "code": "your_code",
+    "name": "🏳️ Your Language Name"
+  },
   "messages": {
     "btn_back": "« Back",
     "btn_cancel": "Cancel",

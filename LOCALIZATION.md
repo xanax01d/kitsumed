@@ -25,10 +25,14 @@ We welcome community translations! Whether you want to add a national language (
 
 ## 📂 File Structure Overview
 
-Each locale file is a single UTF-8 JSON document with 6 required sections:
+Each locale file is a single UTF-8 JSON document containing metadata and 6 translation sections:
 
 ```json
 {
+  "meta": {
+    "code": "de",
+    "name": "🇩🇪 Deutsch"
+  },
   "messages": { ... },
   "location_map": { ... },
   "pain_type_map": { ... },
@@ -37,6 +41,10 @@ Each locale file is a single UTF-8 JSON document with 6 required sections:
   "triggers_map": { ... }
 }
 ```
+
+### 0. `meta` (Locale Metadata)
+- `code`: The unique lowercase language identifier matching the file stem (e.g. `"de"`, `"fr"`, `"pl"`).
+- `name`: Display title with emoji for the language picker button (e.g. `"🇩🇪 Deutsch"`). KitsuMed dynamically renders this in the `/language` menu without requiring bot recompilation!
 
 ### 1. `messages` (UI Strings & Dialogues)
 Contains all text prompts, navigation buttons, alerts, and report labels.
