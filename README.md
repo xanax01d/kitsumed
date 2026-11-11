@@ -422,39 +422,65 @@ docker run -d \
 
 ## 📋 База данных
 
-Схема таблиц PostgreSQL автоматически инициализируется при запуске бота:
+Схема таблиц PostgreSQL автоматически инициализируется и мигрирует при старте бота (`init_db` в [`src/db.rs`](file:///Users/zahariaklimkovich/Documents/projects/migrebot_analog/src/db.rs)):
 
-### `users`
+### `users` — Профили пользователей
+Хранит настройки расписания напоминаний, часовой пояс и выбранный язык интерфейса.
+
 | Колонка | Тип | Описание |
 | :--- | :--- | :--- |
-| `user_id` | `BIGINT PRIMARY KEY` | ID пользователя Telegram |
-| `username` | `VARCHAR(255)` | Никнейм (@username) |
-| `first_name` | `VARCHAR(255)` | Имя профиля |
-| `language` | `VARCHAR(16) DEFAULT 'ru'` | Выбранный язык (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
-| `reminder_time` | `VARCHAR(8)` | Время ежедневного опроса (`21:00`) |
-| `reminder_enabled` | `BOOLEAN` | Включен ли опрос |
-| `timezone` | `VARCHAR(64)` | Часовой пояс пользователя (`Europe/Minsk`, `Europe/Moscow` и т.д.) |
-| `last_reminded_date` | `VARCHAR(16)` | Дата последней отправки чек-ина |
-| `created_at` | `TIMESTAMPTZ` | Дата регистрации |
+| `user_id` | `BIGINT PRIMARY KEY` | Уникальный Telegram ID пользователя |
+| `username` | `VARCHAR(255)` | Юзернейм Telegram (`@username`) |
+| `first_name` | `VARCHAR(255)` | Имя в профиле Telegram |
+| `reminder_time` | `VARCHAR(8) DEFAULT '21:00'` | Время ежедневного вечернего чек-ина (`ЧЧ:ММ`) |
+| `reminder_enabled` | `BOOLEAN DEFAULT TRUE` | Статус активности ежедневного напоминания |
+| `timezone` | `VARCHAR(64) DEFAULT 'Europe/Moscow'` | Часовой пояс пользователя (IANA, напр. `Europe/Minsk`, `Europe/Moscow`) |
+| `last_reminded_date` | `VARCHAR(16) DEFAULT NULL` | Дата последней отправки чек-ина (`ГГГГ-ММ-ДД`) для исключения дублей |
+| `language` | `VARCHAR(16) DEFAULT 'ru'` | Выбранная персона/язык интерфейса (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Дата и время первой регистрации |
 
-### `headache_episodes`
+### `headache_episodes` — Записи приступов головной боли
+Хранит полную клиническую картину эпизода: локализацию, силу, симптомы, триггеры, принятые препараты, динамику купирования и погодные условия.
+
 | Колонка | Тип | Описание |
 | :--- | :--- | :--- |
-| `id` | `SERIAL PRIMARY KEY` | Номер приступа |
-| `user_id` | `BIGINT REFERENCES users` | ID пользователя |
-| `start_time` | `VARCHAR(64)` | Время начала |
-| `end_time` | `VARCHAR(64)` | Время окончания |
-| `intensity` | `SMALLINT` | Сила боли (1-10) |
-| `location` | `VARCHAR(64)` | Локализация |
-| `pain_type` | `VARCHAR(64)` | Характер боли |
-| `symptoms` | `JSONB` | Массив сопутствующих симптомов |
-| `triggers` | `JSONB` | Массив провоцирующих факторов |
-| `medication` | `VARCHAR(255)` | Принятый препарат |
-| `status` | `VARCHAR(32)` | `active` или `completed` |
-| `medication_relief` | `VARCHAR(32)` | Оценка действия препарата (`helped`, `partially`, `not_helped`) |
-| `pain_resolved` | `BOOLEAN` | Стихание боли по результатам follow-up |
-| `followup_sent` | `BOOLEAN DEFAULT false` | Отметка отправки двухчасового контроля |
-| `created_at` | `TIMESTAMPTZ` | Время фиксации записи |
+| `id` | `SERIAL PRIMARY KEY` | Уникальный идентификатор эпизода |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Внешний ключ Telegram ID пользователя с каскадным удалением |
+| `start_time` | `VARCHAR(64) NOT NULL` | Дата и время начала приступа |
+| `end_time` | `VARCHAR(64)` | Дата и время окончания приступа (для завершенных эпизодов) |
+| `intensity` | `INTEGER NOT NULL` | Интенсивность боли по 10-балльной шкале (1–10) |
+| `location` | `VARCHAR(128) NOT NULL` | Локализация боли (виски, лоб, затылок, односторонняя и т.д.) |
+| `pain_type` | `VARCHAR(128) NOT NULL` | Характер боли (пульсирующая, давящая, распирающая, колющая и т.д.) |
+| `symptoms` | `JSONB` | JSON-массив сопутствующих симптомов (`["nausea", "photophobia", ...]`) |
+| `triggers` | `JSONB` | JSON-массив провоцирующих факторов (`["stress", "sleep_lack", ...]`) |
+| `medication` | `TEXT` | Название и дозировка принятого препарата |
+| `status` | `VARCHAR(32) DEFAULT 'active'` | Текущий статус эпизода: `active` (длится) или `completed` (завершен) |
+| `medication_relief` | `VARCHAR(32) DEFAULT NULL` | Эффективность препарата по результатам контроля (`helped`, `partially`, `not_helped`) |
+| `pain_resolved` | `BOOLEAN DEFAULT NULL` | Полное купирование боли по результатам контрольного опроса (`true`/`false`) |
+| `med_take_delay` | `VARCHAR(32) DEFAULT NULL` | Задержка приёма препарата от начала боли (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `relief_delay` | `VARCHAR(32) DEFAULT NULL` | Время до наступления облегчения (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `followup_due_at` | `TIMESTAMPTZ DEFAULT NULL` | Расчетное время отправки контрольного чек-ина эффективности (через 2 часа) |
+| `followup_sent` | `BOOLEAN DEFAULT FALSE` | Флаг отправки контрольного опроса эффективности |
+| `pressure_hpa` | `REAL DEFAULT NULL` | Атмосферное давление в гПа на момент приступа (Open-Meteo) |
+| `temperature_c` | `REAL DEFAULT NULL` | Температура воздуха в °C на момент приступа (Open-Meteo) |
+| `is_quick_log` | `BOOLEAN DEFAULT FALSE` | Отметка экспресс-записи в один клик |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Метка времени создания записи в БД |
+
+### `user_medications` — Персональный справочник препаратов
+Автоматически пополняемый список лекарств пользователя для быстрого выбора на инлайн-клавиатуре.
+
+| Колонка | Тип | Описание |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Уникальный идентификатор записи |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Внешний ключ Telegram ID пользователя с каскадным удалением |
+| `name` | `VARCHAR(255) NOT NULL` | Торговое или международное наименование препарата |
+| `last_used_at` | `TIMESTAMPTZ DEFAULT NOW()` | Метка времени последнего применения (для сортировки по актуальности) |
+
+*Ограничение уникальности:* `UNIQUE(user_id, name)` — исключает дублирование одного препарата у одного пользователя.
+
+### ⚡ Индексы базы данных
+- `idx_headache_episodes_user_status` — `ON headache_episodes(user_id, status)`: обеспечивает мгновенную выборку текущих активных приступов пользователя и ускоряет фоновые воркеры follow-up.
+- `idx_user_medications_user_id` — `ON user_medications(user_id, last_used_at DESC)`: оптимизирует мгновенный рендеринг кнопок последних принятых препаратов.
 
 ---
 
