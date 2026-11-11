@@ -143,10 +143,6 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 
 ## ⌨️ Commands & Navigation
 
-<p align="center">
-  <img src="assets/images/en/hero_banner.png" alt="Commands and Navigation" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 16px;" />
-</p>
-
 | Command | Action |
 | :--- | :--- |
 | `/start` | Welcome message, user registration, and main Rich menu |
