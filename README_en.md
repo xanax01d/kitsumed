@@ -202,13 +202,37 @@ kitsumed/
 
 ## ⚙️ Quick Start
 
-### 1. Clone Repository
+### 🦊 Automated 1-Click Installer (Recommended)
+You can launch our interactive installer with a beautiful CLI interface:
+
+```bash
+git clone https://github.com/xanax01d/kitsumed.git
+cd kitsumed
+./install.sh
+```
+The script automatically performs system diagnostics (OS, RAM, disk space), installs prerequisites, and lets you choose:
+- **`[1] 🐳 Docker Compose`** — Bot, PostgreSQL 16, and Redis 7 in isolated containers (with auto-generated `.env`).
+- **`[2] ⚡ Native Systemd`** — Native Rust release build & Linux systemd service.
+- **`[3] 📊 Check Status`** — Live diagnostics of running containers or service.
+
+CLI flags for automated/CI setups:
+```bash
+./install.sh --docker --token "YOUR_TOKEN"   # Headless Docker deployment
+./install.sh --systemd --token "YOUR_TOKEN"  # Headless Systemd build & launch
+./install.sh --status                        # Diagnostics check
+```
+
+---
+
+### Manual Setup
+
+#### 1. Clone Repository
 ```bash
 git clone https://github.com/xanax01d/kitsumed.git
 cd kitsumed
 ```
 
-### 2. Configuration (`.env`)
+#### 2. Configuration (`.env`)
 Create a `.env` file in the project root:
 
 ```dotenv
