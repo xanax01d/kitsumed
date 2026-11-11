@@ -118,6 +118,8 @@ Each locale features its own unique stylized anime fox girl (kitsune) mascot:
 - 🎭 **Meme (`meme`)**: Internet slang.
 - 🦾 **Cyberpunk 2077 (`cyberpunk`)**: Neon netrunner aesthetic, neuro-glitches, Trauma Team protocols, and chrome resilience.
 
+> 💡 **Want to contribute your language?** Check out our [Localization Contributor Guide (LOCALIZATION.md)](LOCALIZATION.md).
+
 ### 4. 📅 Interactive Monthly Calendar (`/history` / `/calendar`)
 
 <p align="center">
