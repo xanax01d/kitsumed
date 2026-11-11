@@ -66,6 +66,11 @@ def validate_locale(target_path: Path, ref_data: dict) -> tuple[list[str], list[
         errors.append("Missing required top-level section: 'meta' (with 'code' and 'name')")
 
     # Check top-level sections
+    allowed_top_level = set(REQUIRED_SECTIONS) | {"meta"}
+    unexpected_top = set(target_data.keys()) - allowed_top_level
+    if unexpected_top:
+        errors.append(f"Unexpected top-level key(s): {', '.join(sorted(unexpected_top))}. All translation strings must be placed inside 'messages' or map sections!")
+
     for sec in REQUIRED_SECTIONS:
         if sec not in target_data:
             errors.append(f"Missing required top-level section: '{sec}'")
