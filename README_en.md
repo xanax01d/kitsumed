@@ -419,6 +419,70 @@ docker run -d \
 
 ---
 
+## 📋 Database Schema
+
+The PostgreSQL database schema is automatically initialized and migrated during bot startup (`init_db` in [`src/db.rs`](file:///Users/zahariaklimkovich/Documents/projects/migrebot_analog/src/db.rs)):
+
+### `users` — User Profiles & Preferences
+Stores notification schedule settings, timezone, and active interface persona.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `user_id` | `BIGINT PRIMARY KEY` | Telegram unique user ID |
+| `username` | `VARCHAR(255)` | Telegram handle (`@username`) |
+| `first_name` | `VARCHAR(255)` | Profile first name |
+| `reminder_time` | `VARCHAR(8) DEFAULT '21:00'` | Evening daily check-in time (`HH:MM`) |
+| `reminder_enabled` | `BOOLEAN DEFAULT TRUE` | Daily reminder status toggle |
+| `timezone` | `VARCHAR(64) DEFAULT 'Europe/Moscow'` | User IANA time zone (e.g. `Europe/Minsk`, `Europe/London`) |
+| `last_reminded_date` | `VARCHAR(16) DEFAULT NULL` | Date of last delivered check-in (`YYYY-MM-DD`) to avoid duplicate pings |
+| `language` | `VARCHAR(16) DEFAULT 'ru'` | Selected persona / UI language (`ru`, `be`, `en`, `meme`, `cyberpunk`) |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Registration timestamp |
+
+### `headache_episodes` — Headache & Migraine Episode Records
+Captures clinical episode details: pain intensity, localization, triggers, medications, relief progression, and weather metrics.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Unique episode ID |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Foreign key referencing Telegram user with cascading deletion |
+| `start_time` | `VARCHAR(64) NOT NULL` | Pain onset timestamp / date string |
+| `end_time` | `VARCHAR(64)` | Pain resolution timestamp (for completed episodes) |
+| `intensity` | `INTEGER NOT NULL` | Pain intensity on a 1–10 numeric rating scale |
+| `location` | `VARCHAR(128) NOT NULL` | Pain localization (temples, forehead, occipital, unilateral, etc.) |
+| `pain_type` | `VARCHAR(128) NOT NULL` | Pain quality (pulsating, pressing, stabbing, burning, etc.) |
+| `symptoms` | `JSONB` | JSON array of accompanying symptoms (`["nausea", "photophobia", ...]`) |
+| `triggers` | `JSONB` | JSON array of suspected triggers (`["stress", "sleep_lack", ...]`) |
+| `medication` | `TEXT` | Name and dosage of taken medication |
+| `status` | `VARCHAR(32) DEFAULT 'active'` | Episode status: `active` (ongoing) or `completed` |
+| `medication_relief` | `VARCHAR(32) DEFAULT NULL` | Drug effectiveness rating (`helped`, `partially`, `not_helped`) |
+| `pain_resolved` | `BOOLEAN DEFAULT NULL` | Pain resolution status confirmed during follow-up (`true`/`false`) |
+| `med_take_delay` | `VARCHAR(32) DEFAULT NULL` | Delay from pain onset to pill intake (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `relief_delay` | `VARCHAR(32) DEFAULT NULL` | Time to noticeable pain relief (`<30min`, `30-60min`, `1-2h`, `>2h`) |
+| `followup_due_at` | `TIMESTAMPTZ DEFAULT NULL` | Scheduled timestamp for the 2-hour efficacy check-in notification |
+| `followup_sent` | `BOOLEAN DEFAULT FALSE` | Follow-up dispatch completion flag |
+| `pressure_hpa` | `REAL DEFAULT NULL` | Atmospheric pressure in hPa at episode start (via Open-Meteo API) |
+| `temperature_c` | `REAL DEFAULT NULL` | Outdoor temperature in °C at episode start (via Open-Meteo API) |
+| `is_quick_log` | `BOOLEAN DEFAULT FALSE` | Flag indicating 1-click Quick Log entry |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | Record insertion timestamp |
+
+### `user_medications` — Personalized Medication Dictionary
+Auto-populated user medication list enabling quick one-tap selections on inline keyboards.
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `SERIAL PRIMARY KEY` | Unique medication entry ID |
+| `user_id` | `BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE` | Foreign key referencing Telegram user with cascading deletion |
+| `name` | `VARCHAR(255) NOT NULL` | Commercial or generic medication name |
+| `last_used_at` | `TIMESTAMPTZ DEFAULT NOW()` | Last intake timestamp (used for recency sorting) |
+
+*Unique Constraint:* `UNIQUE(user_id, name)` — ensures no duplicate medication names per user.
+
+### ⚡ Database Indexes
+- `idx_headache_episodes_user_status` — `ON headache_episodes(user_id, status)`: optimizes active episode retrieval and background 2-hour follow-up scheduler queries.
+- `idx_user_medications_user_id` — `ON user_medications(user_id, last_used_at DESC)`: optimizes instant rendering of recent medication buttons.
+
+---
+
 ## 💖 Support the Project
 
 KitsuMed is a completely free, independent, open-source project. If the bot helps you manage and track your headaches or migraines, you can support our server infrastructure and development:
