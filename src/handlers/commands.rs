@@ -178,6 +178,11 @@ pub async fn handle_menu_callback(
                 sessions.set_last_mid(user_id, new_mid).await;
             }
         }
+        "donate" => {
+            if let Ok(new_mid) = crate::rich::send_rich_donate_menu(bot.token(), chat_id.0, mid, user_id, pool).await {
+                sessions.set_last_mid(user_id, new_mid).await;
+            }
+        }
         "home" | "main" => {
             let first_name = &q.from.first_name;
             if let Ok(new_mid) = crate::rich::send_rich_main_menu(bot.token(), chat_id.0, mid, user_id, first_name, pool).await {
@@ -516,6 +521,12 @@ pub async fn handle_message(
                 }
                 return Ok(());
             }
+            "donate" | "tribute" => {
+                if let Ok(new_mid) = crate::rich::send_rich_donate_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+                    sessions.set_last_mid(user_id, new_mid).await;
+                }
+                return Ok(());
+            }
             _ => {
                 let first_name = msg.from.as_ref().map(|u| u.first_name.as_str()).unwrap_or("друг");
                 send_main_menu(&bot, msg.chat.id, None, user_id, first_name, &pool, &sessions).await?;
@@ -526,6 +537,13 @@ pub async fn handle_message(
 
     if text == "/help" || is_help_btn(text) {
         if let Ok(new_mid) = crate::rich::send_rich_help_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
+            sessions.set_last_mid(user_id, new_mid).await;
+        }
+        return Ok(());
+    }
+
+    if text == "/donate" || text == "/tribute" {
+        if let Ok(new_mid) = crate::rich::send_rich_donate_menu(bot.token(), msg.chat.id.0, last_mid, user_id, &pool).await {
             sessions.set_last_mid(user_id, new_mid).await;
         }
         return Ok(());

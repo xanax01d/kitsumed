@@ -25,6 +25,7 @@
 [![Follow-up](https://img.shields.io/badge/Follow--up-Automated%20Check-blueviolet?style=for-the-badge&logo=clockify&logoColor=white)](#3-🩺-автоматический-follow-up-и-оценка-препаратов)
 [![Rich Messages](https://img.shields.io/badge/Telegram-Rich%20Components%20TG--13-informational?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TXJ)
 
 <p align="center">
   🇷🇺 <b>Русский</b> &nbsp;•&nbsp; <a href="README_be.md"><b>🇧🇾 Беларуская</b></a> &nbsp;•&nbsp; <a href="README_en.md"><b>🇬🇧 English</b></a>
@@ -166,6 +167,7 @@
 | `/calendar`, `/history` | Интерактивный календарь приступов по дням |
 | `/reminder`, `/settings` | Меню настройки ежедневного чек-ина и часового пояса |
 | `/language` | Выбор языка интерфейса (RU, BE, EN, Meme, Cyberpunk) |
+| `/donate` | Поддержать разработку и оплату серверов проекта |
 | `/help` | Справочная информация по шкале боли и ведению дневника |
 | `/cancel` | Прерывание текущего сценария и возврат в главное меню |
 
@@ -433,6 +435,21 @@ docker run -d \
 | `pain_resolved` | `BOOLEAN` | Стихание боли по результатам follow-up |
 | `followup_sent` | `BOOLEAN DEFAULT false` | Отметка отправки двухчасового контроля |
 | `created_at` | `TIMESTAMPTZ` | Время фиксации записи |
+
+---
+
+## 💖 Поддержка проекта
+
+KitsuMed — полностью бесплатный, независимый проект с открытым исходным кодом. Если бот помогает вам контролировать головную боль и мигрень, вы можете поддержать оплату серверов и разработку новых функций:
+
+<p align="center">
+  <a href="https://web.tribute.tg/d/TXJ">
+    <img src="https://img.shields.io/badge/Поддержать_через_Tribute-FF5B5B?style=for-the-badge&logo=telegram&logoColor=white" alt="Поддержать через Tribute" />
+  </a>
+</p>
+
+- 🌐 **Для браузера / GitHub**: [web.tribute.tg/d/TXJ](https://web.tribute.tg/d/TXJ) *(карты РФ/МИР, европейские карты Visa/MC, TON)*
+- 📱 **Внутри Telegram**: [t.me/tribute/app?startapp=dTXJ](https://t.me/tribute/app?startapp=dTXJ)
 
 ---
 

@@ -367,6 +367,7 @@ pub async fn send_rich_main_menu(
     let btn_reminder = get_text("btn_reminder", norm);
     let btn_language = get_text("btn_language", norm);
     let btn_help = get_text("btn_help", norm);
+    let btn_donate = get_text("btn_donate", norm);
 
     let html = format!(
         "<b>KitsuMed 🦊</b>\n\n\
@@ -394,6 +395,7 @@ pub async fn send_rich_main_menu(
         </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:help\">{btn_help}</tg-button>\n\
+          <tg-button type=\"callback_data\" data=\"menu:donate\">{btn_donate}</tg-button>\n\
         </tg-button-row>",
         rem.reminder_time
     );
@@ -969,6 +971,7 @@ pub async fn send_rich_help_menu(
     let block_title = get_text("help_rich_block_title", norm);
     let help_items = get_text("help_rich_items", norm);
     let btn_log = get_text("help_rich_btn_log", norm);
+    let btn_donate = get_text("btn_donate", norm);
     let btn_menu = get_text("btn_main_menu", norm);
 
     let html = format!(
@@ -978,6 +981,38 @@ pub async fn send_rich_help_menu(
         {help_items}</blockquote>\n\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" style=\"success\" data=\"menu:log\">{btn_log}</tg-button>\n\
+          <tg-button type=\"callback_data\" data=\"menu:donate\">{btn_donate}</tg-button>\n\
+        </tg-button-row>\n\
+        <tg-button-row>\n\
+          <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
+        </tg-button-row>"
+    );
+
+    let img_path = format!("assets/images/{norm}/hero_banner.png");
+    send_or_edit_rich_raw(token, chat_id, message_id, &html, Some(&img_path)).await
+}
+
+pub async fn send_rich_donate_menu(
+    token: &str,
+    chat_id: i64,
+    message_id: Option<i32>,
+    user_id: i64,
+    pool: &PgPool,
+) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
+    let lang = get_user_language(pool, user_id).await;
+    let norm = normalize_lang(&lang);
+
+    let title = get_text("donate_rich_title", norm);
+    let block = get_text("donate_rich_block", norm);
+    let btn_tribute = get_text("donate_rich_btn_tribute", norm);
+    let btn_menu = get_text("btn_main_menu", norm);
+
+    let html = format!(
+        "<b>{title}</b>\n\n\
+        <img src=\"tg://photo?id=hero\">\n\n\
+        <blockquote>{block}</blockquote>\n\n\
+        <tg-button-row>\n\
+          <tg-button type=\"url\" url=\"https://t.me/tribute/app?startapp=dTXJ\">{btn_tribute}</tg-button>\n\
         </tg-button-row>\n\
         <tg-button-row>\n\
           <tg-button type=\"callback_data\" data=\"menu:main\">{btn_menu}</tg-button>\n\
